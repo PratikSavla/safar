@@ -71,13 +71,18 @@ class SimGattServer(private val context: Context, private val events: Peripheral
         return if (sent == true) true else fail("notification was not sent")
     }
 
-    /** Drops the link to the connected central, as when the bike goes out of range. */
-    fun disconnect(): Boolean {
-        val s = server ?: return fail("GATT server is not open")
-        val device = central ?: return fail("no central connected")
-        guard("cancelConnection") { s.cancelConnection(device) } ?: return false
-        events.onEvent("Link dropped by the simulator")
-        return true
+    /**
+     * Asks the stack to drop the link to the central, as when the bike goes out of range, and returns its address.
+     * cancelConnection only releases links this app holds, and an incoming link has no app holder, so connect()
+     * first registers the server as a holder. The drop itself is reported by the STATE_DISCONNECTED callback.
+     */
+    fun disconnect(): String? {
+        val s = server ?: return null.also { fail("GATT server is not open") }
+        val device = central ?: return null.also { fail("no central connected") }
+        if (guard("connect") { s.connect(device, false) } != true) Log.w(TAG, "connect() before cancelConnection refused")
+        guard("cancelConnection") { s.cancelConnection(device) } ?: return null
+        events.onEvent("Disconnect of ${device.address} requested")
+        return device.address
     }
 
     internal fun addNextService() {

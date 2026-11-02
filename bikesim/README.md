@@ -58,7 +58,7 @@ With both devices connected to one computer, pick the target of each install wit
 | Send bad framing | One cluster frame with a broken start byte and end byte (and non-digit speed and odometer). Safar rejects it at the framing check. |
 | Send bad fields | One cluster frame with valid framing and checksum but non-digit speed and odometer. It passes Safar's framing check and fails in the field decoder. |
 | Send wrong checksum | One correct cluster frame whose checksum matches neither checksum mode. |
-| Drop link | Cancels the connection to the central, as when the bike goes out of range. Advertising starts again. |
+| Drop link | Asks the stack to drop the link to the central, as when the bike goes out of range. Events shows "Central … disconnected" when the link is gone (advertising then starts again), or an error when it is still up 5 s later. |
 | Pause frames (bike off) | Stops the 5 s cluster frames; the link stays up. Press again to resume. |
 | Events | The last few simulator events: connections, MTU, notify, errors. |
 | Received | The last 200 frames Safar wrote, newest first: time, type, decoded fields, checksum result and hex. **Copy as hex** puts them on the clipboard, oldest first, one line per frame. |

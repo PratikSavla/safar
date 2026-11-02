@@ -120,7 +120,13 @@ class SimViewModel(app: Application) : AndroidViewModel(app), PeripheralEvents {
     fun sendWrongChecksum() = send(ClusterFrames.wrongChecksum(_state.value.cluster, _state.value.mode), "wrong checksum")
 
     fun dropLink() {
-        server.disconnect()
+        val address = server.disconnect() ?: return
+        viewModelScope.launch {
+            delay(DROP_CHECK_MS)
+            if (_state.value.central == address) {
+                onEvent("Link to $address still up ${DROP_CHECK_MS / 1000} s after Drop link", error = true)
+            }
+        }
     }
 
     fun clearLog() = _state.update { it.copy(log = it.log.clear()) }
@@ -205,6 +211,7 @@ class SimViewModel(app: Application) : AndroidViewModel(app), PeripheralEvents {
         const val NAME_MAX = 20
         const val RIDE_TICK_MS = 1000L
         const val FIRST_FRAME_DELAY_MS = 300L
+        const val DROP_CHECK_MS = 5000L
         val EVENT_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
     }
 }

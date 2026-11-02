@@ -133,6 +133,7 @@ internal fun AboutCard(onVersionTap: () -> Unit = {}) {
             Stamp("no account", tone = StampTone.MOSS)
             Stamp("no analytics", tone = StampTone.SLATE)
         }
+        Note(TRADEMARK_NOTE, Modifier.padding(top = 12.dp), color = Atlas.colors.ink3)
     }
 }
 

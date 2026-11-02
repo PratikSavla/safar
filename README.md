@@ -90,3 +90,10 @@ emulator connected:
 BikeSim advertises as a Suzuki display, accepts Safar's frames and sends cluster readings every few seconds. Run it
 on a second phone, or run both apps on two emulators linked by virtual Bluetooth. The unit tests also run the
 Bluetooth session against a fake GATT that sends synthetic bike frames.
+
+## Trademarks
+
+Safar is an independent project. It is not affiliated with, endorsed by or sponsored by Suzuki Motor Corporation
+or any of its subsidiaries. Suzuki, V-Strom, Gixxer, Access, Burgman and Avenis are trademarks of their owners and
+are used here only to name the bikes Safar works with. Google Maps is a trademark of Google LLC, and WhatsApp is a
+trademark of WhatsApp LLC.

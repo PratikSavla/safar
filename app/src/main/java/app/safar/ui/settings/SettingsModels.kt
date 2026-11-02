@@ -67,6 +67,10 @@ fun tankSubtitle(model: BikeModel?, own: Double?): String {
     return if (yours != null) "$spec $yours" else spec
 }
 
+/** Under About: Safar names Suzuki's bikes only to say which ones it works with. */
+const val TRADEMARK_NOTE =
+    "Not affiliated with or endorsed by Suzuki. Suzuki and its model names are trademarks of their owners."
+
 /** The Backup note in Settings. Android's own backup carries Safar's data; the rider switches it in Settings. */
 const val BACKUP_NOTE =
     "Your rides, fuel log, places and settings are saved with your phone’s backup. Turn it on or off in your phone’s settings, under Backup."

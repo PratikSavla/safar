@@ -1,0 +1,111 @@
+package app.safar.ui.components
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import app.safar.ui.format.Formatters
+import app.safar.ui.theme.Atlas
+import kotlinx.coroutines.delay
+import java.util.Locale
+
+/** Mono uppercase label above titles and values (`.kicker`). */
+@Composable
+fun Kicker(text: String, modifier: Modifier = Modifier, color: Color = Atlas.colors.ink3) {
+    BasicText(text.uppercase(Locale.ROOT), modifier, style = Atlas.type.kicker.copy(color = color), maxLines = 1, overflow = TextOverflow.Ellipsis)
+}
+
+/** Section heading: mono label, hairline to the edge, optional aside (`.sec`). */
+@Composable
+fun SectionHeader(title: String, modifier: Modifier = Modifier, aside: (@Composable () -> Unit)? = null) {
+    val c = Atlas.colors
+    Row(
+        modifier.fillMaxWidth().padding(top = Atlas.dimens.sectionGap, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        BasicText(
+            title.uppercase(Locale.ROOT),
+            Modifier.semantics { heading() },
+            style = Atlas.type.section.copy(color = c.ink2),
+            maxLines = 1,
+        )
+        Hairline(Modifier.weight(1f), color = c.rule2)
+        aside?.invoke()
+    }
+}
+
+/** Caption that says where a value came from and how old it is: "↳ bike · 3 s ago" (UX rule: every bike value). */
+@Composable
+fun SourceLine(source: String, modifier: Modifier = Modifier, age: String? = null) {
+    val text = if (age == null) "↳ $source" else "↳ $source · $age"
+    BasicText(text, modifier, style = Atlas.type.src.copy(color = Atlas.colors.ink3), maxLines = 1, overflow = TextOverflow.Ellipsis)
+}
+
+/** [SourceLine] with a live age from [atMillis]; "waiting" until the first reading. */
+@Composable
+fun SourceLine(source: String, atMillis: Long?, modifier: Modifier = Modifier) {
+    val now = rememberNow()
+    SourceLine(source, modifier, age = if (atMillis == null) "waiting" else Formatters.age(atMillis, now.value))
+}
+
+/** Serif introduction paragraph (`.lede`). */
+@Composable
+fun Lede(text: String, modifier: Modifier = Modifier) {
+    BasicText(text, modifier, style = Atlas.type.lede.copy(color = Atlas.colors.ink2))
+}
+
+/** Small explanatory text (`.note`). */
+@Composable
+fun Note(text: String, modifier: Modifier = Modifier, color: Color = Atlas.colors.ink2) {
+    BasicText(text, modifier, style = Atlas.type.note.copy(color = color))
+}
+
+/**
+ * Tab page masthead (`.mast`): kicker row with an optional right-hand note, then a big serif
+ * title whose [titleEm] tail is set light and italic, e.g. "Where to" + "?".
+ */
+@Composable
+fun Masthead(kicker: String, title: String, modifier: Modifier = Modifier, kickerAside: String? = null, titleEm: String? = null) {
+    Column(modifier.fillMaxWidth().padding(top = 8.dp, bottom = 18.dp)) {
+        Row(Modifier.fillMaxWidth()) {
+            Kicker(kicker, Modifier.weight(1f))
+            if (kickerAside != null) Kicker(kickerAside)
+        }
+        Spacer(Modifier.height(10.dp))
+        DisplayTitle(title, titleEm, Atlas.type.displayLarge, Modifier.semantics { heading() })
+    }
+}
+
+/** Ticks once per [periodMillis] so ages ("3 s ago") stay current. */
+@Composable
+fun rememberNow(periodMillis: Long = 1000): State<Long> = produceState(System.currentTimeMillis(), periodMillis) {
+    while (true) {
+        delay(periodMillis - System.currentTimeMillis() % periodMillis)
+        value = System.currentTimeMillis()
+    }
+}
+
+@Preview
+@Composable
+private fun TextPreview() = PreviewSurface {
+    Masthead("Route · via Google Maps", "Where to", kickerAside = "idle", titleEm = "?")
+    SectionHeader("Destinations") { Kicker("3 saved") }
+    SourceLine("bike", age = "3 s ago")
+    Lede("Safar sends turns, callers and the clock to your cluster.")
+}

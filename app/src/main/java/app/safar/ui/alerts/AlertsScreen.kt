@@ -25,6 +25,7 @@ import app.safar.ui.components.SectionHeader
 import app.safar.ui.components.SwitchRow
 import app.safar.ui.components.TopoTransform
 import app.safar.ui.copy.Phrases
+import app.safar.ui.copy.SwitchCopy
 import app.safar.ui.nav.Navigator
 import app.safar.ui.settings.AccessStatus
 import app.safar.ui.settings.SystemAccess
@@ -98,9 +99,9 @@ internal fun AlertsContent(
 @Composable
 private fun AlertSwitches(state: AlertsScreenState, access: AccessStatus, actions: AlertsActions) {
     val s = state.settings
-    SwitchRow("Phone calls", s.alertCalls, actions.onCalls, subtitle = "Caller name while ringing, and missed calls")
-    SwitchRow("WhatsApp calls", s.alertWhatsAppCalls, actions.onWhatsAppCalls, subtitle = "Caller name while ringing")
-    SwitchRow("WhatsApp messages", s.alertWhatsAppMessages, actions.onWhatsAppMessages, subtitle = "Sender name and count")
+    SwitchRow("Phone calls", s.alertCalls, actions.onCalls, subtitle = SwitchCopy.PHONE_CALLS)
+    SwitchRow("WhatsApp calls", s.alertWhatsAppCalls, actions.onWhatsAppCalls, subtitle = SwitchCopy.WHATSAPP_CALLS)
+    SwitchRow("WhatsApp messages", s.alertWhatsAppMessages, actions.onWhatsAppMessages, subtitle = SwitchCopy.WHATSAPP_MESSAGES)
     SwitchRow("SMS", false, {}, subtitle = Phrases.COMING_SOON, enabled = false)
     NotificationAccessRow(access.notificationAccess, actions.onAccess, divider = false)
 }
@@ -112,7 +113,7 @@ private fun AlertSwitches(state: AlertsScreenState, access: AccessStatus, action
 @Composable
 fun NotificationAccessRow(granted: Boolean, onOpen: () -> Unit, modifier: Modifier = Modifier, divider: Boolean = true) {
     ListRow(
-        "Read phone alerts",
+        Phrases.ALERTS_ACCESS,
         modifier,
         subtitle = if (granted) "On · Google Maps, calls and WhatsApp" else "${Phrases.ALLOW_ALERTS}.",
         divider = divider,

@@ -24,6 +24,7 @@ import app.safar.ui.components.StampTone
 import app.safar.ui.components.SwitchRow
 import app.safar.ui.components.TopoTransform
 import app.safar.ui.copy.Phrases
+import app.safar.ui.copy.SwitchCopy
 import app.safar.ui.nav.Navigator
 import app.safar.ui.nav.Route
 import app.safar.ui.shell.LocalShellUi
@@ -120,13 +121,13 @@ internal fun SettingsContent(
 @Composable
 private fun AlertSection(s: Settings, onSettings: (String, (Settings) -> Settings) -> Unit) {
     SectionHeader("Alerts on your bike")
-    SwitchRow("Phone calls", s.alertCalls, { v -> onSettings("call alerts") { it.copy(alertCalls = v) } }, subtitle = "Caller name and missed calls")
-    SwitchRow("WhatsApp calls", s.alertWhatsAppCalls, { v -> onSettings("WhatsApp call alerts") { it.copy(alertWhatsAppCalls = v) } }, subtitle = "Caller name")
+    SwitchRow("Phone calls", s.alertCalls, { v -> onSettings("call alerts") { it.copy(alertCalls = v) } }, subtitle = SwitchCopy.PHONE_CALLS)
+    SwitchRow("WhatsApp calls", s.alertWhatsAppCalls, { v -> onSettings("WhatsApp call alerts") { it.copy(alertWhatsAppCalls = v) } }, subtitle = SwitchCopy.WHATSAPP_CALLS)
     SwitchRow(
         "WhatsApp messages",
         s.alertWhatsAppMessages,
         { v -> onSettings("WhatsApp message alerts") { it.copy(alertWhatsAppMessages = v) } },
-        subtitle = "Sender name and count, never the message",
+        subtitle = SwitchCopy.WHATSAPP_MESSAGES,
     )
     SwitchRow("SMS", false, {}, subtitle = Phrases.COMING_SOON, enabled = false, divider = false)
 }
@@ -140,7 +141,7 @@ private fun RidingSection(s: Settings, onSettings: (String, (Settings) -> Settin
         "Service reminders",
         s.serviceReminders,
         { v -> onSettings("service reminders") { it.copy(serviceReminders = v) } },
-        subtitle = "When a service item is due soon",
+        subtitle = SwitchCopy.SERVICE_REMINDERS,
         divider = false,
     )
 }
@@ -154,7 +155,7 @@ private fun FuelSection(state: SettingsState, actions: SettingsActions) {
         "Low-fuel reminder",
         state.settings.lowFuelAlert,
         { v -> actions.onSettings("low fuel") { it.copy(lowFuelAlert = v) } },
-        subtitle = "When the fuel gauge drops to 1 bar",
+        subtitle = SwitchCopy.LOW_FUEL,
         divider = false,
     )
 }

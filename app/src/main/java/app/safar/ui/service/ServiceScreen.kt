@@ -37,6 +37,7 @@ import app.safar.ui.components.TextAction
 import app.safar.ui.components.TopoTransform
 import app.safar.ui.components.developerMode
 import app.safar.ui.components.rememberToastState
+import app.safar.ui.copy.SwitchCopy
 import app.safar.ui.format.Formatters
 import app.safar.ui.format.ValueSource
 import app.safar.ui.nav.Navigator
@@ -98,7 +99,7 @@ fun ServiceContent(state: ServiceUiState, toast: AtlasToastState, actions: Servi
         }
         TextAction("Add your own item", { adding = true }, Modifier.padding(top = 14.dp), icon = AtlasIcons.plus)
         SectionHeader("Reminders")
-        SwitchRow("Service reminders", state.reminders, actions.onReminders, subtitle = "A notification when an item is due soon or overdue")
+        SwitchRow("Service reminders", state.reminders, actions.onReminders, subtitle = SwitchCopy.SERVICE_REMINDERS)
     }
 }
 

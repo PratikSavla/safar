@@ -27,6 +27,7 @@ import app.safar.ui.components.DashedRule
 import app.safar.ui.components.InkButton
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.StampTone
+import app.safar.ui.copy.Phrases
 import app.safar.ui.settings.AccessStatus
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
@@ -43,7 +44,7 @@ internal fun ChecksCard(access: AccessStatus, onGrant: () -> Unit, modifier: Mod
         DashedRule(thickness = 1.dp, dash = 4.dp, gap = 3.dp)
         CheckRow(
             ok = access.notificationAccess,
-            title = "Read Google Maps alerts",
+            title = Phrases.ALERTS_ACCESS,
             sub = if (access.notificationAccess) "Allowed · Safar can see the turns" else "Needed so Safar can see the turns",
         ) {
             if (!access.notificationAccess) InkButton("Allow", onGrant, small = true)

@@ -32,6 +32,9 @@ object Phrases {
     /** Replaces "notification access". */
     const val ALLOW_ALERTS = "Allow Safar to read Google Maps and WhatsApp alerts"
 
+    /** The one title for the notification-access permission, on Onboarding, Route, Alerts and Settings. */
+    const val ALERTS_ACCESS = "Google Maps and WhatsApp alerts"
+
     /** Before the first reading while connected. */
     val WAITING_FOR_BIKE: String = checkNotNull(ValueSource.BIKE.waiting)
     val WAITING_FOR_GPS: String = checkNotNull(ValueSource.PHONE_GPS.waiting)

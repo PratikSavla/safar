@@ -29,6 +29,7 @@ import app.safar.ui.components.SectionHeader
 import app.safar.ui.components.SwitchRow
 import app.safar.ui.components.TopoTransform
 import app.safar.ui.components.rememberToastState
+import app.safar.ui.copy.SwitchCopy
 import app.safar.ui.fuel.preview.FuelPreviewData
 import app.safar.ui.nav.Navigator
 import app.safar.ui.nav.Route
@@ -102,7 +103,7 @@ private fun FuelStatsBlock(state: FuelUiState, stats: FuelStats, zone: ZoneId, o
 private fun FuelAlertBlock(on: Boolean, onLowFuelAlert: (Boolean) -> Unit) {
     Column {
         SectionHeader("Reminder")
-        SwitchRow("Low-fuel reminder", on, onLowFuelAlert, subtitle = "A phone notification when your bike shows 1 bar")
+        SwitchRow("Low-fuel reminder", on, onLowFuelAlert, subtitle = SwitchCopy.LOW_FUEL)
         Note(
             "Your bike shows fuel only as bars, so litres and prices come from your fuel-ups. The odometer comes from your bike.",
             Modifier.padding(top = 12.dp),

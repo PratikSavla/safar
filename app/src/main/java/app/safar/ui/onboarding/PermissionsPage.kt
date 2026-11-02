@@ -44,6 +44,7 @@ import app.safar.ui.components.Note
 import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.StampTone
+import app.safar.ui.copy.Phrases
 import app.safar.ui.theme.Atlas
 
 private const val TAG = "SafarOnboarding"
@@ -56,7 +57,7 @@ private val PERMS by lazy {
         PermInfo(PermId.NEARBY, AtlasIcons.bt, "Nearby devices", "Find your bike and stay connected to it."),
         PermInfo(PermId.NOTIFICATIONS, AtlasIcons.bell, "Notifications", "A quiet note while Safar stays connected, and a low-fuel reminder."),
         PermInfo(
-            PermId.NOTIFICATION_ACCESS, AtlasIcons.msg, "Google Maps and WhatsApp alerts",
+            PermId.NOTIFICATION_ACCESS, AtlasIcons.msg, Phrases.ALERTS_ACCESS,
             "Turns from Google Maps, and who’s calling on Phone and WhatsApp. Android calls this “Notification access”.",
         ),
         PermInfo(PermId.LOCATION, AtlasIcons.pin, "Location", "Your trip routes, your speed and where you parked."),

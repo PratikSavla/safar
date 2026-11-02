@@ -74,7 +74,7 @@ class BikeSessionTest {
             send = { sent += testScheduler.currentTime to it },
             log = log,
             now = { testScheduler.currentTime },
-            zone = ZoneOffset.UTC,
+            zone = { ZoneOffset.UTC },
             onReading = { readings += it },
         )
         return s to scope

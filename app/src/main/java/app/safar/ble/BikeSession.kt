@@ -55,7 +55,8 @@ class BikeSession(
     private val send: (ByteArray) -> Unit,
     private val log: DebugLog,
     private val now: () -> Long,
-    private val zone: ZoneId = ZoneId.systemDefault(),
+    /** Read per frame: the phone's time zone can change mid-connection (crossing a border, Settings). */
+    private val zone: () -> ZoneId = ZoneId::systemDefault,
     private val onReading: (ClusterReading) -> Unit,
 ) : ClusterOutbox {
     private val mode = config.mode
@@ -95,7 +96,7 @@ class BikeSession(
     internal fun statusFrame(): ByteArray {
         val alerts = inputs.alerts.value
         val flags = cleared.tick(alerts.messages.count, alerts.missed.count)
-        val time = Instant.ofEpochMilli(now()).atZone(zone).toLocalTime()
+        val time = Instant.ofEpochMilli(now()).atZone(zone()).toLocalTime()
         val status = buildPhoneStatus(inputs.phone.value, inputs.settings.value, config.model, time, flags)
         return encodePhoneStatus(status, mode)
     }
@@ -134,7 +135,7 @@ class BikeSession(
 
     /** Debug: one navigation frame with [iconCode] (assignment task 4). */
     fun sendIconTest(iconCode: Int) {
-        val eta = Instant.ofEpochMilli(now() + ICON_TEST_ETA_MS).atZone(zone).toLocalTime()
+        val eta = Instant.ofEpochMilli(now() + ICON_TEST_ETA_MS).atZone(zone()).toLocalTime()
         val data = NavigationData(iconCode, ICON_TEST_TURN_M, eta, ICON_TEST_LEFT_M, NavStatus.NORMAL, active = true)
         emit(encodeNavigation(data, mode))
     }

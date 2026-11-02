@@ -104,7 +104,9 @@ fun navStatusFor(code: NavStatusCode, phone: PhoneSnapshot, rerouteAlreadySent: 
  * [NavSnapshot] to protocol [NavigationData]. Keeps the last valid icon for an out-of-range code (the
  * original app sends the previous icon again) and sends "rerouting" for one frame per snapshot (docs 4.3).
  */
-class NavFrameMapper(private val zone: ZoneId) {
+class NavFrameMapper(private val zone: () -> ZoneId) {
+    constructor(zone: ZoneId) : this({ zone })
+
     private var lastIcon = DEFAULT_ICON
     private var rerouteSentFor: Long? = null
 
@@ -116,7 +118,8 @@ class NavFrameMapper(private val zone: ZoneId) {
         return NavigationData(
             iconCode = lastIcon,
             distanceToTurnM = snapshot.distanceToTurnM.coerceAtLeast(0),
-            eta = Instant.ofEpochMilli(snapshot.etaMillis).atZone(zone).toLocalTime(),
+            // The phone side turns Maps' local ETA into epoch millis with the zone of that moment; read it again here.
+            eta = Instant.ofEpochMilli(snapshot.etaMillis).atZone(zone()).toLocalTime(),
             remainingM = snapshot.remainingM.coerceAtLeast(0),
             status = status,
             active = active,

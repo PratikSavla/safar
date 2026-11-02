@@ -13,6 +13,7 @@ import app.safar.protocol.fromHex
 import org.junit.Test
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -117,6 +118,15 @@ class SessionFramesTest {
         assertEquals(LocalTime.of(13, 1), data.eta)
         assertEquals(NavStatus.NORMAL, data.status)
         assertTrue(data.active)
+    }
+
+    @Test
+    fun etaFollowsATimeZoneChangeMidConnection() {
+        var current: ZoneId = ZoneOffset.UTC
+        val mapper = NavFrameMapper { current }
+        val utc = mapper.map(snap(), good, active = true).eta
+        current = ZoneOffset.ofHours(1)
+        assertEquals(utc.plusHours(1), mapper.map(snap(at = 2L), good, active = true).eta)
     }
 
     @Test

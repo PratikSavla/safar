@@ -69,7 +69,7 @@ data class StatCell(
     val label: String,
     val value: String,
     val unit: String? = null,
-    /** Old free-text caption ("↳ last 3 tanks"), still shown. New cells: rider words in [note], freshness in [origin]. */
+    /** Technical source ("phone GPS"), shown in Developer mode only. Rider words go in [note], freshness in [origin]. */
     val source: String? = null,
     val note: String? = null,
     val valueColor: Color? = null,
@@ -105,7 +105,7 @@ private fun StatCellView(cell: StatCell, numberStyle: TextStyle, modifier: Modif
         Kicker(cell.label)
         NumberWithUnit(cell.value, cell.unit, numberStyle, Modifier.padding(top = 6.dp, bottom = 2.dp), color = cell.valueColor ?: c.ink)
         if (cell.origin != null) Freshness(cell.origin)
-        if (cell.source != null) DeveloperLine("↳ ${cell.source}")
+        if (cell.source != null) DevOnly { DeveloperLine("↳ ${cell.source}") }
         if (cell.note != null) BasicText(cell.note, style = Atlas.type.src.copy(color = c.ink3))
     }
 }

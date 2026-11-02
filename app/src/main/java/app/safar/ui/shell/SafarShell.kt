@@ -29,8 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import app.safar.ui.components.AtlasToastHost
@@ -114,15 +112,13 @@ private fun PageHost(stack: NavStack, shell: ShellViewModel, modifier: Modifier)
         label = "page",
     ) { entry ->
         holder.SaveableStateProvider(entry.id) {
-            val owner = remember(entry.id) { EntryOwner(shell.storeFor(entry.id)) }
+            val owner = rememberEntryOwner(entry.id) { shell.storeFor(entry.id) }
             CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
                 RouteHost(entry.route, shell)
             }
         }
     }
 }
-
-private class EntryOwner(override val viewModelStore: ViewModelStore) : ViewModelStoreOwner
 
 @Composable
 private fun BoxScope.TabsBar(route: Route?, chrome: ShellChrome, onSelect: (Route) -> Unit) {

@@ -1,5 +1,10 @@
 package app.safar.ui.ride
 
+import app.safar.ui.format.Formatters
+import app.safar.ui.components.rememberNow
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -55,13 +60,22 @@ internal fun glance(size: Dp, weight: Int = 800, color: Color = Atlas.colors.ink
  * Clock, gear in a ring, fuel bars, over a 2 dp ink rule (ride.css `.r-top`). Gear and fuel carry their
  * source and age underneath, and fade to ink-2 when they are the last known frame (docs 12.5 rule 4).
  */
+/** "14:05": reads the shared clock at minute steps in its own scope, so a tick recomposes this text only. */
 @Composable
-internal fun RideTop(clock: String, ui: RideUi) {
+private fun RideClock(modifier: Modifier) {
+    val is24h = DateFormat.is24HourFormat(LocalContext.current)
+    val now by rememberNow(periodMillis = 60_000)
+    val clock = Formatters.clock(now, is24h = is24h).substringBefore(' ')
+    BasicText(clock, modifier.clearAndSetSemantics { contentDescription = "Time $clock" }, style = glance(35.dp, 600), maxLines = 1)
+}
+
+@Composable
+internal fun RideTop(ui: RideUi) {
     val c = Atlas.colors
     val bikeInk = if (ui.bikeLive) c.ink else c.ink2
     val stale = if (ui.bikeLive) "" else ", last known"
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        BasicText(clock, Modifier.weight(1f).clearAndSetSemantics { contentDescription = "Time $clock" }, style = glance(35.dp, 600), maxLines = 1)
+        RideClock(Modifier.weight(1f))
         Box(
             Modifier.size(66.dp).border(3.dp, bikeInk, CircleShape).clearAndSetSemantics { contentDescription = "Gear ${ui.gear}, probable$stale" },
             contentAlignment = Alignment.Center,

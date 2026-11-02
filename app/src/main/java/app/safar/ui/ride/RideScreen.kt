@@ -1,6 +1,5 @@
 package app.safar.ui.ride
 
-import android.text.format.DateFormat
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
@@ -31,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,8 +41,6 @@ import app.safar.ui.components.Stamp
 import app.safar.ui.components.StampTone
 import app.safar.ui.components.TopoBackground
 import app.safar.ui.components.TopoTransform
-import app.safar.ui.components.rememberNow
-import app.safar.ui.format.Formatters
 import app.safar.ui.nav.Navigator
 import app.safar.ui.ride.preview.RidePreviewData
 import app.safar.ui.shell.LocalShellUi
@@ -99,14 +95,11 @@ internal fun RideContent(ui: RideUi?, auto: Boolean, onLeave: () -> Unit) {
 @Composable
 private fun RideColumn(ui: RideUi, auto: Boolean, holding: Boolean) {
     val c = Atlas.colors
-    val context = LocalContext.current
-    val now by rememberNow()
-    val clock = Formatters.clock(now, is24h = DateFormat.is24HourFormat(context))
     Column(
         Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(start = 22.dp, end = 22.dp, top = 24.dp, bottom = 34.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        RideTop(clock.substringBefore(' '), ui)
+        RideTop(ui)
         ui.call?.let { RideCall(it) }
         ui.turn?.let { RideTurn(it) }
         RideSpeed(ui, Modifier.weight(1f))

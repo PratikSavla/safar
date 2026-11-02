@@ -1,5 +1,6 @@
 package app.safar.ui.alerts
 
+import app.safar.ui.components.liveAge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -42,8 +43,6 @@ import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.Kicker
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.dashedOutline
-import app.safar.ui.components.rememberNow
-import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 
@@ -138,11 +137,16 @@ internal fun PrivacyNote() {
     }
 }
 
+/** "14:05 · 3 min ago": its own scope, so a clock tick recomposes this line only. */
+@Composable
+private fun FeedTime(r: FeedRow) {
+    BasicText("${r.time} · ${liveAge(r.atMillis)}", style = Atlas.type.src.copy(color = Atlas.colors.ink3))
+}
+
 /** Timeline of what went to the cluster (`.feed`): dashed spine, a round mark per line. */
 @Composable
 internal fun Feed(rows: List<FeedRow>) {
     val c = Atlas.colors
-    val now = rememberNow()
     Column(
         Modifier.fillMaxWidth().drawBehind {
             val x = 17.dp.toPx()
@@ -161,7 +165,7 @@ internal fun Feed(rows: List<FeedRow>) {
                 Column(Modifier.weight(1f)) {
                     BasicText(r.name, style = Atlas.type.serifTitle.copy(color = c.ink, fontSize = Atlas.type.serifTitle.fontSize * 0.88f))
                     BasicText(r.what, Modifier.padding(top = 2.dp), style = Atlas.type.src.copy(color = c.ink3))
-                    BasicText("${r.time} · ${Formatters.age(r.atMillis, now.value)}", style = Atlas.type.src.copy(color = c.ink3))
+                    FeedTime(r)
                 }
             }
         }

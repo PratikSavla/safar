@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,9 +17,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
-import kotlinx.coroutines.delay
 import java.util.Locale
 
 /** Mono uppercase label above titles and values (`.kicker`). */
@@ -58,11 +54,10 @@ fun SourceLine(source: String, modifier: Modifier = Modifier, age: String? = nul
     BasicText(text, modifier, style = Atlas.type.src.copy(color = Atlas.colors.ink3), maxLines = 2, overflow = TextOverflow.Ellipsis)
 }
 
-/** [SourceLine] with a live age from [atMillis]; "waiting" until the first reading. */
+/** [SourceLine] with a live age from [atMillis]; "waiting" until the first reading. Only this text recomposes on a tick. */
 @Composable
 fun SourceLine(source: String, atMillis: Long?, modifier: Modifier = Modifier) {
-    val now = rememberNow()
-    SourceLine(source, modifier, age = if (atMillis == null) "waiting" else Formatters.age(atMillis, now.value))
+    SourceLine(source, modifier, age = if (atMillis == null) "waiting" else liveAge(atMillis))
 }
 
 /** Serif introduction paragraph (`.lede`). */
@@ -90,15 +85,6 @@ fun Masthead(kicker: String, title: String, modifier: Modifier = Modifier, kicke
         }
         Spacer(Modifier.height(10.dp))
         DisplayTitle(title, titleEm, Atlas.type.displayLarge, Modifier.semantics { heading() })
-    }
-}
-
-/** Ticks once per [periodMillis] so ages ("3 s ago") stay current. */
-@Composable
-fun rememberNow(periodMillis: Long = 1000): State<Long> = produceState(System.currentTimeMillis(), periodMillis) {
-    while (true) {
-        delay(periodMillis - System.currentTimeMillis() % periodMillis)
-        value = System.currentTimeMillis()
     }
 }
 

@@ -1,5 +1,6 @@
 package app.safar.ui.home
 
+import app.safar.ui.components.liveAge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -37,7 +38,6 @@ import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.CardStyle
 import app.safar.ui.components.Kicker
 import app.safar.ui.components.SourceLine
-import app.safar.ui.components.rememberNow
 import app.safar.ui.format.Formatters
 import app.safar.ui.nav.Route
 import app.safar.ui.theme.Atlas
@@ -67,8 +67,7 @@ fun Garage(tiles: List<GarageTile>, onOpen: (Route) -> Unit) {
 @Composable
 private fun Tile(t: GarageTile, modifier: Modifier, onClick: () -> Unit) {
     val c = Atlas.colors
-    val now = rememberNow(periodMillis = 30_000)
-    val hint = t.hintAtMillis?.let { Formatters.age(it, now.value) } ?: t.hint
+    val hint = t.hintAtMillis?.let { liveAge(it, periodMillis = 30_000) } ?: t.hint
     val outline = if (t.accent) c.rust else c.rule
     Column(
         modifier

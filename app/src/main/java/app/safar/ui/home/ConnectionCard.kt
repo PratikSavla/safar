@@ -26,8 +26,7 @@ import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.TextAction
-import app.safar.ui.components.rememberNow
-import app.safar.ui.format.Formatters
+import app.safar.ui.components.liveAge
 import app.safar.ui.theme.Atlas
 
 /** What the connection card can trigger. */
@@ -84,12 +83,10 @@ private fun ConnFoot(conn: ConnUi, autoRideOn: Boolean, actions: ConnActions) {
 @Composable
 private fun ConnectedFoot(conn: ConnUi, autoRideOn: Boolean, openRide: () -> Unit) {
     val c = Atlas.colors
-    val now = rememberNow()
-    val last = conn.lastFrameAt?.let { Formatters.age(it, now.value) } ?: "waiting"
     DashedRule(Modifier.padding(top = 4.dp, bottom = 10.dp), thickness = 1.dp, dash = 4.dp, gap = 3.dp)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         BasicText(conn.bikeName.orEmpty(), Modifier.weight(1f), style = Atlas.type.src.copy(color = c.ink3), maxLines = 1, overflow = TextOverflow.Ellipsis)
-        BasicText("frames every 5 s · last $last", style = Atlas.type.src.copy(color = c.ink3, textAlign = TextAlign.End), maxLines = 1)
+        LastFrameText(conn.lastFrameAt)
     }
     Column(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         PrimaryButton("Ride mode", openRide, Modifier.fillMaxWidth(), icon = AtlasIcons.ride)
@@ -99,4 +96,11 @@ private fun ConnectedFoot(conn: ConnUi, autoRideOn: Boolean, openRide: () -> Uni
             style = Atlas.type.src.copy(color = c.ink3),
         )
     }
+}
+
+/** "frames every 5 s · last 3 s ago": its own scope, so the clock tick recomposes this text only. */
+@Composable
+private fun LastFrameText(lastFrameAt: Long?) {
+    val last = lastFrameAt?.let { liveAge(it) } ?: "waiting"
+    BasicText("frames every 5 s · last $last", style = Atlas.type.src.copy(color = Atlas.colors.ink3, textAlign = TextAlign.End), maxLines = 1)
 }

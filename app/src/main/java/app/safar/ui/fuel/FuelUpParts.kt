@@ -1,5 +1,6 @@
 package app.safar.ui.fuel
 
+import app.safar.ui.components.liveAge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,7 +28,6 @@ import app.safar.ui.components.NumberWithUnit
 import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.TextAction
-import app.safar.ui.components.rememberNow
 import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
 import java.time.ZoneId
@@ -90,8 +90,7 @@ internal fun OdometerBlock(state: FuelUpUiState, actions: FuelUpActions) {
 private fun OdoSourceLine(state: FuelUpUiState) {
     val c = Atlas.colors
     val sugg = state.sugg ?: return
-    val now = rememberNow()
-    val age = sugg.atMillis?.let { Formatters.age(it, now.value) }
+    val age = sugg.atMillis?.let { liveAge(it) }
     val label = odoLabel(state.entry, sugg, age)
     val color = when (label.tone) {
         OdoTone.MOSS -> c.moss

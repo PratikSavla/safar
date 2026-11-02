@@ -150,17 +150,19 @@ internal fun FuelUpRow(row: FuelUpRowUi, currency: String, onClick: () -> Unit) 
             BasicText(row.date, Modifier.width(52.dp), style = Atlas.type.src.copy(color = c.ink2))
             Column(Modifier.weight(1f)) {
                 NumberWithUnit(jsNumber(row.litres), "L", Atlas.type.numberSmall.copy(fontSize = Atlas.type.numberSmall.fontSize * 0.9f), unitScale = 0.55f, unitColor = c.ink3)
+                // Wraps after "·" at a large font scale, so the price per litre is never cut to "₹1…".
                 BasicText(
                     "${Formatters.money(row.total, currency)} · ${Formatters.money(row.perLitre, currency, 2)}/L",
-                    style = mono, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    style = mono, maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
             }
-            Column(horizontalAlignment = Alignment.End) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    BasicText("${Formatters.odometer(row.odometerKm)} km", style = Atlas.type.src.copy(color = c.ink))
+            // The odometer on its own line, the two stamps under it with a gap, so nothing touches.
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                BasicText("${Formatters.odometer(row.odometerKm)} km", style = Atlas.type.src.copy(color = c.ink), maxLines = 1)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Stamp(row.badge.label, tone = row.badge.tone(), tilted = false)
+                    Stamp(if (row.full) "Full" else "Top-up", tone = StampTone.INK, tilted = false)
                 }
-                Stamp(if (row.full) "Full" else "Top-up", tone = StampTone.INK, tilted = false)
             }
         }
         DashedRule(thickness = 1.dp, dash = 4.dp, gap = 3.dp)

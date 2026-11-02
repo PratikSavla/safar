@@ -45,7 +45,7 @@ internal fun sliderValueAt(x: Float, width: Float, range: IntRange): Int {
 
 /**
  * Speed-alert style slider (`.slider`): big serif value with its unit, a dashed ink track,
- * a rust thumb ringed in paper, and min / mid / max ticks. Whole numbers only.
+ * a rust thumb ringed in paper, and min / max ticks with the unit. Whole numbers only.
  */
 @Composable
 fun AtlasSlider(
@@ -90,17 +90,18 @@ fun AtlasSlider(
             drawCircle(c.rust, thumbR - 4.dp.toPx(), Offset(x, y))
             drawCircle(c.rust, thumbR + 1.5.dp.toPx(), Offset(x, y), style = Stroke(1.5.dp.toPx()))
         }
-        SliderTicks(range)
+        SliderTicks(range, unit)
     }
 }
 
 @Composable
-private fun SliderTicks(range: IntRange) {
+private fun SliderTicks(range: IntRange, unit: String?) {
+    // The ends only: the arithmetic middle ("154") reads as an odd number to aim for.
     Row(Modifier.fillMaxWidth()) {
         val tick = Atlas.type.src.copy(color = Atlas.colors.ink3)
-        BasicText(range.first.toString(), Modifier.weight(1f), style = tick)
-        BasicText(((range.first + range.last) / 2).toString(), Modifier.weight(1f), style = tick.copy(textAlign = TextAlign.Center))
-        BasicText(range.last.toString(), Modifier.weight(1f), style = tick.copy(textAlign = TextAlign.End))
+        val suffix = unit?.let { " $it" }.orEmpty()
+        BasicText("${range.first}$suffix", Modifier.weight(1f), style = tick)
+        BasicText("${range.last}$suffix", Modifier.weight(1f), style = tick.copy(textAlign = TextAlign.End))
     }
 }
 

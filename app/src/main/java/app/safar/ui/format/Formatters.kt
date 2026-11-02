@@ -1,5 +1,7 @@
 package app.safar.ui.format
 
+import app.safar.protocol.DistanceUnit
+import app.safar.protocol.formatDistance
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -7,7 +9,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.floor
-import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 /** A number and its unit, kept apart so the UI can set them in different styles ("850" + "m"). */
@@ -71,17 +72,14 @@ object Formatters {
     }
 
     /**
-     * Distance for navigation: under 1 km in metres rounded to 10 m ("850 m"),
-     * then km with one decimal ("1.2 km"), then whole km from 100 km ("123 km").
+     * Distance for navigation, as the cluster gets it: the digits of `:protocol` [formatDistance] without the
+     * leading zeros. Under 1 km in metres rounded to 10 m ("850 m"), then km with one decimal rounded like JS
+     * `toFixed(1)` ("1.1 km" for 1150 m), then whole km from 100 km ("123 km").
      */
     fun navDistance(meters: Int): ValueUnit {
-        val m = meters.coerceAtLeast(0)
-        val rounded = ((m / 10.0).roundToInt()) * 10
-        return when {
-            rounded < 1000 -> ValueUnit(rounded.toString(), "m")
-            m < 99_950 -> ValueUnit(km1(m / 1000.0), "km")
-            else -> ValueUnit(groupDigits((m / 1000.0).roundToLong(), indian = false), "km")
-        }
+        val d = formatDistance(meters.coerceAtLeast(0))
+        val digits = d.text.trimStart('0').let { if (it.isEmpty() || it.startsWith('.')) "0$it" else it }
+        return ValueUnit(digits, if (d.unit == DistanceUnit.METRES) "m" else "km")
     }
 
     /** Clock time: "14:05", or "2:05 PM" when [is24h] is false. */

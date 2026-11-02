@@ -44,6 +44,11 @@
     </queries>
     <!-- end phone -->
 
+    <!-- Screens (Route, Settings): see whether Google Maps is installed (API 30+ package visibility). -->
+    <queries>
+        <package android:name="com.google.android.apps.maps" />
+    </queries>
+
     <application
         android:name=".SafarApp"
         android:allowBackup="false"

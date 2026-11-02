@@ -1,0 +1,16 @@
+Fonts bundled with Safar (app/src/main/res/font), all under the SIL Open Font License 1.1.
+Source: the google/fonts repository, directory ofl/<family>.
+
+fraunces.ttf, fraunces_italic.ttf
+  Fraunces[SOFT,WONK,opsz,wght].ttf and Fraunces-Italic[SOFT,WONK,opsz,wght].ttf (variable)
+  License: ofl-fraunces.txt
+
+ibm_plex_mono_regular.ttf, ibm_plex_mono_medium.ttf, ibm_plex_mono_semibold.ttf
+  IBMPlexMono-Regular.ttf, IBMPlexMono-Medium.ttf, IBMPlexMono-SemiBold.ttf
+  License: ofl-ibm-plex-mono.txt ("Plex" is a Reserved Font Name; the files are unmodified)
+
+instrument_sans.ttf
+  InstrumentSans[wdth,wght].ttf (variable)
+  License: ofl-instrument-sans.txt
+
+The font files are bundled unmodified. Resource names are lowercase because Android requires it.

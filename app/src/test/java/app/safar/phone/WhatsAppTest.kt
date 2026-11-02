@@ -125,6 +125,18 @@ class WhatsAppTest {
     }
 
     @Test
+    fun declinedCallIsNotAnsweredByALaterOutgoingCall() {
+        val rig = AlertRig()
+        val alerts = WhatsAppAlerts(rig.center, rig.clock)
+        alerts.posted(wa(key = "call", category = CATEGORY_CALL, text = "Incoming voice call"))
+        rig.clock.now += 3_000
+        alerts.removed("call") // declined: no missed-call notification follows
+        rig.clock.now += WA_HANDOFF_MS + 5_000
+        alerts.posted(wa(key = "out", title = "Rider", category = CATEGORY_CALL, text = "Ongoing voice call"))
+        assertEquals(listOf("2:Alex:ringing:W"), rig.outbox.frames)
+    }
+
+    @Test
     fun ringingThenMissedCounts() {
         val rig = AlertRig()
         val alerts = WhatsAppAlerts(rig.center, rig.clock)

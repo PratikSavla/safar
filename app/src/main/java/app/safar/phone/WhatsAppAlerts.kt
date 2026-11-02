@@ -9,6 +9,12 @@ import app.safar.core.AlertSource
 const val WA_ANSWER_WINDOW_MS = 60_000L
 
 /**
+ * Once the ringing notification is removed, an "ongoing call" notification counts as the answer only this
+ * soon after: WhatsApp swaps the two when the rider answers, but a declined call leaves no ongoing one.
+ */
+const val WA_HANDOFF_MS = 5_000L
+
+/**
  * Turns WhatsApp notifications into [AlertCenterImpl] events (docs 5.7). WhatsApp re-posts a chat's
  * notification on each new message, so counts are tracked per notification key and only the increase is
  * reported. When a notification is removed, the center's WhatsApp count drops to the sum of the remaining ones;
@@ -19,8 +25,10 @@ class WhatsAppAlerts(
     private val center: AlertCenterImpl,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
-    /** [posted] is false once the ringing notification is gone; an answer may still follow it. */
-    private data class Ringing(val key: String, val name: String, val atMillis: Long, val posted: Boolean = true)
+    /** [removedAtMillis] is set once the ringing notification is gone; an answer may still follow it. */
+    private data class Ringing(val key: String, val name: String, val atMillis: Long, val removedAtMillis: Long? = null) {
+        val posted: Boolean get() = removedAtMillis == null
+    }
 
     private val callKeys = HashSet<String>()
     private val missedByKey = HashMap<String, Int>()
@@ -40,7 +48,7 @@ class WhatsAppAlerts(
 
     @Synchronized
     fun removed(key: String) {
-        ringing?.takeIf { it.key == key }?.let { ringing = it.copy(posted = false) }
+        ringing?.takeIf { it.key == key && it.posted }?.let { ringing = it.copy(removedAtMillis = clock()) }
         if (callKeys.remove(key) && callKeys.isEmpty()) center.callEnded(AlertSource.WHATSAPP)
         if (missedByKey.remove(key) != null) center.whatsAppMissedLeft(missedByKey.values.sum())
         if (unreadByKey.remove(key) != null) center.whatsAppMessagesLeft(unreadByKey.values.sum())
@@ -63,7 +71,12 @@ class WhatsAppAlerts(
         callKeys += n.key
         val current = ringing ?: return // outgoing call or already answered
         ringing = null
-        if (clock() - current.atMillis <= WA_ANSWER_WINDOW_MS) center.callAnswered(current.name, AlertSource.WHATSAPP)
+        val now = clock()
+        val answered = when (val removedAt = current.removedAtMillis) {
+            null -> current.key == n.key || now - current.atMillis <= WA_ANSWER_WINDOW_MS
+            else -> now - removedAt <= WA_HANDOFF_MS
+        }
+        if (answered) center.callAnswered(current.name, AlertSource.WHATSAPP)
     }
 
     private fun onMissed(n: WaNotification) {

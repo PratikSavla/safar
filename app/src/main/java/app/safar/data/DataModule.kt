@@ -12,6 +12,8 @@ import app.safar.data.db.SafarDatabase
 import app.safar.data.prefs.DataStoreSavedBikeStore
 import app.safar.data.prefs.DataStoreSettingsStore
 import app.safar.data.prefs.createPreferencesStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** Wires the data layer into [AppContainer]. Call once from `SafarApp.onCreate`. */
@@ -26,9 +28,11 @@ object DataModule {
         if (!installed.compareAndSet(false, true)) return
         val app = context.applicationContext
         val scope = AppContainer.appScope
+        // File reads and fsync-ed writes run on the IO pool, not the CPU pool BLE work shares; same parent job.
+        val ioScope = CoroutineScope(scope.coroutineContext + Dispatchers.IO)
         // One DataStore per file for the whole process.
-        val settingsData = createPreferencesStore("settings", scope) { app.preferencesDataStoreFile(SETTINGS_FILE) }
-        val bikeData = createPreferencesStore("saved bike", scope) { app.preferencesDataStoreFile(SAVED_BIKE_FILE) }
+        val settingsData = createPreferencesStore("settings", ioScope) { app.preferencesDataStoreFile(SETTINGS_FILE) }
+        val bikeData = createPreferencesStore("saved bike", ioScope) { app.preferencesDataStoreFile(SAVED_BIKE_FILE) }
         AppContainer.settings = DataStoreSettingsStore(settingsData, scope)
         AppContainer.savedBike = DataStoreSavedBikeStore(bikeData, scope)
 

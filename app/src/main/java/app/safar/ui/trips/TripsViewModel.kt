@@ -24,9 +24,14 @@ class TripsViewModel(
     private val now: () -> Long = System::currentTimeMillis,
     private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
-    val state: StateFlow<TripsUiState> = combine(trips.trips, ride, bike) { list, r, b ->
-        tripsUiState(list, r, b.saved?.model?.name, now(), zone)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TripsUiState())
+    /** Rows and totals: rebuilt when the trip list or the bike's name changes, not on every GPS fix. */
+    private val entries = combine(trips.trips.distinctUntilChanged(), bike.map { it.saved?.model?.name }.distinctUntilChanged()) { list, name ->
+        tripsUiState(list, RideState(), name, now(), zone)
+    }
+
+    /** The live card follows the ride at 1 Hz; `copy` keeps the same rows list, so the postcards skip. */
+    val state: StateFlow<TripsUiState> = combine(entries, ride.map(::liveRide).distinctUntilChanged()) { base, live -> base.copy(live = live) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TripsUiState())
 
     /**
      * One trip's postcard thumbnail, built on [Dispatchers.Default]. Room re-emits every track on each track_points

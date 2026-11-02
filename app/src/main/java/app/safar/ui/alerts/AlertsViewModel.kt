@@ -1,14 +1,15 @@
 package app.safar.ui.alerts
 
 import android.util.Log
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.safar.core.AlertCenter
 import app.safar.core.AlertsState
 import app.safar.core.BikeController
-import app.safar.core.LinkState
 import app.safar.data.Settings
 import app.safar.data.SettingsStore
+import app.safar.ui.vm.linked
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "SafarAlerts"
 
+@Immutable
 data class AlertsScreenState(
     val alerts: AlertsState = AlertsState(),
     val feed: List<FeedRow> = emptyList(),
@@ -30,8 +32,8 @@ class AlertsViewModel(
     private val settings: SettingsStore,
     bike: BikeController,
 ) : ViewModel() {
-    val state: StateFlow<AlertsScreenState> = combine(alerts.state, settings.settings, bike.state) { a, s, b ->
-        AlertsScreenState(a, feedRows(a.feed), s, b.link == LinkState.Connected)
+    val state: StateFlow<AlertsScreenState> = combine(alerts.state, settings.settings, bike.state.linked()) { a, s, linked ->
+        AlertsScreenState(a, feedRows(a.feed), s, linked)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AlertsScreenState())
 
     fun clearMissed() = guard("clear missed calls") { alerts.clearMissedCalls() }

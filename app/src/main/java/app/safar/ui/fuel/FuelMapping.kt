@@ -1,5 +1,6 @@
 package app.safar.ui.fuel
 
+import androidx.compose.runtime.Immutable
 import app.safar.core.BikeState
 import app.safar.core.LinkState
 import app.safar.data.FuelMethod
@@ -37,6 +38,7 @@ data class FuelUpRowUi(
     val full: Boolean,
 )
 
+@Immutable
 data class FuelUiState(
     val loading: Boolean = true,
     val stats: FuelStats? = null,

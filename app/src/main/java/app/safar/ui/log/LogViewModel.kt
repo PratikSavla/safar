@@ -1,6 +1,7 @@
 package app.safar.ui.log
 
 import android.util.Log
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.safar.core.DebugLog
@@ -26,6 +27,7 @@ private const val TAG = "SafarLogScreen"
 /** The share sheet: "Hide names" (on by default) and the file written with that choice. */
 data class ExportSheet(val hideNames: Boolean, val busy: Boolean = true, val file: File? = null, val preview: ExportPreview? = null, val error: String? = null)
 
+@Immutable
 data class LogScreenState(
     val total: Int = 0,
     val matching: Int = 0,

@@ -1,16 +1,17 @@
 package app.safar.ui.navigate
 
 import android.util.Log
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.safar.core.BikeController
-import app.safar.core.LinkState
 import app.safar.core.NavState
 import app.safar.core.NavigationBridge
 import app.safar.data.ParkedRepository
 import app.safar.data.ParkedSpot
 import app.safar.data.Place
 import app.safar.data.PlaceRepository
+import app.safar.ui.vm.linked
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -27,6 +29,7 @@ import kotlinx.coroutines.launch
 private const val TAG = "SafarRoute"
 
 /** Everything the Route page draws. */
+@Immutable
 data class NavigateState(
     val phase: RoutePhase = RoutePhase.PICK,
     val nav: NavState = NavState(),
@@ -52,22 +55,22 @@ class NavigateViewModel(
     /** One-off messages for the toast. */
     val messages: Flow<String> = events.receiveAsFlow()
 
-    private val placeList = places.places.catch { e ->
+    private val placeList = places.places.distinctUntilChanged().catch { e ->
         Log.e(TAG, "Could not read saved places", e)
         emit(emptyList<Place>())
     }
-    private val parkedSpot = parked.parked.catch { e ->
+    private val parkedSpot = parked.parked.distinctUntilChanged().catch { e ->
         Log.e(TAG, "Could not read the parked spot", e)
         emit(null as ParkedSpot?)
     }
 
-    val state: StateFlow<NavigateState> = combine(navigation.state, placeList, parkedSpot, bike.state, ui) { nav, list, spot, b, u ->
+    val state: StateFlow<NavigateState> = combine(navigation.state, placeList, parkedSpot, bike.state.linked(), ui) { nav, list, spot, linked, u ->
         val dests = destinations(list, spot)
         NavigateState(
             phase = routePhase(nav, u.awaitingMaps),
             nav = nav,
             mirror = nav.snapshot?.let(::mirrorOf),
-            bikeConnected = b.link == LinkState.Connected,
+            bikeConnected = linked,
             destinations = dests,
             selected = resolveSelection(dests, u.selectedKey),
             editing = u.editing,

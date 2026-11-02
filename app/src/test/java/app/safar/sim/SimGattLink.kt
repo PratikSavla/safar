@@ -4,7 +4,7 @@ import app.safar.ble.GattClient
 import app.safar.ble.GattLink
 import app.safar.ble.GattPort
 import app.safar.ble.WriteOutcome
-import app.safar.ble.gattStatusText
+import app.safar.ble.onGattDisconnected
 import app.safar.core.DebugLog
 import app.safar.protocol.GattUuids
 import kotlinx.coroutines.CompletableDeferred
@@ -18,9 +18,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 
 /**
- * One app-side GATT link to a [FakeBikePeripheral]: what GattClient and its callback bridge do on a phone,
- * including the "Disconnected" log event the bridge writes when the bike drops the link. As in GattClient, a
- * write waits for the bike's ack, and [markLost] fails the waiting write at once with status -1.
+ * One app-side GATT link to a [FakeBikePeripheral]: what GattClient and its callback bridge do on a phone.
+ * A bike-side drop goes through the bridge's own [onGattDisconnected], so the "Disconnected" event comes from
+ * app code. As in GattClient, a write waits for the bike's ack, and [markLost] fails it at once with status -1.
  */
 class SimGattLink(private val bike: FakeBikePeripheral, private val log: DebugLog) : GattPort {
     private val state = MutableStateFlow<GattLink>(GattLink.Connecting)
@@ -107,11 +107,9 @@ class SimGattLink(private val bike: FakeBikePeripheral, private val log: DebugLo
         if (isUp) rx.trySend(frame.copyOf())
     }
 
-    /** onConnectionStateChange(status, STATE_DISCONNECTED) as the callback bridge handles it. */
+    /** onConnectionStateChange(status, STATE_DISCONNECTED): the callback bridge's own handling. */
     internal fun lostByBike(status: Int) {
-        val reason = gattStatusText(status)
-        log.event("Disconnected", mapOf("status" to status.toString(), "reason" to reason), error = true)
-        markLost(status, reason)
+        onGattDisconnected(log, status, ::markLost)
     }
 
     private companion object {

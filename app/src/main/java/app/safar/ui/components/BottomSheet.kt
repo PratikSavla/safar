@@ -36,7 +36,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.dialog
-import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.dismiss
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Density
@@ -93,7 +93,7 @@ private fun SheetBody(maxHeightDp: Float, title: String?, onDismiss: () -> Unit,
             .semantics {
                 dialog()
                 if (title != null) paneTitle = title
-                onClick("Close sheet") { onDismiss(); true }
+                dismiss("Close sheet") { onDismiss(); true } // not onClick: the paper is not a button
             }
             .imePadding() // paper runs behind the keyboard, the fields scroll above it
             .verticalScroll(rememberScrollState())

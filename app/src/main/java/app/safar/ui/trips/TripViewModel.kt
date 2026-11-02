@@ -19,6 +19,9 @@ import java.time.ZoneId
 private const val TAG = "TripViewModel"
 private const val DEFAULT_BARS = 6
 
+/** Why the ride being recorded cannot be deleted; shown on the page and as a toast. */
+internal const val RECORDING_DELETE = "Recording. Stop the ride to delete it."
+
 /** One journal entry: track, stats, rename and delete. */
 class TripViewModel(
     private val tripId: Long,
@@ -61,7 +64,12 @@ class TripViewModel(
         }
     }
 
+    /** Refused while this trip is being recorded: the recorder still writes its track points (UX: stop first). */
     fun delete() {
+        if (ride.value.recordingTripId == tripId) {
+            notices.post(RECORDING_DELETE)
+            return
+        }
         launchLogged(TAG, "delete of trip $tripId", { notices.post("Could not delete the ride") }) {
             trips.delete(tripId)
             _deleted.value = true

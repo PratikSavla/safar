@@ -22,6 +22,7 @@ import app.safar.ui.components.AtlasToastHost
 import app.safar.ui.components.AtlasToastState
 import app.safar.ui.components.BackTopBar
 import app.safar.ui.components.EmptyState
+import app.safar.ui.components.Note
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.TextAction
 import app.safar.ui.components.TopoTransform
@@ -76,7 +77,7 @@ fun TripContent(
         overlay = {
             if (trip != null) {
                 RenameSheet(sheet == TripSheet.RENAME, trip.title, lockReason, { sheet = TripSheet.NONE }) { onRename(it); sheet = TripSheet.NONE }
-                DeleteSheet(sheet == TripSheet.DELETE, trip, { sheet = TripSheet.NONE }) { onDelete(); sheet = TripSheet.NONE }
+                DeleteSheet(sheet == TripSheet.DELETE && !trip.recording, trip, { sheet = TripSheet.NONE }) { onDelete(); sheet = TripSheet.NONE }
             }
             AtlasToastHost(toast, bottomPadding = 40.dp)
         },
@@ -102,7 +103,11 @@ private fun TripBody(trip: TripDetailUi, onBack: () -> Unit, onAsk: (TripSheet) 
     Row(Modifier.fillMaxWidth().padding(top = 30.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         SecondaryButton("Rename", { onAsk(TripSheet.RENAME) }, Modifier.weight(1f), icon = AtlasIcons.edit)
     }
-    TextAction("Delete this ride", { onAsk(TripSheet.DELETE) }, Modifier.padding(top = 10.dp), icon = AtlasIcons.cross, color = Atlas.colors.rust)
+    TextAction(
+        "Delete this ride", { onAsk(TripSheet.DELETE) }, Modifier.padding(top = 10.dp),
+        icon = AtlasIcons.cross, enabled = !trip.recording, color = Atlas.colors.rust,
+    )
+    if (trip.recording) Note(RECORDING_DELETE, Modifier.padding(start = 8.dp, top = 4.dp))
 }
 
 @Preview

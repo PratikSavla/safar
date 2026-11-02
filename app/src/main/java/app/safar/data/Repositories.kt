@@ -1,7 +1,9 @@
 package app.safar.data
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /** DataStore-backed settings. [settings] is hot and always has a value (defaults until loaded). */
 interface SettingsStore {
@@ -12,9 +14,18 @@ interface SettingsStore {
 /** Saved cluster for direct reconnect (docs 2.4). Kept apart from [Settings] because the BLE layer owns it. */
 interface SavedBikeStore {
     val saved: StateFlow<SavedBikeRecord?>
+
+    /**
+     * True once [saved] holds the stored value, so a null [saved] then means "no bike", not "not read yet".
+     * Stores that load synchronously keep the default (always loaded).
+     */
+    val loaded: StateFlow<Boolean> get() = ALWAYS_LOADED
+
     suspend fun save(record: SavedBikeRecord)
     suspend fun clear()
 }
+
+private val ALWAYS_LOADED: StateFlow<Boolean> = MutableStateFlow(true).asStateFlow()
 
 data class SavedBikeRecord(val name: String, val address: String)
 

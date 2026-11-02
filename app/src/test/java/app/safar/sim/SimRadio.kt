@@ -11,8 +11,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-/** The phone's Bluetooth adapter switch; [set] flips it like the quick settings tile. */
-class FakeBluetooth(on: Boolean = true) : BluetoothSwitch {
+/**
+ * The phone's Bluetooth adapter switch; [set] flips it like the quick settings tile. Turning it off also ends
+ * every GATT link ([dropLinks]), as the adapter does on a phone.
+ */
+class FakeBluetooth(on: Boolean = true, private val dropLinks: () -> Unit = {}) : BluetoothSwitch {
+    /** Whether the GATT disconnect callback or the adapter-off broadcast reaches the app first; either can. */
+    enum class OffOrder { LINKS_FIRST, LISTENER_FIRST }
+
     override var isOn: Boolean = on
         private set
     private var listener: ((Boolean) -> Unit)? = null
@@ -21,9 +27,11 @@ class FakeBluetooth(on: Boolean = true) : BluetoothSwitch {
         listener = onChange
     }
 
-    fun set(on: Boolean) {
+    fun set(on: Boolean, order: OffOrder = OffOrder.LINKS_FIRST) {
         isOn = on
+        if (!on && order == OffOrder.LINKS_FIRST) dropLinks()
         listener?.invoke(on)
+        if (!on && order == OffOrder.LISTENER_FIRST) dropLinks()
     }
 }
 
@@ -56,9 +64,12 @@ class FakeScanner(private val bikes: () -> List<FakeBikePeripheral>) : BikeScann
     }
 }
 
+/** HCI 0x16, "terminated by local host": the status a link gets when the phone's adapter turns off. */
+const val ADAPTER_OFF_STATUS = 0x16
+
 /** [BleRadio] whose GATT links reach the simulated [bikes]. [opened] lists every address a link was opened to. */
 class SimRadio(private val bikes: List<FakeBikePeripheral>, private val log: DebugLog) : BleRadio {
-    override val bluetooth = FakeBluetooth()
+    override val bluetooth = FakeBluetooth { bikes.forEach { it.dropLink(ADAPTER_OFF_STATUS) } }
     val scanner = FakeScanner { bikes }
     val opened = mutableListOf<String>()
     val links = mutableListOf<SimGattLink>()

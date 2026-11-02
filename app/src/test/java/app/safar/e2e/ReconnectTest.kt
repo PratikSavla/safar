@@ -5,9 +5,11 @@ import app.safar.core.LinkState
 import app.safar.data.SavedBikeRecord
 import app.safar.protocol.ConnectTiming
 import app.safar.protocol.Timing
+import app.safar.sim.ADAPTER_OFF_STATUS
 import app.safar.sim.BIKE_ADDRESS
 import app.safar.sim.BikeRig
 import app.safar.sim.CLOCK_BASE
+import app.safar.sim.FakeBluetooth.OffOrder
 import app.safar.sim.MOTO_NAME
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -181,12 +183,39 @@ class ReconnectTest {
     }
 
     @Test
-    fun bluetoothOffWhileConnectedClosesTheLink() = runTest {
+    fun bluetoothOffWhileConnectedWhenTheLinkEndsFirst() = runTest {
+        val rig = bluetoothOffWhileConnected(OffOrder.LINKS_FIRST)
+        // The link-ended handling ran first and scheduled a reconnect; Bluetooth off cancelled it.
+        val disconnected = rig.recording.named("Disconnected").single()
+        assertEquals(mapOf("status" to "$ADAPTER_OFF_STATUS", "reason" to "terminated by local host"), disconnected.detail)
+        val names = rig.recording.events.map { it.name }
+        assertTrue(names.indexOf("Reconnect scheduled") in 0 until names.indexOf("Bluetooth off"), "$names")
+    }
+
+    @Test
+    fun bluetoothOffWhileConnectedWhenTheAppHearsItFirst() = runTest {
+        val rig = bluetoothOffWhileConnected(OffOrder.LISTENER_FIRST)
+        assertEquals(emptyList(), rig.recording.named("Link ended"), "the app closed the link itself")
+        assertEquals(emptyList(), rig.recording.named("Reconnect scheduled"))
+    }
+
+    /** Bluetooth off on a live link in [order]: ends at BluetoothOff, no connect until Bluetooth is on again. */
+    private fun TestScope.bluetoothOffWhileConnected(order: OffOrder): BikeRig {
         val rig = connectedRig()
-        rig.radio.bluetooth.set(false)
+        rig.radio.bluetooth.set(false, order)
         rig.advance(0)
         assertEquals(LinkState.BluetoothOff, rig.link)
         assertTrue(rig.radio.links.single().closed)
         assertEquals(false, rig.bike.connected)
+        rig.advance(120_000)
+        assertEquals(LinkState.BluetoothOff, rig.link, "no back-off timer overrides Bluetooth off")
+        assertEquals(1, rig.bike.connectRequests.size, "no connect while Bluetooth is off")
+
+        rig.radio.bluetooth.set(true)
+        rig.advance(0)
+        assertEquals(LinkState.Connecting(MOTO_NAME), rig.link)
+        rig.awaitConnected()
+        assertEquals(2, rig.bike.connectRequests.size)
+        return rig
     }
 }

@@ -18,6 +18,9 @@ layout, checksums and UUIDs and shares no code with `:app`.
   - Device Information `0x180A` with synthetic values: `2A29` manufacturer, `2A24` model, `2A25` serial,
     `2A26` firmware, `2A27` hardware, `2A28` software and `2A50` PnP ID.
   - Every write to `FFF1` is answered with `GATT_SUCCESS`.
+  - Notify state is kept per device. The server sees every LE link of the phone (a watch, a second central), but
+    another link becomes the central only when it enables notify or no central is connected, and it never turns
+    the central's notify off. Frames go to every device that enabled notify.
 - **Cluster frames**: after the central enables notify on `FFF2`, BikeSim sends a cluster frame (`'7'`) every 5 s.
   Byte 23 carries the gear, byte 25 a settable raw value and bytes 26-27 `FF FF`. The checksum mode follows the
   name: character [1] `A` gives the inverted checksum, anything else the sum checksum.

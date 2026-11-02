@@ -171,7 +171,7 @@ class SimViewModel(app: Application) : AndroidViewModel(app), PeripheralEvents {
     override fun onCentral(address: String?) {
         _state.update { it.copy(central = address, mtu = null, notifyOn = if (address == null) false else it.notifyOn) }
         if (address != null) {
-            onEvent("Central $address connected")
+            onEvent("Central is $address")
         } else if (_state.value.wanted) {
             advertiseJob = viewModelScope.launch { advertiser.restart(_state.value.name) }
         }

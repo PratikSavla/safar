@@ -20,18 +20,8 @@ internal class SimGattCallback(
 
     override fun onConnectionStateChange(device: BluetoothDevice, status: Int, newState: Int) {
         when (newState) {
-            BluetoothProfile.STATE_CONNECTED -> {
-                owner.central = device
-                owner.notifyEnabled = false
-                events.onCentral(device.address)
-            }
-            BluetoothProfile.STATE_DISCONNECTED -> if (owner.central?.address == device.address) {
-                owner.central = null
-                owner.notifyEnabled = false
-                events.onNotify(false)
-                events.onCentral(null)
-                events.onEvent("Central ${device.address} disconnected (status $status)")
-            }
+            BluetoothProfile.STATE_CONNECTED -> owner.onLinkUp(device)
+            BluetoothProfile.STATE_DISCONNECTED -> owner.onLinkDown(device, status)
         }
     }
 
@@ -46,7 +36,7 @@ internal class SimGattCallback(
     }
 
     override fun onMtuChanged(device: BluetoothDevice, mtu: Int) {
-        events.onMtu(mtu)
+        owner.onMtu(device, mtu)
     }
 
     override fun onCharacteristicReadRequest(
@@ -96,7 +86,7 @@ internal class SimGattCallback(
         offset: Int,
         descriptor: BluetoothGattDescriptor,
     ) {
-        val value = if (owner.notifyEnabled) {
+        val value = if (owner.isSubscribed(device)) {
             BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
         } else {
             BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
@@ -118,9 +108,8 @@ internal class SimGattCallback(
             return
         }
         val enabled = value.contentEquals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
-        owner.notifyEnabled = enabled
+        owner.onCccd(device, enabled)
         if (responseNeeded) owner.respond(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value)
-        events.onNotify(enabled)
     }
 
     override fun onNotificationSent(device: BluetoothDevice, status: Int) {

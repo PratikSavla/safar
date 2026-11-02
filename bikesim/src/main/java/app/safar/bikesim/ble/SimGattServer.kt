@@ -2,6 +2,7 @@ package app.safar.bikesim.ble
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattServer
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothStatusCodes
@@ -9,18 +10,20 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import app.safar.protocol.GattUuids
+import java.util.concurrent.ConcurrentHashMap
 
 /**
- * The GATT server of the simulated cluster. One central at a time: the last one that connected gets the
- * notifications. Every Bluetooth call checks the runtime permission and catches [SecurityException].
+ * The GATT server of the simulated cluster. Frames go to every device that enabled notify on FFF2; the screen shows
+ * one central, chosen by [CentralTracker]. Every Bluetooth call checks the runtime permission and catches
+ * [SecurityException].
  */
 @SuppressLint("MissingPermission") // SimPermissions.granted() is checked in open() and every call is guarded.
 class SimGattServer(private val context: Context, private val events: PeripheralEvents) {
     @Volatile private var server: BluetoothGattServer? = null
 
-    @Volatile internal var central: BluetoothDevice? = null
-
-    @Volatile internal var notifyEnabled: Boolean = false
+    private val tracker = CentralTracker()
+    private val devices = ConcurrentHashMap<String, BluetoothDevice>()
+    private val mtus = ConcurrentHashMap<String, Int>()
 
     private val pending = ArrayDeque<BluetoothGattService>()
     private val lock = Any()
@@ -45,19 +48,32 @@ class SimGattServer(private val context: Context, private val events: Peripheral
     fun close() {
         val s = server ?: return
         server = null
-        central = null
-        notifyEnabled = false
+        tracker.clear()
+        devices.clear()
+        mtus.clear()
         guard("close") { s.clearServices(); s.close() }
         events.onEvent("GATT server closed")
     }
 
-    /** Sends [frame] on FFF2. False, with an event, when nobody listens or the stack refuses it. */
+    /** Sends [frame] on FFF2 to every subscriber. False, with an event, when nobody listens or no send succeeds. */
     fun notify(frame: ByteArray): Boolean {
         val s = server ?: return fail("GATT server is not open")
-        val device = central ?: return fail("no central connected")
-        if (!notifyEnabled) return fail("the central has not enabled notify")
+        val targets = tracker.subscribers().mapNotNull { devices[it] }
+        if (targets.isEmpty()) {
+            return fail(if (tracker.central == null) "no central connected" else "the central has not enabled notify")
+        }
         val rx = s.getService(GattUuids.SERVICE)?.getCharacteristic(GattUuids.RX_CHARACTERISTIC)
             ?: return fail("FFF2 is not registered yet")
+        val sent = targets.count { notifyOne(s, rx, it, frame) }
+        return if (sent > 0) true else fail("notification was not sent")
+    }
+
+    private fun notifyOne(
+        s: BluetoothGattServer,
+        rx: BluetoothGattCharacteristic,
+        device: BluetoothDevice,
+        frame: ByteArray,
+    ): Boolean {
         val sent = guard("notifyCharacteristicChanged") {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 s.notifyCharacteristicChanged(device, rx, false, frame) == BluetoothStatusCodes.SUCCESS
@@ -68,7 +84,8 @@ class SimGattServer(private val context: Context, private val events: Peripheral
                 s.notifyCharacteristicChanged(device, rx, false)
             }
         }
-        return if (sent == true) true else fail("notification was not sent")
+        if (sent != true) Log.w(TAG, "Notification to ${device.address} was not sent")
+        return sent == true
     }
 
     /**
@@ -78,11 +95,47 @@ class SimGattServer(private val context: Context, private val events: Peripheral
      */
     fun disconnect(): String? {
         val s = server ?: return null.also { fail("GATT server is not open") }
-        val device = central ?: return null.also { fail("no central connected") }
+        val device = tracker.central?.let { devices[it] } ?: return null.also { fail("no central connected") }
         if (guard("connect") { s.connect(device, false) } != true) Log.w(TAG, "connect() before cancelConnection refused")
         guard("cancelConnection") { s.cancelConnection(device) } ?: return null
         events.onEvent("Disconnect of ${device.address} requested")
         return device.address
+    }
+
+    internal fun onLinkUp(device: BluetoothDevice) {
+        devices[device.address] = device
+        val change = tracker.connected(device.address)
+        if (!change.centralChanged) events.onEvent("LE device ${device.address} connected; not the central")
+        publish(change)
+    }
+
+    internal fun onLinkDown(device: BluetoothDevice, status: Int) {
+        val wasCentral = tracker.central == device.address
+        devices.remove(device.address)
+        mtus.remove(device.address)
+        val change = tracker.disconnected(device.address)
+        events.onEvent("${if (wasCentral) "Central" else "LE device"} ${device.address} disconnected (status $status)")
+        publish(change)
+    }
+
+    internal fun onCccd(device: BluetoothDevice, enabled: Boolean) {
+        devices[device.address] = device
+        publish(tracker.cccd(device.address, enabled))
+    }
+
+    internal fun onMtu(device: BluetoothDevice, mtu: Int) {
+        mtus[device.address] = mtu
+        if (tracker.central == device.address) events.onMtu(mtu)
+    }
+
+    internal fun isSubscribed(device: BluetoothDevice): Boolean = tracker.isSubscribed(device.address)
+
+    /** Notify first, so the screen keeps notify on when the central moves to another subscriber. */
+    private fun publish(change: CentralTracker.Change) {
+        if (change.notifyChanged) events.onNotify(change.notifyOn)
+        if (!change.centralChanged) return
+        events.onCentral(change.central)
+        change.central?.let { mtus[it] }?.let(events::onMtu)
     }
 
     internal fun addNextService() {

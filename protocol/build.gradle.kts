@@ -15,6 +15,11 @@ kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_21) }
 }
 
+tasks.withType<Test>().configureEach {
+    // Test classes are spread over several JVMs; they share no state, so they run in parallel.
+    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+}
+
 dependencies {
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.kotlin.test)

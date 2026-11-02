@@ -43,7 +43,7 @@ object BleModule {
         AppContainer.log = log
 
         val manager = BikeManager(
-            context = app,
+            radio = AndroidBleRadio(app, log),
             log = log,
             savedStore = AppContainer.savedBike,
             serviceItems = { AppContainer.service },

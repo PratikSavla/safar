@@ -110,7 +110,14 @@ class WriteQueue(
                 if (signal.receiveCatching().isClosed) return
                 continue
             }
-            listener.onWritten(next.frame, writeOne(next.frame))
+            val outcome = try {
+                writeOne(next.frame)
+            } catch (e: CancellationException) {
+                // The link closed mid-write; report the frame so the TX log still shows it.
+                listener.onWritten(next.frame, WriteOutcome.Failed(CANCELLED))
+                throw e
+            }
+            listener.onWritten(next.frame, outcome)
         }
     }
 
@@ -138,5 +145,7 @@ class WriteQueue(
         const val DEFAULT_CAPACITY = 32
         /** A write with response takes one or two connection intervals; 1.5 s means the link is stuck. */
         const val WRITE_TIMEOUT_MS = 1_500L
+        /** [WriteOutcome.Failed] reason of a write cut off because the queue's coroutine was cancelled. */
+        const val CANCELLED = "cancelled: link closed"
     }
 }

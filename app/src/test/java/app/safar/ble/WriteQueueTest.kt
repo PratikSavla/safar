@@ -178,4 +178,18 @@ class WriteQueueTest {
         assertFalse(queue.offer(call("Alex")))
         assertEquals(0, queue.size)
     }
+
+    @Test
+    fun writeCutOffByCancellationIsStillReported() = runTest {
+        val rec = Recorder()
+        val queue = WriteQueue(FakeWriter(latencyMs = 100), rec)
+        val job = launch { queue.run() }
+        queue.offer(call("Alex"))
+        advanceTimeBy(50)
+        job.cancel()
+        runCurrent()
+        assertEquals(1, rec.written.size)
+        assertContentEquals(call("Alex"), rec.written.single().first)
+        assertEquals(WriteOutcome.Failed(WriteQueue.CANCELLED), rec.written.single().second)
+    }
 }

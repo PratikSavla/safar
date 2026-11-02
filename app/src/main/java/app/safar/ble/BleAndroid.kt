@@ -40,13 +40,13 @@ internal fun bluetoothAdapter(context: Context): BluetoothAdapter? =
     context.getSystemService(BluetoothManager::class.java)?.adapter
 
 /** Bluetooth adapter on/off. [isOn] is false on a phone without Bluetooth. */
-class BluetoothMonitor(private val context: Context) {
+class BluetoothMonitor(private val context: Context) : BluetoothSwitch {
     private var receiver: BroadcastReceiver? = null
 
-    val isOn: Boolean get() = bluetoothAdapter(context)?.isEnabled == true
+    override val isOn: Boolean get() = bluetoothAdapter(context)?.isEnabled == true
 
     /** [onChange] runs on the main thread: true for STATE_ON, false for STATE_TURNING_OFF / STATE_OFF. */
-    fun register(onChange: (Boolean) -> Unit) {
+    override fun register(onChange: (Boolean) -> Unit) {
         if (receiver != null) return
         val r = object : BroadcastReceiver() {
             override fun onReceive(c: Context, intent: Intent) {

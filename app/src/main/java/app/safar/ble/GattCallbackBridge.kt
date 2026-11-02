@@ -24,6 +24,16 @@ fun gattStatusText(status: Int): String = when (status) {
 }
 
 /**
+ * A link that ended with [status], as reported by onConnectionStateChange: logs "Disconnected" with the status
+ * and its text, then calls [markLost]. The JVM bike simulator calls it too, so its log matches a phone's.
+ */
+internal fun onGattDisconnected(log: DebugLog, status: Int, markLost: (status: Int, reason: String) -> Unit) {
+    val reason = gattStatusText(status)
+    log.event("Disconnected", mapOf("status" to status.toString(), "reason" to reason), error = true)
+    markLost(status, reason)
+}
+
+/**
  * Forwards [BluetoothGattCallback] events (binder threads) to [client]. API 33 added callbacks that carry the
  * value; on API 33+ the framework calls those, so the deprecated ones only act below API 33.
  */
@@ -36,9 +46,7 @@ internal class GattCallbackBridge(
         if (newState == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS) {
             client.linkState.compareAndSet(GattLink.Connecting, GattLink.Connected)
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED || status != BluetoothGatt.GATT_SUCCESS) {
-            val reason = gattStatusText(status)
-            log.event("Disconnected", mapOf("status" to status.toString(), "reason" to reason), error = true)
-            client.markLost(status, reason)
+            onGattDisconnected(log, status, client::markLost)
         }
     }
 

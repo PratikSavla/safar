@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -37,6 +38,7 @@ import app.safar.ui.art.TurnArrow
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.FuelBars
 import app.safar.ui.components.Hairline
+import app.safar.ui.components.SourceLine
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 import app.safar.ui.theme.FrauncesGlance
@@ -48,28 +50,38 @@ internal fun glance(size: Dp, weight: Int = 800, color: Color = Atlas.colors.ink
     return TextStyle(fontFamily = FrauncesGlance, fontWeight = FontWeight(weight), fontSize = sp, lineHeight = sp, letterSpacing = (-0.04).em, color = color, fontFeatureSettings = "lnum, tnum")
 }
 
-/** Clock, gear in a ring, fuel bars, over a 2 dp ink rule (ride.css `.r-top`). */
+/**
+ * Clock, gear in a ring, fuel bars, over a 2 dp ink rule (ride.css `.r-top`). Gear and fuel carry their
+ * source and age underneath, and fade to ink-2 when they are the last known frame (docs 12.5 rule 4).
+ */
 @Composable
 internal fun RideTop(clock: String, ui: RideUi) {
     val c = Atlas.colors
-    Row(Modifier.fillMaxWidth().padding(bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+    val bikeInk = if (ui.bikeLive) c.ink else c.ink2
+    val stale = if (ui.bikeLive) "" else ", last known"
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         BasicText(clock, Modifier.weight(1f).clearAndSetSemantics { contentDescription = "Time $clock" }, style = glance(35.dp, 600), maxLines = 1)
         Box(
-            Modifier.size(66.dp).border(3.dp, c.ink, CircleShape).clearAndSetSemantics { contentDescription = "Gear ${ui.gear}, probable" },
+            Modifier.size(66.dp).border(3.dp, bikeInk, CircleShape).clearAndSetSemantics { contentDescription = "Gear ${ui.gear}, probable$stale" },
             contentAlignment = Alignment.Center,
         ) {
-            BasicText(ui.gear, style = glance(42.dp))
+            BasicText(ui.gear, style = glance(42.dp, color = bikeInk))
         }
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
             if (ui.fuelBars != null) {
-                FuelBars(ui.fuelBars, ui.fuelMax, height = 46.dp, barWidth = 13.dp, gap = 5.dp)
+                FuelBars(ui.fuelBars, ui.fuelMax, Modifier.alpha(if (ui.bikeLive) 1f else STALE_ALPHA), height = 46.dp, barWidth = 13.dp, gap = 5.dp)
             } else {
                 BasicText("fuel …", style = Atlas.type.kicker.copy(color = c.ink3))
             }
         }
     }
+    Box(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
+        SourceLine(ui.bikeSource, ui.readingAt)
+    }
     Hairline(thickness = 2.dp, color = c.ink)
 }
+
+private const val STALE_ALPHA = 0.55f
 
 /** Caller in big type: rust while ringing, ink once answered (ride.css `.r-call`). */
 @Composable

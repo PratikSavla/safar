@@ -44,6 +44,23 @@ class RideStateTest {
     }
 
     @Test
+    fun bikeValuesSayWhenTheyAreLastKnown() {
+        val live = rideUi(bike, RideState(), NavState(), AlertsState(), Settings())
+        assertTrue(live.bikeLive)
+        assertEquals("bike", live.bikeSource)
+        assertEquals(1_000L, live.readingAt)
+        val dropped = BikeState(link = LinkState.Reconnecting(1, 0), saved = testSaved, lastCluster = testReading(at = 500L, gear = '2'))
+        val stale = rideUi(dropped, RideState(), NavState(), AlertsState(), Settings())
+        assertFalse(stale.bikeLive)
+        assertEquals("bike · last known", stale.bikeSource)
+        assertEquals("2", stale.gear)
+        assertEquals(500L, stale.readingAt)
+        val none = rideUi(BikeState(), RideState(), NavState(), AlertsState(), Settings())
+        assertNull(none.readingAt)
+        assertEquals("bike", none.bikeSource)
+    }
+
+    @Test
     fun turnBlockFollowsTheNavigationState() {
         assertNull(turnUi(NavState()))
         assertEquals(TurnUi.Waiting, turnUi(NavState(active = true, waiting = true)))

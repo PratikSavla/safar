@@ -35,19 +35,27 @@ data class RideUi(
     val gear: String,
     val fuelBars: Int?,
     val fuelMax: Int,
+    /** Gear and fuel come from a live cluster frame; false = the last frame before the link dropped. */
+    val bikeLive: Boolean,
+    /** When the cluster frame behind gear and fuel arrived; null before the first one. */
+    val readingAt: Long?,
     val turn: TurnUi?,
     val call: RideCallUi?,
     /** "bike link · retrying" / "bike not connected", or null while linked. */
     val linkNote: String?,
     val moving: Boolean,
-)
+) {
+    /** Source caption for gear and fuel, worded like the home ledger ("waiting" age before any frame). */
+    val bikeSource: String get() = if (bikeLive || readingAt == null) "bike" else "bike · last known"
+}
 
 private const val ARRIVED_CODE = 9
 private const val STATUS_CODE = 46
 private const val DEFAULT_FUEL_BARS = 6
 
 internal fun rideUi(bike: BikeState, ride: RideState, nav: NavState, alerts: AlertsState, settings: Settings): RideUi {
-    val reading = bike.cluster ?: bike.lastCluster
+    val live = bike.link == LinkState.Connected && bike.cluster != null
+    val reading = if (live) bike.cluster else bike.lastCluster ?: bike.cluster
     val speed = ride.speedKmh?.roundToInt()
     return RideUi(
         speedKmh = speed,
@@ -55,6 +63,8 @@ internal fun rideUi(bike: BikeState, ride: RideState, nav: NavState, alerts: Ale
         gear = reading?.gear?.toString() ?: "–",
         fuelBars = reading?.fuelBars,
         fuelMax = bike.saved?.model?.fuelBars ?: DEFAULT_FUEL_BARS,
+        bikeLive = live,
+        readingAt = reading?.receivedAtMillis,
         turn = turnUi(nav),
         call = alerts.call?.let { c ->
             val label = when {

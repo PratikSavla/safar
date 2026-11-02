@@ -72,7 +72,9 @@ class BikeManager(
     private var generation = 0
     private var nextAttemptAt = 0L
     private var autoConnectDone = false
-    private var seedOnFirstReading = false
+
+    /** Set by the first connection to a bike; cleared only once a seed attempt has finished. */
+    private var seedPending = false
 
     @Volatile private var session: BikeSession? = null
 
@@ -238,8 +240,8 @@ class BikeManager(
             this@BikeManager.session = session
             apply(policy.onLinkReady())
             _state.update { it.copy(mtu = ready.mtu, deviceInfo = ready.deviceInfo, framesReceived = 0) }
+            if (target.firstConnection) seedPending = true
             if (target.firstConnection || savedStore.saved.value?.address != target.address) {
-                seedOnFirstReading = target.firstConnection
                 scope.launch { saveBike(SavedBikeRecord(name, target.address)) }
             }
         }
@@ -249,9 +251,10 @@ class BikeManager(
             _state.update {
                 it.copy(cluster = reading, lastCluster = reading, framesReceived = it.framesReceived + 1)
             }
-            if (seedOnFirstReading) {
-                seedOnFirstReading = false
-                scope.launch { seedService(reading.odometerKm) }
+            if (seedPending) {
+                // Survives a link that drops before its first reading; a failed seed is tried on the next one.
+                seedPending = false
+                scope.launch { if (!seedService(reading.odometerKm)) seedPending = true }
             }
         }
     }
@@ -266,14 +269,17 @@ class BikeManager(
         log.event("Service reminders", mapOf("seeded" to "$seeded", "odometerKm" to "$odometerKm"))
     }
 
-    private suspend fun guardedIo(what: String, block: suspend () -> Unit) {
+    /** Runs [block], logging a failure; returns whether it completed. */
+    private suspend fun guardedIo(what: String, block: suspend () -> Unit): Boolean {
         try {
             block()
+            return true
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "$what failed", e)
             log.event("$what failed", mapOf("error" to (e.message ?: e.javaClass.simpleName)), error = true)
+            return false
         }
     }
 

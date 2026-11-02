@@ -55,7 +55,7 @@ data class ServiceActions(
 @Composable
 fun ServiceScreen(navigator: Navigator) {
     val vm: ServiceViewModel = viewModel {
-        ServiceViewModel(AppContainer.service, AppContainer.settings, AppContainer.bike.state, AppContainer.ride.state)
+        ServiceViewModel(AppContainer.service, AppContainer.settings, AppContainer.bike.state, AppContainer.ride.state, AppContainer.fuel.fuelUps)
     }
     val state by vm.state.collectAsStateWithLifecycle()
     val toast = rememberToastState()

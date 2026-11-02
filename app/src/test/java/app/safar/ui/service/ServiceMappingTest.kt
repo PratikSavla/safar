@@ -4,6 +4,8 @@ import app.safar.core.BikeState
 import app.safar.core.ClusterReading
 import app.safar.core.LinkState
 import app.safar.core.RideState
+import app.safar.data.FuelUp
+import app.safar.data.OdoSource
 import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
 import app.safar.data.ServiceState
@@ -14,6 +16,8 @@ import kotlin.test.assertNull
 
 class ServiceMappingTest {
     private fun reading(odo: Int, at: Long = 5_000) = ClusterReading(0, odo, 0.0, 0.0, 4, 'N', 0, 0, at)
+
+    private fun fill(odo: Int, at: Long) = FuelUp(0, at, odo, 10.0, 1_000.0, true, OdoSource.MANUAL)
 
     private val oil = ServiceItem(1, "Engine oil", 3000, 9_200, null, ServiceIcon.OIL)
     private val chain = ServiceItem(2, "Chain clean & lube", 500, 11_820, null, ServiceIcon.CHAIN)
@@ -26,6 +30,25 @@ class ServiceMappingTest {
         assertEquals(OdoNowUi(12_250, 5_000, false, "bike · last known"), odoNow(BikeState(lastCluster = reading(12_250)), items))
         assertEquals(OdoNowUi(11_820, null, false, "last service · no bike reading"), odoNow(BikeState(), items))
         assertNull(odoNow(BikeState(), emptyList()).km)
+    }
+
+    @Test
+    fun `without a bike reading the typed fuel-up odometer counts, so Home and the logbook agree`() {
+        val fills = listOf(fill(12_000, 1_000), fill(12_300, 2_000))
+        val coolant = ServiceItem(4, "Coolant", 1_100, 12_300, null, ServiceIcon.GENERIC)
+        assertEquals(OdoNowUi(12_300, 2_000, false, "last fuel-up · no bike reading"), odoNow(BikeState(), emptyList(), fills))
+        // A later service odometer beats an older fuel-up; a live bike beats both.
+        assertEquals(12_300, odoNow(BikeState(), listOf(coolant), listOf(fill(12_000, 1_000))).km)
+        assertEquals(12_400, odoNow(BikeState(link = LinkState.Connected, cluster = reading(12_400)), listOf(coolant), fills).km)
+        val s = serviceUiState(listOf(coolant), BikeState(), RideState(), reminders = true, fuelUps = fills)
+        assertEquals("Due in 1,100 km · at 13,400", s.rows.single().line)
+        assertEquals(0, s.needYou)
+    }
+
+    @Test
+    fun `a new item needs a known odometer`() {
+        assertEquals("Counted from 12,300 km, the odometer now.", addFromLine(12_300))
+        assertEquals("Needs the odometer first: connect the bike or log a fuel-up.", addFromLine(null))
     }
 
     @Test

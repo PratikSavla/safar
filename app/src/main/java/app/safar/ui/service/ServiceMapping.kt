@@ -3,6 +3,7 @@ package app.safar.ui.service
 import app.safar.core.BikeState
 import app.safar.core.LinkState
 import app.safar.core.RideState
+import app.safar.data.FuelUp
 import app.safar.data.ServiceItem
 import app.safar.data.ServiceState
 import app.safar.data.ServiceStatus
@@ -39,14 +40,20 @@ data class ServiceUiState(
     val lockReason: String? = null,
 )
 
-/** Live reading, else the last one kept after a disconnect, else the latest service odometer. */
-fun odoNow(bike: BikeState, items: List<ServiceItem>): OdoNowUi {
+/**
+ * The one "odometer now" for Home and the logbook: the live reading, else the last one kept after a disconnect,
+ * else the highest odometer the rider typed (at a fuel-up or a service).
+ */
+fun odoNow(bike: BikeState, items: List<ServiceItem>, fuelUps: List<FuelUp> = emptyList()): OdoNowUi {
     val live = bike.link == LinkState.Connected && bike.cluster != null
     val reading = bike.cluster ?: bike.lastCluster
+    val fuel = fuelUps.maxByOrNull { it.odometerKm }
+    val service = items.maxOfOrNull { it.lastDoneOdoKm }
     return when {
         reading != null && live -> OdoNowUi(reading.odometerKm, reading.receivedAtMillis, true, "bike")
         reading != null -> OdoNowUi(reading.odometerKm, reading.receivedAtMillis, false, "bike · last known")
-        else -> OdoNowUi(items.maxOfOrNull { it.lastDoneOdoKm }, null, false, "last service · no bike reading")
+        fuel != null && fuel.odometerKm >= (service ?: 0) -> OdoNowUi(fuel.odometerKm, fuel.atMillis, false, "last fuel-up · no bike reading")
+        else -> OdoNowUi(service, null, false, "last service · no bike reading")
     }
 }
 
@@ -80,8 +87,14 @@ fun titleTail(needYou: Int): String = when (needYou) {
     else -> ", $needYou need you."
 }
 
-fun serviceUiState(items: List<ServiceItem>, bike: BikeState, ride: RideState, reminders: Boolean): ServiceUiState {
-    val odo = odoNow(bike, items)
+fun serviceUiState(
+    items: List<ServiceItem>,
+    bike: BikeState,
+    ride: RideState,
+    reminders: Boolean,
+    fuelUps: List<FuelUp> = emptyList(),
+): ServiceUiState {
+    val odo = odoNow(bike, items, fuelUps)
     val statuses = serviceStatuses(items, odo.km ?: 0)
     return ServiceUiState(
         loading = false,
@@ -107,3 +120,8 @@ fun markDoneOdo(odo: OdoNowUi, item: ServiceItem): Int = odo.km ?: item.lastDone
 
 /** A custom item's label: trimmed, at most 32 characters; null when blank. */
 fun cleanLabel(input: String, max: Int = 32): String? = input.trim().take(max).ifEmpty { null }
+
+/** Where a new item starts counting; it cannot be added before any odometer is known. */
+fun addFromLine(odoKm: Int?): String =
+    odoKm?.let { "Counted from ${Formatters.odometer(it)} km, the odometer now." }
+        ?: "Needs the odometer first: connect the bike or log a fuel-up."

@@ -24,6 +24,7 @@ import app.safar.data.SettingsStore
 import app.safar.data.Trip
 import app.safar.data.TripRepository
 import app.safar.data.fuelStats
+import app.safar.ui.service.odoNow
 import app.safar.ui.shell.ShellDeps
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -64,7 +65,7 @@ internal fun homeUi(live: HomeLive, stored: HomeStored, logCount: Int, nowMillis
     val nav = navStripUi(live.nav)
     val alertCount = live.alerts.missed.count + live.alerts.messages.count
     val garage = GarageInputs(
-        fuel, reading?.odometerKm ?: fuel.odoNow, stored.services, stored.parked, stored.trips, stored.placesCount,
+        fuel, odoNow(bike, stored.services, stored.fuelUps).km, stored.services, stored.parked, stored.trips, stored.placesCount,
         nav, alertCount, bike.link, live.settings.debugLog, logCount,
     )
     return HomeUi(

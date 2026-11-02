@@ -84,11 +84,11 @@ internal fun AddItemSheet(visible: Boolean, odoKm: Int?, lockReason: String?, on
     AtlasBottomSheet(visible, onDismiss, title = "Add to the logbook") {
         AtlasTextField(label, { label = it }, label = "What needs doing", lockedReason = lockReason, placeholder = "Coolant check", maxLength = 32)
         IntervalStepper(km) { km = it }
-        val from = odoKm?.let { "Counted from ${Formatters.odometer(it)} km, the odometer now." } ?: "Counted from 0 km until the bike reports its odometer."
-        BasicText(from, Modifier.padding(top = 6.dp), style = Atlas.type.src.copy(color = Atlas.colors.ink3))
+        BasicText(addFromLine(odoKm), Modifier.padding(top = 6.dp), style = Atlas.type.src.copy(color = Atlas.colors.ink3))
         Row(Modifier.fillMaxWidth().padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SecondaryButton("Cancel", onDismiss, Modifier.weight(1f))
-            PrimaryButton("Add", { onAdd(label, km) }, Modifier.weight(1f), icon = AtlasIcons.plus, enabled = lockReason == null && cleanLabel(label) != null)
+            val ready = lockReason == null && odoKm != null && cleanLabel(label) != null
+            PrimaryButton("Add", { onAdd(label, km) }, Modifier.weight(1f), icon = AtlasIcons.plus, enabled = ready)
         }
     }
 }

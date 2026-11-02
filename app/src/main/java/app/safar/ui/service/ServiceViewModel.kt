@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.safar.core.BikeState
 import app.safar.core.RideState
+import app.safar.data.FuelUp
 import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
 import app.safar.data.ServiceRepository
@@ -11,9 +12,11 @@ import app.safar.data.SettingsStore
 import app.safar.ui.format.Formatters
 import app.safar.ui.vm.Notices
 import app.safar.ui.vm.launchLogged
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 
 private const val TAG = "ServiceViewModel"
@@ -24,10 +27,11 @@ class ServiceViewModel(
     private val settings: SettingsStore,
     bike: StateFlow<BikeState>,
     ride: StateFlow<RideState>,
+    fuelUps: Flow<List<FuelUp>> = flowOf(emptyList()),
     private val now: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
-    val state: StateFlow<ServiceUiState> = combine(service.items, settings.settings, bike, ride) { items, s, b, r ->
-        serviceUiState(items, b, r, s.serviceReminders)
+    val state: StateFlow<ServiceUiState> = combine(service.items, settings.settings, bike, ride, fuelUps) { items, s, b, r, f ->
+        serviceUiState(items, b, r, s.serviceReminders, f)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ServiceUiState())
 
     val notices = Notices()
@@ -54,7 +58,8 @@ class ServiceViewModel(
     fun add(label: String, everyKm: Int) {
         val clean = cleanLabel(label) ?: return
         if (state.value.lockReason != null) return
-        val odo = state.value.odo.km ?: 0
+        // Never count from a made-up 0 km: it reads as massively overdue once the real odometer is known.
+        val odo = state.value.odo.km ?: return
         val item = ServiceItem(label = clean, everyKm = everyKm, lastDoneOdoKm = odo, lastDoneMillis = now(), icon = ServiceIcon.GENERIC)
         launchLogged(TAG, "add of service item", { notices.post("Could not add the item") }) {
             service.upsert(item)

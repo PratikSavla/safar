@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug log exports (app.safar.log) shared through the share sheet. Only this cache folder is exposed. -->
+<paths>
+    <cache-path name="exports" path="exports/" />
+</paths>

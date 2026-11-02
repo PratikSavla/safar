@@ -13,6 +13,7 @@ import app.safar.data.SettingsStore
 import app.safar.data.ThemeMode
 import app.safar.ui.format.InputLock
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,9 @@ import kotlinx.coroutines.launch
 private const val TAG = "SafarSettings"
 private const val TYPING_DEBOUNCE_MS = 600L
 private const val SLIDER_DEBOUNCE_MS = 300L
+
+/** A debounced write waiting for its delay; [change] is replayed if the screen goes away first. */
+private class PendingSave(val job: Job, val change: (Settings) -> Settings)
 
 /** Unsaved field text. Null = show the stored value. */
 private data class Drafts(val name: String? = null, val tank: String? = null, val speed: Int? = null)
@@ -42,14 +46,19 @@ data class SettingsState(
     val lockReason: String? = null,
 )
 
+/**
+ * Settings screen state. Typed fields and the slider save after a short pause; [flushScope] (the app scope)
+ * writes any edit still waiting when the screen closes, so leaving right after typing keeps the change.
+ */
 class SettingsViewModel(
     private val store: SettingsStore,
     ride: RideTracker,
     bike: BikeController,
     savedBike: SavedBikeStore,
+    private val flushScope: CoroutineScope,
 ) : ViewModel() {
     private val drafts = MutableStateFlow(Drafts())
-    private val pending = mutableMapOf<String, Job>()
+    private val pending = mutableMapOf<String, PendingSave>()
 
     val state: StateFlow<SettingsState> = combine(store.settings, drafts, ride.state, bike.state, savedBike.saved) { s, d, r, b, saved ->
         val model = b.saved?.model ?: saved?.let { BikeCatalog.forBleName(it.name) }
@@ -89,7 +98,7 @@ class SettingsViewModel(
     }
 
     fun resetTank() {
-        pending.remove("tank")?.cancel()
+        pending.remove("tank")?.job?.cancel()
         drafts.update { it.copy(tank = null) }
         write("tank size") { it.copy(tankLitres = null) }
     }
@@ -105,11 +114,22 @@ class SettingsViewModel(
     fun toggle(what: String, change: (Settings) -> Settings) = write(what, change)
 
     private fun debounce(key: String, delayMs: Long, change: (Settings) -> Settings) {
-        pending.remove(key)?.cancel()
-        pending[key] = viewModelScope.launch {
+        pending.remove(key)?.job?.cancel()
+        val job = viewModelScope.launch {
             delay(delayMs)
+            pending.remove(key)
             save(key, change)
         }
+        pending[key] = PendingSave(job, change)
+    }
+
+    /** viewModelScope is already cancelled here; write what was still waiting in one update. */
+    override fun onCleared() {
+        val left = pending.values.toList()
+        pending.clear()
+        left.forEach { it.job.cancel() }
+        if (left.isEmpty()) return
+        flushScope.launch { save("unsaved edits") { s -> left.fold(s) { acc, p -> p.change(acc) } } }
     }
 
     private fun write(what: String, change: (Settings) -> Settings) {

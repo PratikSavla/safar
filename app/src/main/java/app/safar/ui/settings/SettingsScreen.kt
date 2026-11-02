@@ -43,7 +43,7 @@ class SettingsActions(
  */
 @Composable
 fun SettingsScreen(navigator: Navigator, modifier: Modifier = Modifier, bottomBar: (@Composable () -> Unit)? = null) {
-    val vm = viewModel { SettingsViewModel(AppContainer.settings, AppContainer.ride, AppContainer.bike, AppContainer.savedBike) }
+    val vm = viewModel { SettingsViewModel(AppContainer.settings, AppContainer.ride, AppContainer.bike, AppContainer.savedBike, AppContainer.appScope) }
     val state by vm.state.collectAsStateWithLifecycle()
     val access by rememberAccessStatus()
     val context = LocalContext.current

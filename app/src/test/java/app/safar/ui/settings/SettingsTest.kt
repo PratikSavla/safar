@@ -10,6 +10,11 @@ import app.safar.ui.testing.FakeRide
 import app.safar.ui.testing.FakeSavedBike
 import app.safar.ui.testing.FakeSettings
 import app.safar.ui.testing.MainDispatcherRule
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -26,7 +31,10 @@ class SettingsTest {
 
     private val store = FakeSettings(Settings(riderName = "Rider"))
     private val ride = FakeRide()
-    private val vm by lazy { SettingsViewModel(store, ride, FakeBike(), FakeSavedBike(SavedBikeRecord("SBS21A1B2C3D", "00:00:00:00:00:01"))) }
+    private val flushed = CoroutineScope(main.dispatcher)
+    private val vm by lazy { newVm() }
+
+    private fun newVm() = SettingsViewModel(store, ride, FakeBike(), FakeSavedBike(SavedBikeRecord("SBS21A1B2C3D", "00:00:00:00:00:01")), flushed)
 
     @Test
     fun clusterNameIsCleanedUpperCase() {
@@ -102,5 +110,22 @@ class SettingsTest {
         advanceUntilIdle()
         assertNull(store.settings.value.tankLitres)
         assertEquals("5.2", vm.state.value.tankText)
+    }
+
+    @Test
+    fun editsStillWaitingAreSavedWhenTheScreenCloses() = runTest {
+        val owner = ViewModelStore()
+        val vm = ViewModelProvider.create(owner, viewModelFactory { initializer { newVm() } })[SettingsViewModel::class]
+        backgroundScope.launch(main.dispatcher) { vm.state.collect {} }
+        vm.setRiderName("Alex")
+        vm.setTank("7")
+        vm.setSpeedAlert(90)
+        assertEquals("Rider", store.settings.value.riderName)
+        owner.clear()
+        advanceUntilIdle()
+        assertEquals("Alex", store.settings.value.riderName)
+        assertEquals(7.0, store.settings.value.tankLitres)
+        assertEquals(90, store.settings.value.speedAlertKmh)
+        assertEquals(1, store.writes)
     }
 }

@@ -74,7 +74,6 @@ internal fun CompassBlock(state: ParkedUiState, actions: ParkedActions) {
         }
         val fixAt = state.phoneFix?.atMillis
         if (fixAt != null) SourceLine("phone location", fixAt, Modifier.padding(top = 4.dp))
-        if (state.spot != null) SourceLine("parked spot · phone location", state.spot.atMillis, Modifier.padding(top = 2.dp))
     }
 }
 

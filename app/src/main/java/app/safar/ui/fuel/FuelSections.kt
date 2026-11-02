@@ -51,7 +51,7 @@ internal fun MileageSection(stats: FuelStats, zone: ZoneId) {
     val unit = "km/L"
     StatGrid(
         listOf(
-            StatCell("Average", stats.avgKmpl?.let(::jsNumber) ?: "—", unit, source = "last 3 full tanks", valueColor = Atlas.colors.rust),
+            StatCell("Average", stats.avgKmpl?.let(::jsNumber) ?: "—", unit, source = "last 3 tanks", valueColor = Atlas.colors.rust),
             StatCell("Last tank", stats.lastKmpl?.let(::jsNumber) ?: "—", unit, source = "most recent"),
             StatCell("Lifetime", stats.lifetimeKmpl?.let(::jsNumber) ?: "—", unit, source = "${stats.segments.size} tanks"),
         ),

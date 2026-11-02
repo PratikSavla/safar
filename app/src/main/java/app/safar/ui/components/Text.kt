@@ -54,7 +54,8 @@ fun SectionHeader(title: String, modifier: Modifier = Modifier, aside: (@Composa
 @Composable
 fun SourceLine(source: String, modifier: Modifier = Modifier, age: String? = null) {
     val text = if (age == null) "↳ $source" else "↳ $source · $age"
-    BasicText(text, modifier, style = Atlas.type.src.copy(color = Atlas.colors.ink3), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    // Two lines, so a narrow column at a large font scale wraps the source instead of cutting it.
+    BasicText(text, modifier, style = Atlas.type.src.copy(color = Atlas.colors.ink3), maxLines = 2, overflow = TextOverflow.Ellipsis)
 }
 
 /** [SourceLine] with a live age from [atMillis]; "waiting" until the first reading. */

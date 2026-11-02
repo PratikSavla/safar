@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.safar.data.FuelMethod
 import app.safar.data.FuelStats
@@ -49,9 +50,10 @@ internal fun RangeHero(stats: FuelStats, reading: BarsReading) {
         Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val mono = Atlas.type.src.copy(color = c.ink2)
             val left = if (stats.remainingL == null) "—" else "≈${jsNumber(stats.remainingL)} L"
-            BasicText("$left of ${jsNumber(stats.tank)} L", Modifier.weight(1f), style = mono)
+            // The amount never wraps (a lone "L" on its own line); the note beside it takes the rest and wraps.
+            BasicText("$left of ${jsNumber(stats.tank)} L", style = mono, softWrap = false)
             if (stats.method == FuelMethod.HISTORY && stats.sinceFullKm != null) {
-                BasicText("${Formatters.odometer(stats.sinceFullKm)} km since the last full tank", style = mono)
+                BasicText("${Formatters.odometer(stats.sinceFullKm)} km since the last full tank", Modifier.weight(1f), style = mono.copy(textAlign = TextAlign.End))
             }
         }
         BikeBars(reading)

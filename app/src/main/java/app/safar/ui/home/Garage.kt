@@ -81,7 +81,8 @@ private fun Tile(t: GarageTile, modifier: Modifier, onClick: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         AtlasIcon(TILE_ICONS[t.key] ?: AtlasIcons.info, tint = if (t.accent) c.rust else c.ink2, size = 20.dp, modifier = Modifier.padding(bottom = 2.dp))
-        BasicText(t.name, style = Atlas.type.serifTitle.copy(fontSize = Atlas.type.serifTitle.fontSize * 0.88f, color = c.ink), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // Two lines: at a large font scale "Debug log" wraps instead of being cut to "Debug l…".
+        BasicText(t.name, style = Atlas.type.serifTitle.copy(fontSize = Atlas.type.serifTitle.fontSize * 0.88f, color = c.ink), maxLines = 2, overflow = TextOverflow.Ellipsis)
         BasicText(hint, style = Atlas.type.src.copy(fontSize = Atlas.type.src.fontSize * 0.92f, color = if (t.warn) c.rust else c.ink3), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

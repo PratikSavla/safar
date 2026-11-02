@@ -29,4 +29,16 @@ class ScanListTest {
         assertEquals(VehicleFamily.SCOOTER, items[1].model.family)
         assertEquals("SAS01A1B2C3D", list.nameOf("00:11:22:33:44:66"))
     }
+
+    @Test
+    fun aBikeThatMovedAddressShowsOnceAtItsNewAddress() {
+        val list = ScanList()
+        list.add("SBM01A1B2C3D", "00:11:22:33:44:55", -60)
+        list.add("SAS01A1B2C3D", "00:11:22:33:44:66", -70)
+        assertEquals(ScanList.Change.UPDATED, list.add("SBM01A1B2C3D", "00:11:22:33:44:77", -58))
+        assertEquals(listOf("00:11:22:33:44:66", "00:11:22:33:44:77"), list.items.map { it.address })
+        assertEquals("SBM01A1B2C3D", list.nameOf("00:11:22:33:44:55"), "the old address still names the bike")
+        list.clear()
+        assertEquals(null, list.nameOf("00:11:22:33:44:55"))
+    }
 }

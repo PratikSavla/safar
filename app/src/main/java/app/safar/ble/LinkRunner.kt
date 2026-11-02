@@ -1,12 +1,11 @@
 package app.safar.ble
 
-import android.bluetooth.BluetoothDevice
-import android.content.Context
 import android.util.Log
 import app.safar.core.BikeCatalog
 import app.safar.core.ClusterReading
 import app.safar.core.DebugLog
 import app.safar.core.LogKind
+import app.safar.protocol.GattUuids
 import app.safar.protocol.checksumModeFor
 import app.safar.protocol.messageType
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -26,7 +25,7 @@ class LinkTarget(val address: String, val name: String?, val firstConnection: Bo
  * starts lives in a child scope that ends with [run]; cancelling the caller closes the GATT.
  */
 internal class LinkRunner(
-    private val context: Context,
+    private val radio: BleRadio,
     private val log: DebugLog,
     private val now: () -> Long,
 ) {
@@ -42,8 +41,7 @@ internal class LinkRunner(
 
     /** Returns the reason the link ended (setup failure or drop). */
     suspend fun run(target: LinkTarget, inputs: () -> SessionInputs, listener: Listener): String {
-        val device = remoteDevice(target.address) ?: return "invalid address"
-        val client = GattClient(context, device, log)
+        val client = radio.open(target.address) ?: return "invalid address"
         val parent = currentCoroutineContext()
         val linkScope = CoroutineScope(parent + SupervisorJob(parent.job) + errors)
         try {
@@ -54,7 +52,7 @@ internal class LinkRunner(
                 log.event("Connect failed", mapOf("reason" to (e.message ?: "unknown")), error = true)
                 return e.message ?: "setup failed"
             }
-            val name = target.name ?: deviceName(device) ?: return "unknown bike name"
+            val name = target.name ?: client.deviceName ?: return "unknown bike name"
             val session = startSession(linkScope, client, ready, name, target, inputs(), listener)
             listener.onReady(name, ready, session)
             val lost = client.link.first { it is GattLink.Disconnected } as GattLink.Disconnected
@@ -67,14 +65,15 @@ internal class LinkRunner(
 
     private fun startSession(
         scope: CoroutineScope,
-        client: GattClient,
+        client: GattPort,
         ready: LinkReady,
         name: String,
         target: LinkTarget,
         inputs: SessionInputs,
         listener: Listener,
     ): BikeSession {
-        val queue = WriteQueue({ client.write(ready.tx, it) }, TxLogger(log, client))
+        val write = FrameWriter { client.write(GattUuids.SERVICE, GattUuids.TX_CHARACTERISTIC, it) }
+        val queue = WriteQueue(write, TxLogger(log, client))
         scope.launch { queue.run() }
         scope.coroutineContext.job.invokeOnCompletion { queue.close() }
         val config = SessionConfig(checksumModeFor(name), BikeCatalog.forBleName(name), target.firstConnection)
@@ -84,36 +83,10 @@ internal class LinkRunner(
         log.event("Session started", mapOf("bike" to name, "riderFrame" to if (target.firstConnection) "F" else "R"))
         return session
     }
-
-    private fun remoteDevice(address: String): BluetoothDevice? {
-        val adapter = bluetoothAdapter(context)
-        if (adapter == null) {
-            log.event("No Bluetooth adapter", error = true)
-            return null
-        }
-        return try {
-            adapter.getRemoteDevice(address)
-        } catch (e: IllegalArgumentException) {
-            Log.w(TAG, "Saved bike address is not a valid MAC", e)
-            log.event("Invalid bike address", mapOf("address" to address), error = true)
-            null
-        }
-    }
-
-    @android.annotation.SuppressLint("MissingPermission") // canConnect() checked first.
-    private fun deviceName(device: BluetoothDevice): String? {
-        if (!BlePermissions.canConnect(context)) return null
-        return try {
-            device.name
-        } catch (e: SecurityException) {
-            Log.w(TAG, "Reading the bike name was refused", e)
-            null
-        }
-    }
 }
 
 /** Logs every TX frame with its write result; [STALL_LIMIT] failed writes in a row mark the link lost. */
-private class TxLogger(private val log: DebugLog, private val client: GattClient) : WriteListener {
+private class TxLogger(private val log: DebugLog, private val client: GattPort) : WriteListener {
     private var failuresInRow = 0
 
     override fun onWritten(frame: ByteArray, outcome: WriteOutcome) {

@@ -1,6 +1,5 @@
 package app.safar.ble
 
-import android.content.Context
 import android.util.Log
 import app.safar.ble.ReconnectPolicy.Action
 import app.safar.core.AlertSource
@@ -18,6 +17,7 @@ import app.safar.data.seedDefaultsIfEmpty
 import app.safar.protocol.MAX_ICON_CODE
 import app.safar.protocol.MIN_ICON_CODE
 import app.safar.service.shouldRunService
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,21 +39,21 @@ import kotlin.coroutines.cancellation.CancellationException
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class BikeManager(
-    private val context: Context,
+    private val radio: BleRadio,
     private val log: DebugLog,
     private val savedStore: SavedBikeStore,
     private val serviceItems: () -> ServiceRepository,
     private val inputs: () -> SessionInputs,
     parent: CoroutineScope,
     private val now: () -> Long = System::currentTimeMillis,
+    /** Must run one coroutine at a time: the policy and the link fields have no lock. */
+    serial: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1),
 ) : BikeController, ClusterOutbox {
-    private val scope = CoroutineScope(
-        parent.coroutineContext + SupervisorJob(parent.coroutineContext.job) + Dispatchers.Default.limitedParallelism(1),
-    )
+    private val scope = CoroutineScope(parent.coroutineContext + SupervisorJob(parent.coroutineContext.job) + serial)
     private val policy = ReconnectPolicy()
-    private val scanner = BleScanner(context, log, scope)
-    private val runner = LinkRunner(context, log, now)
-    private val bluetooth = BluetoothMonitor(context)
+    private val scanner = radio.scanner(scope)
+    private val runner = LinkRunner(radio, log, now)
+    private val bluetooth = radio.bluetooth
 
     private val _state = MutableStateFlow(BikeState())
     override val state: StateFlow<BikeState> = _state.asStateFlow()
@@ -219,7 +219,7 @@ class BikeManager(
 
     private fun startLink(address: String, attempt: Int) {
         closeLink()
-        if (!BlePermissions.canConnect(context)) {
+        if (!radio.canConnect()) {
             log.event("Connect needs permission", mapOf("permission" to "BLUETOOTH_CONNECT"), error = true)
             apply(policy.disconnect())
             return

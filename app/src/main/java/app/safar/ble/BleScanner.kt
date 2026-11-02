@@ -26,16 +26,16 @@ class BleScanner(
     private val context: Context,
     private val log: DebugLog,
     private val scope: CoroutineScope,
-) {
+) : BikeScanner {
     private val lock = Any()
     private val list = ScanList()
     private var stopJob: Job? = null
 
     private val _results = MutableStateFlow<List<ScannedBike>>(emptyList())
-    val results: StateFlow<List<ScannedBike>> = _results.asStateFlow()
+    override val results: StateFlow<List<ScannedBike>> = _results.asStateFlow()
 
     private val _scanning = MutableStateFlow(false)
-    val scanning: StateFlow<Boolean> = _scanning.asStateFlow()
+    override val scanning: StateFlow<Boolean> = _scanning.asStateFlow()
 
     private val callback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) = handle(result)
@@ -48,10 +48,10 @@ class BleScanner(
         }
     }
 
-    fun nameOf(address: String): String? = synchronized(lock) { list.nameOf(address) }
+    override fun nameOf(address: String): String? = synchronized(lock) { list.nameOf(address) }
 
     /** Starts a new 10 s scan and clears the list. Returns false (and logs why) when it cannot scan. */
-    fun start(): Boolean {
+    override fun start(): Boolean {
         if (!BlePermissions.canScan(context)) {
             log.event("Scan needs permission", mapOf("permission" to BlePermissions.scanPermissionName()), error = true)
             return false
@@ -81,7 +81,7 @@ class BleScanner(
         return true
     }
 
-    fun stop() {
+    override fun stop() {
         stopJob?.cancel()
         stopJob = null
         if (!_scanning.value) return

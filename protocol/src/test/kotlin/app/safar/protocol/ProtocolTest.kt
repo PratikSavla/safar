@@ -68,7 +68,7 @@ class ProtocolTest {
 
     @Test
     fun `names are cleaned and cut to 19 characters`() {
-        assertEquals("Ravi Work", sanitizeName("Ravi \uD83D\uDE00 (Work)"))
+        assertEquals("Alex Work", sanitizeName("Alex \uD83D\uDE00 (Work)"))
         assertEquals("001234567890", sanitizeName("+00 12345 67890"))
         assertEquals("ABCDEFGHIJKLMNOPQRS", sanitizeName("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
         val frame = encodeCall("ABCDEFGHIJKLMNOPQRSTUVWXYZ", CallStatus.RINGING, MessageSource.PHONE, ChecksumMode.SUM)

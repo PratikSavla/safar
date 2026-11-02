@@ -68,7 +68,7 @@ class PlaceViewModelTest {
         vm.useLocation(12.5, 77.25, 8.4f)
         vm.setLabel("Home")
         assertEquals("", vm.state.value.draft?.label)
-        assertEquals("GPS position · ±8 m", vm.state.value.draft?.detail)
+        assertEquals("Your location · within 8 m", vm.state.value.draft?.detail)
     }
 
     @Test

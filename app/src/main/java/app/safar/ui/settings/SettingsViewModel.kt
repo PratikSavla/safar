@@ -78,7 +78,7 @@ class SettingsViewModel(
             settings = s,
             model = model,
             nameText = name,
-            nameHint = if (d.name != null && clusterName(name).isEmpty()) "The cluster needs at least one letter or digit" else null,
+            nameHint = if (d.name != null && clusterName(name).isEmpty()) "Use at least one letter or number" else null,
             tankText = tank,
             tankError = d.tank?.let { (parseTank(it, model?.tankLitres) as? TankInput.Invalid)?.reason },
             speedKmh = (d.speed ?: s.speedAlertKmh).coerceIn(range),

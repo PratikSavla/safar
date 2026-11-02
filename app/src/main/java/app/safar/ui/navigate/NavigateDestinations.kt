@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -28,9 +30,13 @@ import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.CardStyle
 import app.safar.ui.components.TicketShape
+import app.safar.ui.components.developerMode
 import app.safar.ui.components.liveAge
+import app.safar.ui.components.rememberNow
+import app.safar.ui.format.FreshnessText
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
+import java.time.ZoneId
 import java.util.Locale
 
 fun DestKind.icon(): ImageVector = when (this) {
@@ -75,11 +81,17 @@ private fun PickRow(d: Destination, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
+/** The parked spot carries its age: calm ("12 min ago") normally, to the second in Developer mode. */
 @Composable
 private fun detailText(d: Destination): String {
     val at = d.atMillis ?: return d.detail
-    return "${d.detail} · ${liveAge(at)}"
+    if (developerMode()) return "${d.detail} · ${liveAge(at)}"
+    val zone = remember { ZoneId.systemDefault() }
+    val now by rememberNow(MINUTE_MS)
+    return "${d.detail} · ${FreshnessText.calmAge(at, now, zone)}"
 }
+
+private const val MINUTE_MS = 60_000L
 
 @Composable
 private fun EditingRow(d: Destination, actions: NavigateActions) {

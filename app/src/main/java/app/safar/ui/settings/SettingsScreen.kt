@@ -13,6 +13,7 @@ import app.safar.data.ThemeMode
 import app.safar.ui.alerts.NotificationAccessRow
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasPage
+import app.safar.ui.components.DevOnly
 import app.safar.ui.components.LinkRow
 import app.safar.ui.components.ListRow
 import app.safar.ui.components.Masthead
@@ -37,14 +38,15 @@ class SettingsActions(
     val onSettings: (String, (Settings) -> Settings) -> Unit = { _, _ -> },
     val onTheme: (ThemeMode) -> Unit = {},
     val onAccess: () -> Unit = {},
+    val onBackup: () -> Unit = {},
     val onOpen: (Route) -> Unit = {},
     val onDeveloperMode: (Boolean) -> Unit = {},
     val onVersionTap: () -> Unit = {},
 )
 
 /**
- * Settings tab (ux settings.js). Every alert and feature is switchable; text fields lock while moving.
- * [bottomBar] is the shell's tab strip.
+ * Settings tab (ux settings.js). Every alert and feature is switchable; text fields lock while moving. The
+ * debug tools sit in a Developer section that only shows in Developer mode. [bottomBar] is the shell's tab strip.
  */
 @Composable
 fun SettingsScreen(navigator: Navigator, modifier: Modifier = Modifier, bottomBar: (@Composable () -> Unit)? = null) {
@@ -63,6 +65,7 @@ fun SettingsScreen(navigator: Navigator, modifier: Modifier = Modifier, bottomBa
             onSettings = vm::toggle,
             onTheme = vm::setTheme,
             onAccess = { SystemAccess.openNotificationAccess(context) },
+            onBackup = { if (!SystemAccess.openPhoneSettings(context)) shell.toast("Couldn’t open your phone’s settings") },
             onOpen = navigator::go,
             onDeveloperMode = { on ->
                 vm.setDeveloperMode(on)
@@ -89,44 +92,45 @@ internal fun SettingsContent(
         SectionHeader("Rider")
         RiderBlock(state, actions.onName)
         SectionHeader("Units")
-        ListRow("Kilometres", subtitle = "km and km/h, as the cluster shows them. Miles are not in version 1.", divider = false) {
+        ListRow("Kilometres", subtitle = "km and km/h, like your bike’s display. Miles are coming soon.", divider = false) {
             Stamp("km only", tone = StampTone.INK)
         }
         SectionHeader("Speed")
         SpeedBlock(state, actions.onSettings, actions.onSpeed)
         AlertSection(state.settings, actions.onSettings)
         RidingSection(state.settings, actions.onSettings)
-        SectionHeader("Fuel")
-        TankBlock(state, actions.onTank, actions.onTankReset)
-        CurrencyBlock(state, actions.onCurrency)
-        SwitchRow("Low-fuel reminder", state.settings.lowFuelAlert, { v -> actions.onSettings("low fuel") { it.copy(lowFuelAlert = v) } }, subtitle = "At 1 bar", divider = false)
+        FuelSection(state, actions)
         SectionHeader("Theme")
         SegmentedChoice(
             listOf(ThemeMode.SYSTEM to "System", ThemeMode.LIGHT to "Paper", ThemeMode.DARK to "Night map"),
             state.settings.theme,
             actions.onTheme,
         )
-        SectionHeader("Access")
+        SectionHeader("Phone access")
         NotificationAccessRow(access.notificationAccess, actions.onAccess, divider = false)
-        DiagnosticsSection(state.settings, actions)
+        SectionHeader("Your bike")
+        LinkRow("Bike information", AtlasIcons.bike, { actions.onOpen(Route.Bike) }, subtitle = "Model, serial number and software version", divider = false)
+        SectionHeader("Backup")
+        BackupBlock(actions.onBackup)
         SectionHeader("About")
         AboutCard(actions.onVersionTap)
         DeveloperModeRow(state.settings.developerMode, actions.onDeveloperMode)
+        DevOnly { DeveloperSection(state.settings, actions) }
     }
 }
 
 @Composable
 private fun AlertSection(s: Settings, onSettings: (String, (Settings) -> Settings) -> Unit) {
-    SectionHeader("Alerts to the cluster")
+    SectionHeader("Alerts on your bike")
     SwitchRow("Phone calls", s.alertCalls, { v -> onSettings("call alerts") { it.copy(alertCalls = v) } }, subtitle = "Caller name and missed calls")
     SwitchRow("WhatsApp calls", s.alertWhatsAppCalls, { v -> onSettings("WhatsApp call alerts") { it.copy(alertWhatsAppCalls = v) } }, subtitle = "Caller name")
     SwitchRow(
         "WhatsApp messages",
         s.alertWhatsAppMessages,
         { v -> onSettings("WhatsApp message alerts") { it.copy(alertWhatsAppMessages = v) } },
-        subtitle = "Sender name and count, never text",
+        subtitle = "Sender name and count, never the message",
     )
-    SwitchRow("SMS", false, {}, subtitle = "Not in version 1", enabled = false, divider = false)
+    SwitchRow("SMS", false, {}, subtitle = Phrases.COMING_SOON, enabled = false, divider = false)
 }
 
 @Composable
@@ -138,19 +142,34 @@ private fun RidingSection(s: Settings, onSettings: (String, (Settings) -> Settin
         "Service reminders",
         s.serviceReminders,
         { v -> onSettings("service reminders") { it.copy(serviceReminders = v) } },
-        subtitle = "When an item is due soon",
+        subtitle = "When a service item is due soon",
         divider = false,
     )
 }
 
 @Composable
-private fun DiagnosticsSection(s: Settings, actions: SettingsActions) {
-    SectionHeader("Diagnostics")
+private fun FuelSection(state: SettingsState, actions: SettingsActions) {
+    SectionHeader("Fuel")
+    TankBlock(state, actions.onTank, actions.onTankReset)
+    CurrencyBlock(state, actions.onCurrency)
+    SwitchRow(
+        "Low-fuel reminder",
+        state.settings.lowFuelAlert,
+        { v -> actions.onSettings("low fuel") { it.copy(lowFuelAlert = v) } },
+        subtitle = "When the fuel gauge drops to 1 bar",
+        divider = false,
+    )
+}
+
+/** Debug log, export privacy, and the debug screens. Developer mode only. */
+@Composable
+private fun DeveloperSection(s: Settings, actions: SettingsActions) {
+    SectionHeader("Developer")
     SwitchRow(
         "Debug log",
         s.debugLog,
         { v -> actions.onSettings("debug log") { it.copy(debugLog = v) } },
-        subtitle = "Record every frame. Off by default; the last 500 entries are always kept",
+        subtitle = "Record every frame to and from the bike. The last 500 entries are always kept in memory",
     )
     SwitchRow(
         "Hide names in exports",
@@ -159,6 +178,5 @@ private fun DiagnosticsSection(s: Settings, actions: SettingsActions) {
         subtitle = "Default for each export; you can turn it off once",
     )
     LinkRow("Open debug log", AtlasIcons.log, { actions.onOpen(Route.Log) }, subtitle = "Filters, frame detail, export")
-    LinkRow("Bike information", AtlasIcons.bike, { actions.onOpen(Route.Bike) }, subtitle = "Model, serial, firmware, BLE")
     LinkRow("Icon test", AtlasIcons.route, { actions.onOpen(Route.IconTest) }, subtitle = "Send each turn icon 1–45 to the cluster", divider = false)
 }

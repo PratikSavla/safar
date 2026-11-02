@@ -37,10 +37,12 @@ class AlertsTest {
             ZoneOffset.UTC,
         )
         assertEquals(listOf(61_000L, 30_000L, 1_000L), rows.map { it.atMillis })
-        assertEquals("WhatsApp message · count + name → cluster · ×2", rows[0].what)
+        assertEquals("WhatsApp message · 2 waiting", rows[0].what)
         assertEquals(FeedIcon.WHATSAPP, rows[0].icon)
-        assertEquals("Phone call · ringing → cluster", rows[1].what)
-        assertEquals("00:00:01", rows[2].time)
+        assertEquals("Phone call · ringing", rows[1].what)
+        assertEquals("Missed call · 3 waiting", rows[2].what)
+        assertEquals("00:00", rows[2].time)
+        assertEquals("00:00:01", rows[2].exactTime)
         assertTrue(rows[2].alarm)
         assertFalse(rows[0].alarm)
     }
@@ -48,10 +50,12 @@ class AlertsTest {
     @Test
     fun callCardSaysWhetherTheNameWasSent() {
         val wa = ActiveCall("Alex", AlertSource.WHATSAPP, answered = false, sinceMillis = 0)
-        assertEquals("WhatsApp call · ringing" to "Ringing · name sent to the cluster", callCardText(wa, Settings()))
-        assertEquals("Ringing · cluster alert is off for this source", callCardText(wa, Settings(alertWhatsAppCalls = false)).second)
-        val answered = wa.copy(source = AlertSource.PHONE, answered = true)
-        assertEquals("Phone call · answered" to "Answered · the cluster shows the call as live", callCardText(answered, Settings()))
+        assertEquals("WhatsApp call · ringing" to "Ringing · name on your bike", callCardText(wa, Settings()))
+        assertEquals("Ringing · WhatsApp call alerts are off", callCardText(wa, Settings(alertWhatsAppCalls = false)).second)
+        val phone = wa.copy(source = AlertSource.PHONE)
+        assertEquals("Ringing · phone call alerts are off", callCardText(phone, Settings(alertCalls = false)).second)
+        val answered = phone.copy(answered = true)
+        assertEquals("Phone call · answered" to "Answered · your bike shows the call", callCardText(answered, Settings()))
     }
 
     @Test

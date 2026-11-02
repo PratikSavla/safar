@@ -58,7 +58,7 @@ class PlaceViewModel(
             load(placeId)
         } else if (sharedText != null) {
             val draft = draftFromShare(sharedText)
-            if (draft == null) events.trySend(PlaceEvent.Toast("Nothing usable in the shared text"))
+            if (draft == null) events.trySend(PlaceEvent.Toast("Couldn’t find a place in what was shared"))
             form.update { it.copy(draft = draft) }
         }
     }
@@ -73,7 +73,7 @@ class PlaceViewModel(
             null
         }
         if (place == null) {
-            events.trySend(PlaceEvent.Done("That place is gone"))
+            events.trySend(PlaceEvent.Done("That place was deleted"))
         } else {
             form.update { it.copy(loading = false, draft = draftFromPlace(place)) }
         }
@@ -117,13 +117,13 @@ class PlaceViewModel(
                     events.send(PlaceEvent.Done("Place updated"))
                 } else {
                     places.add(draft.toPlace(0, 0))
-                    events.send(PlaceEvent.Done("${draft.label.trim()} saved · in Route"))
+                    events.send(PlaceEvent.Done("${draft.label.trim()} saved to Route"))
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Could not save place ${placeId ?: "new"}", e)
-                events.send(PlaceEvent.Toast("Could not save the place"))
+                events.send(PlaceEvent.Toast("Couldn’t save the place. Try again."))
             }
         }
     }
@@ -143,7 +143,7 @@ class PlaceViewModel(
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Could not delete place $id", e)
-                events.send(PlaceEvent.Toast("Could not delete the place"))
+                events.send(PlaceEvent.Toast("Couldn’t delete the place. Try again."))
             }
         }
     }

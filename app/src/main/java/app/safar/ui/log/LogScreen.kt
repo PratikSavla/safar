@@ -52,7 +52,7 @@ class LogActions(
     val onCloseExport: () -> Unit = {},
 )
 
-/** Debug log (ux log.js): the live wire with filters, frame detail with marked bytes, session, export. */
+/** Debug log (ux log.js), Developer mode: the live wire with filters, frame detail with marked bytes, session, export. */
 @Composable
 fun LogScreen(navigator: Navigator, modifier: Modifier = Modifier) {
     val vm = viewModel { LogViewModel(AppContainer.log, AppContainer.settings) }
@@ -101,7 +101,7 @@ internal fun LogContent(state: LogScreenState, actions: LogActions, toast: Atlas
         item(key = "head", contentType = "head") { LogHead(state, actions) }
         if (state.rows.isEmpty()) {
             item(key = "empty", contentType = "empty") {
-                EmptyState("Nothing on the wire.", Modifier.padding(top = 8.dp), message = "Connect the bike, or loosen the filters.")
+                EmptyState("Nothing logged yet.", Modifier.padding(top = 8.dp), message = "Connect the bike, or loosen the filters.")
             }
         } else {
             items(state.rows, key = { it.id }, contentType = { "row" }) { LogRowItem(it, actions.onOpen) }
@@ -112,7 +112,7 @@ internal fun LogContent(state: LogScreenState, actions: LogActions, toast: Atlas
 @Composable
 private fun LogHead(state: LogScreenState, actions: LogActions) {
     Column {
-        BackTopBar("Debug log · suzuki-ble-log/1", "The", actions.onBack, titleEm = " wire.")
+        BackTopBar("Developer · debug log", "Debug", actions.onBack, titleEm = " log.")
         if (!state.debugLogOn) LogOffRow(actions.onDebugLog)
         SessionBar(state.sessionActive, actions.onSession, actions.onExport)
         LogFilters(state.filter, actions.onDir, actions.onType, actions.onErrors)

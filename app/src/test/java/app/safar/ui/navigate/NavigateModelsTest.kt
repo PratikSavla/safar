@@ -26,6 +26,7 @@ class NavigateModelsTest {
         assertEquals("NH 48", list[0].detail) // blank detail falls back to the query
         assertEquals("address", list[0].via)
         assertEquals("12.500000,77.250000", list[2].query)
+        assertEquals("Saved spot", list[2].detail) // no raw coordinates in the row
         assertEquals("your parked bike", list[2].startLabel)
         assertEquals(1_000L, list[2].atMillis)
     }
@@ -74,6 +75,8 @@ class NavigateModelsTest {
     fun recalculatingAndArrivedAreLabelled() {
         assertEquals("Recalculating", NavStatusCode.RECALCULATING.label())
         assertEquals("No internet", NavStatusCode.NO_INTERNET.label())
+        assertEquals("On route", NavStatusCode.NORMAL.label())
+        assertEquals("You have arrived", NavStatusCode.ARRIVED.label())
         assertEquals(StatusTone.FINE, NavStatusCode.ARRIVED.tone())
         assertEquals(StatusTone.INFO, NavStatusCode.VIA_POINT.tone())
     }

@@ -93,7 +93,7 @@ class NavigateViewModel(
             events.trySend("Opening Google Maps…")
         } catch (e: RuntimeException) {
             Log.e(TAG, "Could not open Google Maps for ${dest.key}", e)
-            events.trySend("Could not open Google Maps")
+            events.trySend("Couldn’t open Google Maps")
         }
     }
 
@@ -109,7 +109,7 @@ class NavigateViewModel(
             ui.update { it.copy(awaitingMaps = true, editing = false) }
             events.trySend("Opening Google Maps search…")
         } else {
-            events.trySend("Google Maps is not installed")
+            events.trySend("Google Maps isn’t installed")
         }
     }
 
@@ -123,7 +123,7 @@ class NavigateViewModel(
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Could not move place $placeId by $direction", e)
-                events.trySend("Could not reorder the list")
+                events.trySend("Couldn’t move that place. Try again.")
             }
         }
     }

@@ -20,6 +20,7 @@ import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.AtlasTextField
 import app.safar.ui.components.CardStyle
+import app.safar.ui.components.DevOnly
 import app.safar.ui.components.Gap
 import app.safar.ui.components.IconBox
 import app.safar.ui.components.Kicker
@@ -37,17 +38,17 @@ import app.safar.ui.theme.Atlas
 /** The three ways a place comes in (`.src-opt`). Typing is off while moving. */
 @Composable
 internal fun SourceChooser(lockReason: String?, actions: PlaceActions) {
-    Lede("Safar does not search places itself; Google Maps does. Bring a place in one of three ways.")
+    Lede("Google Maps does the searching. Bring a place to Safar in one of three ways.")
     Gap(18.dp)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SourceOption(AtlasIcons.maps, "Share from Google Maps", "in Maps: open a place → Share → Safar", actions.onMaps) {
             Stamp("best", tone = StampTone.MOSS)
         }
-        SourceOption(AtlasIcons.pin, "Where I am now", "phone GPS · last known position", actions.onHere)
+        SourceOption(AtlasIcons.pin, "Where I am now", "your phone’s last known location", actions.onHere)
         SourceOption(
             AtlasIcons.edit,
             "Type an address",
-            if (lockReason != null) "stop the bike to type" else "Maps finds it when you navigate",
+            if (lockReason != null) "stop the bike to type" else "Google Maps finds it when you start",
             actions.onTyped,
             enabled = lockReason == null,
         )
@@ -76,7 +77,7 @@ private fun SourceOption(icon: ImageVector, title: String, sub: String, onClick:
     }
 }
 
-/** Source card or address field, name, mark, the Maps query and Save (`.placepg`). */
+/** Source card or address field, name, mark and Save (`.placepg`); the Maps query in Developer mode. */
 @Composable
 internal fun PlaceForm(draft: PlaceDraft, state: PlaceState, actions: PlaceActions) {
     val lock = state.lockReason
@@ -88,8 +89,10 @@ internal fun PlaceForm(draft: PlaceDraft, state: PlaceState, actions: PlaceActio
     AtlasTextField(draft.label, actions.onLabel, "Name in your list", lockedReason = lock, placeholder = "e.g. Home", maxLength = PLACE_LABEL_MAX)
     Kicker("Mark", Modifier.padding(top = 18.dp, bottom = 8.dp))
     SegmentedChoice(PlaceKindLabels, draft.kind, actions.onKind)
-    val query = if (draft.query.isBlank()) "…" else draft.query
-    BasicText("Maps will get: ${readableNavUri(query)}", Modifier.padding(top = 16.dp), style = Atlas.type.src.copy(color = Atlas.colors.ink3))
+    DevOnly {
+        val query = if (draft.query.isBlank()) "…" else draft.query
+        BasicText("↳ Maps gets ${readableNavUri(query)}", Modifier.padding(top = 16.dp), style = Atlas.type.src.copy(color = Atlas.colors.ink3))
+    }
     Gap(14.dp)
     PrimaryButton(
         if (state.editing) "Save changes" else "Save to destinations",
@@ -128,7 +131,9 @@ private fun SourceCard(draft: PlaceDraft, canChange: Boolean, onChange: () -> Un
         )
         val link = draft.link
         if (link != null) {
-            BasicText(link, Modifier.padding(top = 4.dp), style = Atlas.type.src.copy(color = Atlas.colors.ink3), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            DevOnly {
+                BasicText(link, Modifier.padding(top = 4.dp), style = Atlas.type.src.copy(color = Atlas.colors.ink3), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
         }
         if (canChange) TextAction("Change", onChange, Modifier.padding(top = 4.dp))
     }

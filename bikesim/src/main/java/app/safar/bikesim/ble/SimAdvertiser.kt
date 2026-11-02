@@ -9,6 +9,7 @@ import android.content.Context
 import android.os.ParcelUuid
 import android.util.Log
 import app.safar.protocol.GattUuids
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.delay
 
 /**
@@ -20,6 +21,9 @@ import kotlinx.coroutines.delay
 @SuppressLint("MissingPermission") // SimPermissions.granted() is checked in start() and every call is guarded.
 class SimAdvertiser(private val context: Context, private val events: PeripheralEvents) {
     @Volatile private var callback: AdvertiseCallback? = null
+
+    /** Bumped by [stop]; a [start] that sees it change while it waits for the rename gives up. */
+    private val stops = AtomicInteger()
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     /** The adapter's own name while it carries the simulated one. Written with commit() to survive a kill. */
@@ -34,10 +38,12 @@ class SimAdvertiser(private val context: Context, private val events: Peripheral
     /** Renames the adapter to [name] and starts advertising. The result arrives in [PeripheralEvents.onAdvertising]. */
     suspend fun start(name: String): Boolean {
         if (callback != null) return true
+        val generation = stops.get()
         if (!SimPermissions.granted(context)) return fail("Bluetooth permission missing")
         val adapter = bluetoothAdapter(context) ?: return fail("no Bluetooth on this device")
         if (!adapter.isEnabled) return fail("Bluetooth is off")
-        if (!rename(adapter, name)) return false
+        if (!rename(adapter, name, generation)) return false
+        if (stops.get() != generation) return stoppedWhileStarting()
         val advertiser = guard("bluetoothLeAdvertiser") { adapter.bluetoothLeAdvertiser }
             ?: return fail("this device cannot advertise (no BLE peripheral mode)")
         val cb = advertiseCallback()
@@ -53,6 +59,7 @@ class SimAdvertiser(private val context: Context, private val events: Peripheral
 
     /** Stops advertising and gives the adapter its own name back. */
     fun stop() {
+        stops.incrementAndGet()
         val cb = callback ?: return restoreName()
         callback = null
         val adapter = bluetoothAdapter(context)
@@ -74,12 +81,13 @@ class SimAdvertiser(private val context: Context, private val events: Peripheral
         start(name)
     }
 
-    private suspend fun rename(adapter: BluetoothAdapter, name: String): Boolean {
+    private suspend fun rename(adapter: BluetoothAdapter, name: String, generation: Int): Boolean {
         val current = guard("getName") { adapter.name } ?: return fail("the adapter name could not be read")
         if (current == name) return true
         if (originalName == null) originalName = current
         if (guard("setName") { adapter.setName(name) } != true) return fail("the adapter name could not be set to $name")
         repeat(RENAME_POLLS) {
+            if (stops.get() != generation) return stoppedWhileStarting()
             if (guard("getName") { adapter.name } == name) {
                 events.onEvent("Bluetooth name set to $name")
                 return true
@@ -132,6 +140,13 @@ class SimAdvertiser(private val context: Context, private val events: Peripheral
             events.onAdvertising(false)
             restoreName()
         }
+    }
+
+    /** [stop] ran while [start] waited: stop already restored the name, so put back what the rename changed since. */
+    private fun stoppedWhileStarting(): Boolean {
+        Log.i(TAG, "Advertising start abandoned: the simulator was switched off meanwhile")
+        restoreName()
+        return false
     }
 
     private fun fail(reason: String): Boolean {

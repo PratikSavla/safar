@@ -42,6 +42,9 @@ class SimViewModel(app: Application) : AndroidViewModel(app), PeripheralEvents {
     private val advertiser = SimAdvertiser(app, this)
     private val nextId = AtomicLong()
     private var clusterJob: Job? = null
+
+    /** The start or restart of advertising, cancelled when the simulator is switched off. */
+    private var advertiseJob: Job? = null
     private var rideJob: Job? = null
 
     fun onAccess(permissionsOk: Boolean, bluetoothOn: Boolean) {
@@ -67,13 +70,15 @@ class SimViewModel(app: Application) : AndroidViewModel(app), PeripheralEvents {
         val s = _state.value
         if (s.wanted || !s.permissionsOk || !s.bluetoothOn) return
         _state.update { it.copy(wanted = true) }
-        viewModelScope.launch {
-            if (!server.open() || !advertiser.start(_state.value.name)) switchOff()
+        advertiseJob = viewModelScope.launch {
+            if ((!server.open() || !advertiser.start(_state.value.name)) && _state.value.wanted) switchOff()
         }
     }
 
     private fun switchOff() {
         _state.update { it.copy(wanted = false, advertising = false, central = null, mtu = null, notifyOn = false) }
+        advertiseJob?.cancel()
+        advertiseJob = null
         advertiser.stop()
         server.close()
         syncClusterTimer()
@@ -162,7 +167,7 @@ class SimViewModel(app: Application) : AndroidViewModel(app), PeripheralEvents {
         if (address != null) {
             onEvent("Central $address connected")
         } else if (_state.value.wanted) {
-            viewModelScope.launch { advertiser.restart(_state.value.name) }
+            advertiseJob = viewModelScope.launch { advertiser.restart(_state.value.name) }
         }
     }
 

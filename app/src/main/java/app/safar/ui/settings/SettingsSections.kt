@@ -93,6 +93,21 @@ internal fun TankBlock(state: SettingsState, onTank: (String) -> Unit, onReset: 
     Note("Used with your fuel-ups to work out litres left and range.", Modifier.padding(top = 6.dp), color = Atlas.colors.ink3)
 }
 
+/** Currency symbol shown before fuel prices and costs. Locked while moving, like the other text fields. */
+@Composable
+internal fun CurrencyBlock(state: SettingsState, onCurrency: (String) -> Unit) {
+    AtlasTextField(
+        state.currencyText,
+        onCurrency,
+        "Currency symbol · fuel costs",
+        Modifier.padding(top = 12.dp),
+        lockedReason = state.lockReason?.let { "Locked while moving. Stop to change the currency." },
+        placeholder = "₹",
+        maxLength = CURRENCY_MAX,
+    )
+    state.currencyHint?.let { LockLine(it) }
+}
+
 /** Version, and the promises: open source, no account, no analytics (`.about`). */
 @Composable
 internal fun AboutCard() {

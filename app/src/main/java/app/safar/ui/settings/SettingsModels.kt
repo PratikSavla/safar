@@ -16,6 +16,12 @@ const val TANK_MAX_LITRES = 40.0
 /** Longest name the field takes; the cluster shows the first [MAX_NAME_LENGTH] cleaned characters. */
 const val RIDER_NAME_FIELD_MAX = 40
 
+/** Longest currency symbol the field takes ("₹", "$", "Rs."). */
+const val CURRENCY_MAX = 3
+
+/** The trimmed symbol, or null when it is blank or longer than [CURRENCY_MAX] characters. */
+fun cleanCurrency(raw: String): String? = raw.trim().takeIf { it.isNotEmpty() && it.codePointCount(0, it.length) <= CURRENCY_MAX }
+
 /** How the cluster shows the rider name: upper case, printable ASCII, max 19 characters (docs 6.2). */
 fun clusterName(raw: String): String = sanitizeName(raw.uppercase(Locale.ROOT))
 

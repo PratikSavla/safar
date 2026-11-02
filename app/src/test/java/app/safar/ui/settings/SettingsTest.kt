@@ -128,4 +128,22 @@ class SettingsTest {
         assertEquals(90, store.settings.value.speedAlertKmh)
         assertEquals(1, store.writes)
     }
+
+    @Test
+    fun currencySavesTrimmedAndLocksWhileMoving() = runTest {
+        backgroundScope.launch(main.dispatcher) { vm.state.collect {} }
+        assertEquals("₹", vm.state.value.currencyText)
+        vm.setCurrency(" $ ")
+        advanceUntilIdle()
+        assertEquals("$", store.settings.value.currencySymbol)
+        vm.setCurrency("  ")
+        advanceUntilIdle()
+        assertEquals("$", store.settings.value.currencySymbol)
+        assertEquals("Enter a symbol, like ₹ or $", vm.state.value.currencyHint)
+        assertNull(cleanCurrency("EURO"))
+        ride.state.value = RideState(speedKmh = 30f, moving = true)
+        vm.setCurrency("€")
+        advanceUntilIdle()
+        assertEquals("$", store.settings.value.currencySymbol)
+    }
 }

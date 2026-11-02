@@ -29,6 +29,7 @@ class SettingsActions(
     val onName: (String) -> Unit = {},
     val onTank: (String) -> Unit = {},
     val onTankReset: () -> Unit = {},
+    val onCurrency: (String) -> Unit = {},
     val onSpeed: (Int) -> Unit = {},
     /** A plain switch: a name for the log and the change. */
     val onSettings: (String, (Settings) -> Settings) -> Unit = { _, _ -> },
@@ -52,6 +53,7 @@ fun SettingsScreen(navigator: Navigator, modifier: Modifier = Modifier, bottomBa
             onName = vm::setRiderName,
             onTank = vm::setTank,
             onTankReset = vm::resetTank,
+            onCurrency = vm::setCurrency,
             onSpeed = vm::setSpeedAlert,
             onSettings = vm::toggle,
             onTheme = vm::setTheme,
@@ -84,6 +86,7 @@ internal fun SettingsContent(
         RidingSection(state.settings, actions.onSettings)
         SectionHeader("Fuel")
         TankBlock(state, actions.onTank, actions.onTankReset)
+        CurrencyBlock(state, actions.onCurrency)
         SwitchRow("Low-fuel reminder", state.settings.lowFuelAlert, { v -> actions.onSettings("low fuel") { it.copy(lowFuelAlert = v) } }, subtitle = "At 1 bar", divider = false)
         SectionHeader("Theme")
         SegmentedChoice(

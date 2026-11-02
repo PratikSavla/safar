@@ -32,7 +32,7 @@ private const val SLIDER_DEBOUNCE_MS = 300L
 private class PendingSave(val job: Job, val change: (Settings) -> Settings)
 
 /** Unsaved field text. Null = show the stored value. */
-private data class Drafts(val name: String? = null, val tank: String? = null, val speed: Int? = null)
+private data class Drafts(val name: String? = null, val tank: String? = null, val speed: Int? = null, val currency: String? = null)
 
 data class SettingsState(
     val settings: Settings = Settings(),
@@ -43,6 +43,8 @@ data class SettingsState(
     val tankError: String? = null,
     val speedKmh: Int = 100,
     val alertRange: IntRange = DEFAULT_ALERT_RANGE,
+    val currencyText: String = "",
+    val currencyHint: String? = null,
     val lockReason: String? = null,
 )
 
@@ -78,6 +80,8 @@ class SettingsViewModel(
             tankError = d.tank?.let { (parseTank(it, model?.tankLitres) as? TankInput.Invalid)?.reason },
             speedKmh = (d.speed ?: s.speedAlertKmh).coerceIn(range),
             alertRange = range,
+            currencyText = d.currency ?: s.currencySymbol,
+            currencyHint = d.currency?.takeIf { cleanCurrency(it) == null }?.let { "Enter a symbol, like ₹ or $" },
             lockReason = lock,
         )
     }
@@ -101,6 +105,13 @@ class SettingsViewModel(
         pending.remove("tank")?.job?.cancel()
         drafts.update { it.copy(tank = null) }
         write("tank size") { it.copy(tankLitres = null) }
+    }
+
+    fun setCurrency(text: String) {
+        if (state.value.lockReason != null) return
+        drafts.update { it.copy(currency = text) }
+        val symbol = cleanCurrency(text) ?: return
+        debounce("currency", TYPING_DEBOUNCE_MS) { it.copy(currencySymbol = symbol) }
     }
 
     fun setSpeedAlert(kmh: Int) {

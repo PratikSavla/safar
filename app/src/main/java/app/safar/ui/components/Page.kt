@@ -71,13 +71,20 @@ fun AtlasPage(
             content()
             BottomClearance(tabs = bottomBar != null)
         }
-        Spacer(
-            Modifier.fillMaxWidth().height(statusTop + 4.dp)
-                .background(Brush.verticalGradient(0.55f to c.paper, 1f to c.paper.copy(alpha = 0f))),
-        )
+        StatusScrim(statusTop)
         if (bottomBar != null) Box(Modifier.align(Alignment.BottomCenter)) { bottomBar() }
         overlay()
     }
+}
+
+/** Paper fading out under the status bar, so content scrolls away beneath it. */
+@Composable
+internal fun StatusScrim(statusTop: Dp) {
+    val c = Atlas.colors
+    Spacer(
+        Modifier.fillMaxWidth().height(statusTop + 4.dp)
+            .background(Brush.verticalGradient(0.55f to c.paper, 1f to c.paper.copy(alpha = 0f))),
+    )
 }
 
 /**
@@ -85,7 +92,7 @@ fun AtlasPage(
  * cleared by the page's imePadding, which consumes the nav-bar inset while the keyboard is open.
  */
 @Composable
-private fun BottomClearance(tabs: Boolean) {
+internal fun BottomClearance(tabs: Boolean) {
     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     Spacer(Modifier.height(if (tabs) 104.dp else 40.dp))
 }

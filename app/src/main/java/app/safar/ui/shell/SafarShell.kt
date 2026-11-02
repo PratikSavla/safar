@@ -15,7 +15,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -27,11 +26,20 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import app.safar.ui.components.AtlasToastHost
+import app.safar.ui.components.ProvideNow
 import app.safar.ui.components.TicketStubTabs
 import app.safar.ui.components.rememberToastState
 import app.safar.ui.components.safarTabs
@@ -64,18 +72,28 @@ fun SafarShell(shell: ShellViewModel) {
         }
         KeepScreenOn(chrome.keepScreenOn)
         val ui = remember(shell, autoRide) { shellUi(shell, autoRide) }
+        // One clock for every age text in the app (components/Now.kt).
         CompositionLocalProvider(LocalShellUi provides ui) {
-            Box(Modifier.fillMaxSize().background(Atlas.colors.paper)) {
-                BackHandler(enabled = stack.canGoBack, onBack = shell::back)
-                val callSpace by animateDpAsState(if (chrome.call != null) TelegramSpace else 0.dp, tween(400, easing = PageEase), label = "callSpace")
-                if (stack.top != null) PageHost(stack, shell, Modifier.padding(top = callSpace))
-                TabsBar(stack.top?.route, chrome) { shell.go(it) }
-                CallTelegram(chrome.call, onOpen = { shell.go(Route.Alerts) }, modifier = Modifier.align(Alignment.TopCenter))
-                RideFlash(flash)
-                AtlasToastHost(toast, Modifier.align(Alignment.BottomCenter), bottomPadding = if (showsTabs(stack.top?.route)) 120.dp else 56.dp)
+            ProvideNow {
+                Box(Modifier.fillMaxSize().background(Atlas.colors.paper)) {
+                    BackHandler(enabled = stack.canGoBack, onBack = shell::back)
+                    val callSpace = animateDpAsState(if (chrome.call != null) TelegramSpace else 0.dp, tween(400, easing = PageEase), label = "callSpace")
+                    // Read in the layout phase: the telegram's slide moves the page without recomposing the shell.
+                    if (stack.top != null) PageHost(stack, shell, Modifier.layout { m, c -> offsetBelow(m, c, callSpace.value.roundToPx()) })
+                    TabsBar(stack.top?.route, chrome) { shell.go(it) }
+                    CallTelegram(chrome.call, onOpen = { shell.go(Route.Alerts) }, modifier = Modifier.align(Alignment.TopCenter))
+                    RideFlash(flash)
+                    AtlasToastHost(toast, Modifier.align(Alignment.BottomCenter), bottomPadding = if (showsTabs(stack.top?.route)) 120.dp else 56.dp)
+                }
             }
         }
     }
+}
+
+/** Like padding(top = [top] px), but [top] is read while measuring: an animated value relayouts, never recomposes. */
+private fun MeasureScope.offsetBelow(measurable: Measurable, constraints: Constraints, top: Int): MeasureResult {
+    val placeable = measurable.measure(constraints.offset(vertical = -top))
+    return layout(constraints.constrainWidth(placeable.width), constraints.constrainHeight(placeable.height + top)) { placeable.place(0, top) }
 }
 
 private fun shellUi(shell: ShellViewModel, auto: Boolean): ShellUi = object : ShellUi {

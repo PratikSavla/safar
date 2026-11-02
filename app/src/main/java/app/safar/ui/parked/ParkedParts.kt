@@ -23,25 +23,26 @@ import app.safar.ui.components.Note
 import app.safar.ui.components.SourceLine
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.dashedOutline
-import app.safar.ui.components.rememberNow
-import app.safar.ui.format.Formatters
+import app.safar.ui.components.liveAge
 import app.safar.ui.theme.Atlas
 import kotlin.math.min
 import kotlin.math.roundToInt
 
 private const val ACCURACY_FULL_M = 25f
 
+/** "2 h ago · accuracy ±8 m": its own scope, so a clock tick recomposes this line only. */
+@Composable
+private fun ParkedAge(spot: ParkedSpot) {
+    BasicText("${liveAge(spot.atMillis)} · accuracy ±${spot.accuracyM.roundToInt()} m", style = Atlas.type.src.copy(color = Atlas.colors.ink3))
+}
+
 /** Stamp, place and "2 h ago · accuracy ±8 m" (`.park-place`). */
 @Composable
 internal fun PlaceHeader(spot: ParkedSpot, place: String) {
-    val now = rememberNow()
     Column(Modifier.padding(bottom = 6.dp)) {
         Stamp("parked", tilted = false)
         DisplayTitle(place, null, Atlas.type.displaySmall.copy(fontSize = Atlas.type.displaySmall.fontSize * 1.19f), Modifier.padding(top = 8.dp, bottom = 4.dp))
-        BasicText(
-            "${Formatters.age(spot.atMillis, now.value)} · accuracy ±${spot.accuracyM.roundToInt()} m",
-            style = Atlas.type.src.copy(color = Atlas.colors.ink3),
-        )
+        ParkedAge(spot)
     }
 }
 

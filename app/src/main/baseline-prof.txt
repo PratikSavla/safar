@@ -1,0 +1,18 @@
+# Hand-written Baseline Profile rules for Safar's own code, used until a generated profile exists
+# (./gradlew :app:generateBaselineProfile on a device writes src/main/generated/baselineProfiles).
+# TODO: delete this file once the generated profile is committed. mergeIntoMain adds generated rules next
+# to these instead of replacing them, so these blanket rules would keep marking every method hot.
+# Package-wide rules carry no S flag: only MainActivity and SafarApp are marked as startup code here.
+# Compose and AndroidX ship their own rules in their AARs; AGP merges everything into the release APK and
+# profileinstaller writes it on first launch, so sideloaded installs start AOT-compiled too.
+#
+# Screens, components and their state mapping: everything that runs while a page scrolls.
+HPLapp/safar/ui/**;->**(**)**
+Lapp/safar/ui/**;
+# Models and contracts the screens read on every frame of state.
+HPLapp/safar/core/**;->**(**)**
+Lapp/safar/core/**;
+HPLapp/safar/data/**;->**(**)**
+Lapp/safar/data/**;
+HSPLapp/safar/MainActivity;->**(**)**
+HSPLapp/safar/SafarApp;->**(**)**

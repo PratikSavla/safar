@@ -38,24 +38,26 @@ import app.safar.ui.components.LedgerValue
 import app.safar.ui.components.SourceLine
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.StampTone
-import app.safar.ui.components.rememberNow
+import app.safar.ui.components.liveAge
 import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 
-/** The ledger (home.js `dashboard`): odometer across, then a grid of bike, phone and calculated values. */
+/**
+ * The ledger (home.js `dashboard`): odometer across, then a grid of bike, phone and calculated values.
+ * Ages are read cell by cell and [speed] only in its own cell, so a clock tick or a GPS fix recomposes the
+ * texts that change, never the whole grid.
+ */
 @Composable
-fun Ledger(ledger: LedgerUi?, speed: SpeedUi) {
+fun Ledger(ledger: LedgerUi?, speed: () -> SpeedUi) {
     if (ledger == null) {
         EmptyState("A blank page, for now.", message = "Odometer, trips and fuel appear here a few seconds after the bike connects.")
         return
     }
-    val now = rememberNow()
-    val age = Formatters.age(ledger.readingAt, now.value)
     Column(Modifier.fillMaxWidth()) {
-        OdometerRow(ledger, age)
+        OdometerRow(ledger)
         val columns = if (LocalDensity.current.fontScale > 1.3f) 2 else 3
-        cells(ledger, speed, age, now.value).chunked(columns).forEach { row ->
+        cells(ledger, speed).chunked(columns).forEach { row ->
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
                 row.forEachIndexed { i, cell ->
                     if (i > 0) DashedDivider()
@@ -70,9 +72,10 @@ fun Ledger(ledger: LedgerUi?, speed: SpeedUi) {
 }
 
 @Composable
-private fun OdometerRow(l: LedgerUi, age: String) {
+private fun OdometerRow(l: LedgerUi) {
     val c = Atlas.colors
     val style = Atlas.type.numberLarge
+    val age = liveAge(l.readingAt)
     Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(Modifier.weight(1f)) {
             Kicker("Odometer")
@@ -91,25 +94,36 @@ private fun OdometerRow(l: LedgerUi, age: String) {
     Hairline(thickness = 1.5.dp, color = c.ink)
 }
 
-private fun cells(l: LedgerUi, s: SpeedUi, age: String, now: Long): List<@Composable () -> Unit> = listOf(
-    { LedgerValue(Formatters.km1(l.tripAKm), l.bikeSource, unit = "km", label = "Trip A", age = age, size = LedgerSize.SMALL, stale = !l.live) },
-    { LedgerValue(Formatters.km1(l.tripBKm), l.bikeSource, unit = "km", label = "Trip B", age = age, size = LedgerSize.SMALL, stale = !l.live) },
-    {
-        val speedAge = when {
-            s.live -> "live"
-            s.fixAt != null -> Formatters.age(s.fixAt, now)
-            else -> "no fix"
-        }
-        LedgerValue(s.kmh?.toString() ?: "—", "phone GPS", unit = "km/h", label = "Speed", age = speedAge, size = LedgerSize.SMALL)
-    },
-    { FuelCell(l, age) },
+private fun cells(l: LedgerUi, speed: () -> SpeedUi): List<@Composable () -> Unit> = listOf(
+    { TripCell("Trip A", l.tripAKm, l) },
+    { TripCell("Trip B", l.tripBKm, l) },
+    { SpeedCell(speed) },
+    { FuelCell(l) },
     { LedgerValue(l.rangeText, l.rangeSource.replace("calculated", "calc"), unit = "km", label = "Range", size = LedgerSize.SMALL) },
-    { GearCell(l, age) },
+    { GearCell(l) },
 )
 
 @Composable
-private fun FuelCell(l: LedgerUi, age: String) {
+private fun TripCell(label: String, km: Double, l: LedgerUi) {
+    LedgerValue(Formatters.km1(km), l.bikeSource, unit = "km", label = label, age = liveAge(l.readingAt), size = LedgerSize.SMALL, stale = !l.live)
+}
+
+/** Phone GPS speed: the only cell that reads the 1 Hz fix. */
+@Composable
+private fun SpeedCell(speed: () -> SpeedUi) {
+    val s = speed()
+    val speedAge = when {
+        s.live -> "live"
+        s.fixAt != null -> liveAge(s.fixAt)
+        else -> "no fix"
+    }
+    LedgerValue(s.kmh?.toString() ?: "—", "phone GPS", unit = "km/h", label = "Speed", age = speedAge, size = LedgerSize.SMALL)
+}
+
+@Composable
+private fun FuelCell(l: LedgerUi) {
     val c = Atlas.colors
+    val age = liveAge(l.readingAt)
     val low = (l.fuelBars ?: Int.MAX_VALUE) <= 1
     val spoken = if (l.fuelBars == null) "Fuel waiting for the bike" else "Fuel ${l.fuelBars} of ${l.fuelMax} bars, from ${l.bikeSource}, $age"
     Column(Modifier.clearAndSetSemantics { contentDescription = spoken }) {
@@ -130,7 +144,8 @@ private fun FuelCell(l: LedgerUi, age: String) {
 }
 
 @Composable
-private fun GearCell(l: LedgerUi, age: String) {
+private fun GearCell(l: LedgerUi) {
+    val age = liveAge(l.readingAt)
     Column(Modifier.clearAndSetSemantics { contentDescription = "Gear ${l.gear}, probable, from ${l.bikeSource}, $age" }) {
         Kicker("Gear")
         Row(Modifier.padding(top = 4.dp, bottom = 2.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {

@@ -72,7 +72,8 @@ class HomeStateTest {
 
     @Test
     fun speedIsLiveOnlyWhileMoving() {
-        assertEquals(SpeedUi(42, true, 9L), speedUi(RideState(speedKmh = 41.6f, moving = true, lastFixAtMillis = 9)))
+        assertEquals(SpeedUi(42, true, null), speedUi(RideState(speedKmh = 41.6f, moving = true, lastFixAtMillis = 9)))
+        assertEquals(SpeedUi(0, false, 9L), speedUi(RideState(speedKmh = 0.2f, moving = false, lastFixAtMillis = 9)))
         assertEquals(SpeedUi(null, false, null), speedUi(RideState()))
     }
 
@@ -132,7 +133,7 @@ class HomeStateTest {
     @Test
     fun homeUiNumbersTheEntryAndNamesTheModel() {
         val ui = homeUi(
-            HomeLive(BikeState(saved = testSaved), RideState(), NavState(), AlertsState(), Settings(riderName = " Alex ")),
+            HomeLive(BikeState(saved = testSaved), NavState(), AlertsState(), Settings(riderName = " Alex ")),
             HomeStored(emptyList(), emptyList(), null, emptyList(), 0),
             logCount = 0, nowMillis = 0,
         )

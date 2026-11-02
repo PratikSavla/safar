@@ -18,6 +18,7 @@ import app.safar.ui.home.HomeLive
 import app.safar.ui.home.HomeStored
 import app.safar.ui.home.HomeUi
 import app.safar.ui.home.homeUi
+import app.safar.ui.home.speedUi
 
 /** Synthetic Today states for @Preview (rider Alex, bike SBM01A1B2C3D). */
 object HomePreviewData {
@@ -41,18 +42,18 @@ object HomePreviewData {
 
     fun connected(): HomeUi = build(
         BikeState(link = LinkState.Connected, saved = saved, cluster = reading(), lastCluster = reading(), framesReceived = 12),
-        RideState(speedKmh = 0f, lastFixAtMillis = NOW - 2_000),
         AlertsState(missed = AlertCounter(2, "Rider", AlertSource.PHONE), messages = AlertCounter(1, "Alex", AlertSource.WHATSAPP)),
     )
 
     fun reconnecting(): HomeUi = build(
         BikeState(link = LinkState.Reconnecting(2, NOW + 4_000), saved = saved, lastCluster = reading(NOW - 90_000)),
-        RideState(),
         AlertsState(),
     )
 
-    private fun build(bike: BikeState, ride: RideState, alerts: AlertsState): HomeUi = homeUi(
-        HomeLive(bike, ride, NavState(), alerts, settings),
+    val speed = speedUi(RideState(speedKmh = 0f, lastFixAtMillis = NOW - 2_000))
+
+    private fun build(bike: BikeState, alerts: AlertsState): HomeUi = homeUi(
+        HomeLive(bike, NavState(), alerts, settings),
         HomeStored(fuelUps, emptyList(), null, emptyList(), 3),
         logCount = 40,
         nowMillis = NOW,

@@ -28,8 +28,7 @@ import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.CardStyle
 import app.safar.ui.components.TicketShape
-import app.safar.ui.components.rememberNow
-import app.safar.ui.format.Formatters
+import app.safar.ui.components.liveAge
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 import java.util.Locale
@@ -79,8 +78,7 @@ private fun PickRow(d: Destination, selected: Boolean, onClick: () -> Unit) {
 @Composable
 private fun detailText(d: Destination): String {
     val at = d.atMillis ?: return d.detail
-    val now = rememberNow()
-    return "${d.detail} · ${Formatters.age(at, now.value)}"
+    return "${d.detail} · ${liveAge(at)}"
 }
 
 @Composable

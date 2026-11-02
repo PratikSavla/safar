@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 android {
@@ -50,6 +51,16 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+// :baselineprofile generates app + library rules on a device (./gradlew :app:generateBaselineProfile);
+// they land in src/main/generated/baselineProfiles and are compiled into the release APK, where
+// profileinstaller writes them for sideloaded installs too.
+baselineProfile {
+    mergeIntoMain = true
+    saveInSrc = true
+    automaticGenerationDuringBuild = false
+    dexLayoutOptimization = true
+}
+
 dependencies {
     implementation(project(":protocol"))
 
@@ -71,6 +82,8 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(project(":baselineprofile"))
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test)

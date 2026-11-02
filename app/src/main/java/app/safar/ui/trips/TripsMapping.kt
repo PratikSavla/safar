@@ -1,5 +1,6 @@
 package app.safar.ui.trips
 
+import androidx.compose.runtime.Immutable
 import app.safar.core.RideState
 import app.safar.data.TrackPoint
 import app.safar.data.Trip
@@ -36,6 +37,7 @@ data class TripRowUi(
 /** The ride being recorded right now, from phone GPS. [tripId] opens its page. */
 data class LiveRideUi(val speedKmh: Float?, val topKmh: Float, val atMillis: Long?, val tripId: Long? = null)
 
+@Immutable
 data class TripsUiState(
     val loading: Boolean = true,
     val bikeName: String? = null,

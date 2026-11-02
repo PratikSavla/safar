@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -88,7 +89,7 @@ private fun CountdownRing(seconds: Int, fraction: Float) {
     val c = Atlas.colors
     val sweep by animateFloatAsState(fraction, tween(1000), label = "countdown")
     Box(Modifier.size(64.dp).clearAndSetSemantics { contentDescription = "Next try in $seconds seconds" }, contentAlignment = Alignment.Center) {
-        Canvas(Modifier.fillMaxSize()) {
+        Canvas(Modifier.fillMaxSize().graphicsLayer()) {
             val w = 2.5.dp.toPx()
             drawArc(c.amber, -90f, 360f * sweep, false, topLeft = Offset(w, w), size = Size(size.width - 2 * w, size.height - 2 * w), style = Stroke(w))
         }

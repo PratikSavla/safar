@@ -13,5 +13,8 @@ dependencyResolutionManagement {
     }
 }
 
+// Macrobenchmarks and the Baseline Profile generator for :app (they run on a device).
+include(":baselineprofile")
+
 rootProject.name = "safar"
 include(":protocol", ":app", ":bikesim")

@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextMeasurer
@@ -39,9 +41,11 @@ fun ParkedCompass(pointerDeg: Float?, roseDeg: Float, description: String, modif
     val c = Atlas.colors
     val measurer = rememberTextMeasurer()
     val label = Atlas.type.numberSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = Atlas.type.numberSmall.fontSize * 0.78f)
-    val needle = rememberSmoothAngle(pointerDeg ?: 0f)
-    val rose = rememberSmoothAngle(roseDeg)
-    Canvas(modifier.size(size).semantics { contentDescription = description }) {
+    val needleAngle = rememberSmoothAngle(pointerDeg ?: 0f)
+    val roseAngle = rememberSmoothAngle(roseDeg)
+    Canvas(modifier.size(size).graphicsLayer().semantics { contentDescription = description }) {
+        val rose = roseAngle.value
+        val needle = needleAngle.value
         val centre = Offset(this.size.width / 2, this.size.height / 2)
         val r = this.size.width / 2 - 14.dp.toPx()
         drawCircle(c.card, r, centre)
@@ -55,12 +59,12 @@ fun ParkedCompass(pointerDeg: Float?, roseDeg: Float, description: String, modif
     }
 }
 
-/** An angle that glides to each new value the short way round. */
+/** An angle that glides to each new value the short way round. Read `.value` while drawing only. */
 @Composable
-private fun rememberSmoothAngle(target: Float): Float {
+private fun rememberSmoothAngle(target: Float): State<Float> {
     val anim = remember { Animatable(target) }
     LaunchedEffect(target) { anim.animateTo(shortestRotation(anim.value, target), tween(600)) }
-    return anim.value
+    return anim.asState()
 }
 
 private fun DrawScope.drawTicks(centre: Offset, r: Float, c: AtlasColors) {

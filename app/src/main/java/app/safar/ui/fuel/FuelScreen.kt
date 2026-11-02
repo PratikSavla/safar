@@ -1,8 +1,10 @@
 package app.safar.ui.fuel
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,9 +14,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.safar.core.AppContainer
+import app.safar.data.FuelStats
 import app.safar.data.ThemeMode
 import app.safar.ui.art.AtlasIcons
-import app.safar.ui.components.AtlasPage
+import app.safar.ui.components.AtlasLazyPage
 import app.safar.ui.components.AtlasToastHost
 import app.safar.ui.components.AtlasToastState
 import app.safar.ui.components.BackTopBar
@@ -64,10 +67,24 @@ fun FuelContent(
     onLowFuelAlert: (Boolean) -> Unit,
     zone: ZoneId = ZoneId.systemDefault(),
 ) {
-    AtlasPage(topo = TopoTransform.Quiet, overlay = { AtlasToastHost(toast, bottomPadding = 40.dp) }) {
-        BackTopBar("Fuel · receipts and bars", "The tank", onBack, titleEm = ", by the litre.")
-        PrimaryButton("Log fuel", onLog, Modifier.fillMaxWidth().heightIn(min = 58.dp).padding(bottom = 18.dp), icon = AtlasIcons.fuel)
-        val stats = state.stats ?: return@AtlasPage
+    AtlasLazyPage(topo = TopoTransform.Quiet, overlay = { AtlasToastHost(toast, bottomPadding = 40.dp) }) {
+        item(key = "top", contentType = "top") {
+            Column {
+                BackTopBar("Fuel · receipts and bars", "The tank", onBack, titleEm = ", by the litre.")
+                PrimaryButton("Log fuel", onLog, Modifier.fillMaxWidth().heightIn(min = 58.dp).padding(bottom = 18.dp), icon = AtlasIcons.fuel)
+            }
+        }
+        val stats = state.stats ?: return@AtlasLazyPage
+        item(key = "stats", contentType = "stats") { FuelStatsBlock(state, stats, zone, onLog) }
+        items(state.rows, key = { it.id }, contentType = { "fuelUp" }) { row -> FuelUpRow(row, state.currency) { onEdit(row.id) } }
+        item(key = "alert", contentType = "alert") { FuelAlertBlock(state.lowFuelAlert, onLowFuelAlert) }
+    }
+}
+
+/** Range, mileage and cost, then the head of the receipts list. */
+@Composable
+private fun FuelStatsBlock(state: FuelUiState, stats: FuelStats, zone: ZoneId, onLog: () -> Unit) {
+    Column {
         RangeHero(stats, state.reading)
         SectionHeader("Mileage") { Kicker("full tank to full tank") }
         MileageSection(stats, zone)
@@ -78,9 +95,14 @@ fun FuelContent(
         if (state.rows.isEmpty()) {
             EmptyState("No receipts yet.", message = "Log a full tank at the pump to start your mileage.", actionLabel = "Log fuel", onAction = onLog)
         }
-        state.rows.forEach { row -> FuelUpRow(row, state.currency) { onEdit(row.id) } }
+    }
+}
+
+@Composable
+private fun FuelAlertBlock(on: Boolean, onLowFuelAlert: (Boolean) -> Unit) {
+    Column {
         SectionHeader("Alert")
-        SwitchRow("Low-fuel reminder", state.lowFuelAlert, onLowFuelAlert, subtitle = "A phone notification when the cluster reads 1 bar")
+        SwitchRow("Low-fuel reminder", on, onLowFuelAlert, subtitle = "A phone notification when the cluster reads 1 bar")
         Note(
             "The bike reports fuel only as bars, so litres and price come from your receipts. The odometer comes from the bike.",
             Modifier.padding(top = 12.dp),

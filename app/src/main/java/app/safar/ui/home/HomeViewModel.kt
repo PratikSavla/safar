@@ -1,5 +1,6 @@
 package app.safar.ui.home
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.safar.core.AlertCenter
@@ -26,20 +27,25 @@ import app.safar.data.TripRepository
 import app.safar.data.fuelStats
 import app.safar.ui.service.odoNow
 import app.safar.ui.shell.ShellDeps
+import app.safar.ui.vm.throttleLatest
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
-/** Everything Today shows. [entryNo] numbers the journal page ("Entry № 12"). */
+/**
+ * Everything Today shows, except phone GPS speed ([HomeViewModel.speed]), which changes every second and is read
+ * by its one ledger cell. [entryNo] numbers the journal page ("Entry № 12").
+ */
+@Immutable
 data class HomeUi(
     val riderName: String,
     val modelName: String?,
     val conn: ConnUi,
     val autoRideOn: Boolean,
     val ledger: LedgerUi?,
-    val speed: SpeedUi,
     val counts: CountsUi,
     val nav: NavStripUi?,
     val garage: List<GarageTile>,
@@ -47,7 +53,7 @@ data class HomeUi(
 )
 
 /** Live link and phone state. */
-data class HomeLive(val bike: BikeState, val ride: RideState, val nav: NavState, val alerts: AlertsState, val settings: Settings)
+data class HomeLive(val bike: BikeState, val nav: NavState, val alerts: AlertsState, val settings: Settings)
 
 /** What the rider stored on this phone. */
 data class HomeStored(
@@ -74,7 +80,6 @@ internal fun homeUi(live: HomeLive, stored: HomeStored, logCount: Int, nowMillis
         conn = connUi(bike),
         autoRideOn = live.settings.autoRideMode,
         ledger = ledgerUi(bike, fuel),
-        speed = speedUi(live.ride),
         counts = CountsUi(live.alerts.missed, live.alerts.messages),
         nav = nav,
         garage = garageTiles(garage),
@@ -96,11 +101,26 @@ class HomeViewModel(
     log: DebugLog,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
-    private val live = combine(bike.state, ride.state, navigation.state, alerts.state, settings.settings, ::HomeLive)
-    private val stored = combine(fuel.fuelUps, service.items, parked.parked, trips.trips, places.places.map { it.size }, ::HomeStored)
+    private val live = combine(bike.state, navigation.state, alerts.state, settings.settings, ::HomeLive)
+    private val stored = combine(
+        fuel.fuelUps.distinctUntilChanged(),
+        service.items.distinctUntilChanged(),
+        parked.parked.distinctUntilChanged(),
+        trips.trips.distinctUntilChanged(),
+        places.places.map { it.size }.distinctUntilChanged(),
+        ::HomeStored,
+    )
 
-    val ui: StateFlow<HomeUi?> = combine(live, stored, log.records.map { it.size }) { l, s, n -> homeUi(l, s, n, clock()) }
+    /** "40 in memory" on the Debug log tile: the log grows several times a second, the tile needs it once a second at most. */
+    private val logCount = log.records.map { it.size }.distinctUntilChanged().throttleLatest(LOG_COUNT_PERIOD_MS)
+
+    /** Recomputed when an input changes; a result equal to the last one is not emitted (StateFlow equality). */
+    val ui: StateFlow<HomeUi?> = combine(live, stored, logCount) { l, s, n -> homeUi(l, s, n, clock()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
+    /** Phone GPS speed for the ledger's speed cell, kept out of [ui] so a 1 Hz fix does not rebuild the page. */
+    val speed: StateFlow<SpeedUi> = ride.state.map(::speedUi)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), speedUi(RideState()))
 
     /** Direct connect to the saved cluster (docs 2.4). */
     fun connectSaved() {
@@ -109,6 +129,7 @@ class HomeViewModel(
 
     companion object {
         private const val STOP_TIMEOUT_MS = 5_000L
+        internal const val LOG_COUNT_PERIOD_MS = 1_000L
 
         fun fromContainer() = HomeViewModel(
             ShellDeps.bike, ShellDeps.ride, ShellDeps.navigation, ShellDeps.alerts, AppContainer.settings,

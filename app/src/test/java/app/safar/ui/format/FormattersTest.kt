@@ -64,6 +64,10 @@ class FormattersTest {
         assertEquals(ValueUnit("99.9", "km"), Formatters.navDistance(99_900))
         assertEquals(ValueUnit("123", "km"), Formatters.navDistance(123_400))
         assertEquals("850 m", Formatters.navDistance(850).toString())
+        assertEquals(ValueUnit("1.1", "km"), Formatters.navDistance(1_049))
+        assertEquals(ValueUnit("1.1", "km"), Formatters.navDistance(1_150))
+        assertEquals(ValueUnit("2.0", "km"), Formatters.navDistance(2_050))
+        assertEquals(ValueUnit("0", "m"), Formatters.navDistance(-5))
     }
 
     @Test

@@ -52,6 +52,16 @@ class NavigateModelsTest {
     }
 
     @Test
+    fun mirrorDistancesMatchTheFrameRounding() {
+        // Same digits as encodeNavigation: 10 m first, then toFixed(1) on the binary value.
+        val km = listOf(1_049, 1_150, 2_050).map { mirrorOf(NavSnapshot(1, true, it, 0L, it, NavStatusCode.NORMAL, "", 0L), zone) }
+        assertEquals(listOf("1.1 km", "1.1 km", "2.0 km"), km.map { it.toTurn.toString() })
+        assertEquals(listOf("1.1 km", "1.1 km", "2.0 km"), km.map { it.remaining.toString() })
+        assertEquals("100 km", mirrorOf(NavSnapshot(1, true, 99_960, 0L, 0, NavStatusCode.NORMAL, "", 0L), zone).toTurn.toString())
+        assertEquals("0 m", mirrorOf(NavSnapshot(1, true, 4, 0L, 0, NavStatusCode.NORMAL, "", 0L), zone).remaining.toString())
+    }
+
+    @Test
     fun statusThatHidesTheIconSends46() {
         val m = mirrorOf(NavSnapshot(1, true, 850, 0L, 900, NavStatusCode.GPS_OFF, "", 0L), zone)
         assertEquals(46, m.clusterIcon)

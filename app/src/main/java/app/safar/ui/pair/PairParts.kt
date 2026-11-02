@@ -149,16 +149,17 @@ fun PairLink(family: VehicleFamily) {
 /** Connecting steps in the rider's words; [RIDER_STEPS] index 1 is "Connecting", 2 is the name. */
 private val RIDER_STEPS = listOf("Found your bike", "Connecting", "Sending your name")
 
-/** The same steps as the GATT sequence runs them, for Developer mode. */
-private val DEVELOPER_STEPS = listOf("connectGatt · TRANSPORT_LE", "Services FFF0 / FFF1 / FFF2 by UUID", "MTU 65 · notify on", "Send rider name")
+/** The same steps as the GATT sequence runs them, for Developer mode, with the negotiated [mtu] once known. */
+internal fun developerSteps(mtu: Int?): List<String> =
+    listOf("connectGatt · TRANSPORT_LE", "Services FFF0 / FFF1 / FFF2 by UUID", "${mtu?.let { "MTU $it" } ?: "MTU"} · notify on", "Send rider name")
 
-/** Connecting steps (onboard.css `.steps`): done ●, current ◐, to do ○. [mtuSet] moves on to the rider name. */
+/** Connecting steps (onboard.css `.steps`): done ●, current ◐, to do ○. A known [mtu] moves on to the rider name. */
 @Composable
-fun ConnectSteps(mtuSet: Boolean) {
+fun ConnectSteps(mtu: Int?) {
     val c = Atlas.colors
     val dev = developerMode()
-    val steps = if (dev) DEVELOPER_STEPS else RIDER_STEPS
-    val current = if (mtuSet) steps.lastIndex else 1
+    val steps = if (dev) developerSteps(mtu) else RIDER_STEPS
+    val current = if (mtu != null) steps.lastIndex else 1
     val style = if (dev) Atlas.type.src else Atlas.type.ui
     Column(Modifier.fillMaxWidth().padding(top = 26.dp)) {
         steps.forEachIndexed { i, s ->

@@ -7,6 +7,8 @@ import app.safar.core.BikeController
 import app.safar.core.LinkState
 import app.safar.data.SettingsStore
 import app.safar.ui.shell.ShellDeps
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,21 +16,31 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-class PairViewModel(private val bike: BikeController, settings: SettingsStore) : ViewModel() {
-    /** One tap on a cluster. [seq] makes a second tap on the same cluster a new pick. */
-    private data class Pick(val address: String, val seq: Long)
+class PairViewModel(
+    private val bike: BikeController,
+    settings: SettingsStore,
+    private val pickTimeoutMs: Long = PICK_TIMEOUT_MS,
+) : ViewModel() {
+    /** One tap on a cluster, with its BLE name. [seq] makes a second tap on the same cluster a new pick. */
+    private data class Pick(val address: String, val name: String?, val seq: Long)
 
     private class Tracked(val pick: Pick?, val inputs: PairInputs)
 
     private val picked = MutableStateFlow<Pick?>(null)
+
+    /** The [Pick.seq] that waited [pickTimeoutMs] without success. */
+    private val timedOutSeq = MutableStateFlow<Long?>(null)
+    private var timeout: Job? = null
     private var picks = 0L
     private var autoScanned = false
 
-    val inputs: StateFlow<PairInputs?> = combine(bike.state, settings.settings, picked, ::Triple)
-        .runningFold(null as Tracked?) { prev, (b, s, p) ->
+    val inputs: StateFlow<PairInputs?> = combine(bike.state, settings.settings, picked, timedOutSeq) { b, s, p, t -> Triple(b, s.riderName, p) to t }
+        .runningFold(null as Tracked?) { prev, (bsp, t) ->
+            val (b, name, p) = bsp
             val attempted = p != null && pickAttempted(prev?.pick == p, prev?.inputs?.attempted == true, b.link)
-            Tracked(p, PairInputs(b, s.riderName, p?.address, attempted))
+            Tracked(p, PairInputs(b, name, p?.address, attempted, p?.name, timedOut = p != null && t == p.seq))
         }
         .map { it?.inputs }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
@@ -42,13 +54,21 @@ class PairViewModel(private val bike: BikeController, settings: SettingsStore) :
     }
 
     fun scan() {
+        timeout?.cancel()
         picked.value = null
         bike.startScan()
     }
 
     fun pick(address: String) {
         picks += 1
-        picked.value = Pick(address, picks)
+        val seq = picks
+        val name = bike.state.value.scan.firstOrNull { it.address == address }?.name
+        picked.value = Pick(address, name, seq)
+        timeout?.cancel()
+        timeout = viewModelScope.launch {
+            delay(pickTimeoutMs)
+            timedOutSeq.value = seq
+        }
         if (bike.state.value.scanning) bike.stopScan()
         bike.connect(address)
     }

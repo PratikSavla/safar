@@ -50,7 +50,7 @@ internal fun Connecting(ui: PairUi) {
         "Connecting", " to ${LinkCopy.yourBike(ui.model?.name)}…", Atlas.type.displayMedium,
         Modifier.fillMaxWidth().semantics { heading() },
     )
-    ConnectSteps(ui.mtuSet)
+    ConnectSteps(ui.mtu)
 }
 
 /** "Paired" stamp lands, the bike, and how its display greets the rider (pair.js `success`). */

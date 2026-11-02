@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -85,6 +86,33 @@ class PairStateTest {
     }
 
     @Test
+    fun theSameBikeAtANewAddressIsSuccess() {
+        val moved = "00:11:22:33:44:77"
+        val match = PickMatch(picked = moved, linked = TEST_ADDRESS, pickedName = TEST_BIKE, linkedName = TEST_BIKE)
+        assertEquals(PairPhase.SUCCESS, pairPhase(BtAccess.READY, LinkState.Connected, false, 1, match))
+        val ui = pairUi(PairInputs(BikeState(link = LinkState.Connected, saved = testSaved), "Alex", moved, pickedName = TEST_BIKE), BtAccess.READY)
+        assertEquals(PairPhase.SUCCESS, ui.phase)
+        assertEquals("V-Strom SX", ui.model?.name)
+    }
+
+    @Test
+    fun aPickThatTimesOutGoesBackToTheListAndSaysSo() {
+        val other = "00:11:22:33:44:66"
+        val stuck = BikeState(link = LinkState.Connected, scan = listOf(found), saved = testSaved)
+        val ui = pairUi(PairInputs(stuck, "Alex", other, attempted = true, pickedName = "SBM01Z9Y8X7W", timedOut = true), BtAccess.READY)
+        assertEquals(PairPhase.RESULTS, ui.phase)
+        assertTrue(ui.failed)
+        val connecting = BikeState(link = LinkState.Connecting(TEST_BIKE))
+        assertEquals(PairPhase.NOTHING, pairUi(PairInputs(connecting, "Alex", TEST_ADDRESS, timedOut = true), BtAccess.READY).phase)
+    }
+
+    @Test
+    fun developerStepsShowTheNegotiatedMtu() {
+        assertEquals("MTU · notify on", developerSteps(null)[2])
+        assertEquals("MTU 517 · notify on", developerSteps(517)[2])
+    }
+
+    @Test
     fun aPickFailsOnlyAfterItsConnectRan() {
         val idle = BikeState(scan = listOf(found))
         assertFalse(pairUi(PairInputs(idle, "Alex", TEST_ADDRESS, attempted = false), BtAccess.READY).failed)
@@ -128,5 +156,21 @@ class PairStateTest {
         assertEquals(true, vm.inputs.value?.attempted)
         vm.pick(TEST_ADDRESS)
         assertEquals(false, vm.inputs.value?.attempted)
+    }
+
+    @Test
+    fun viewModelTimesOutAPickThatNeverConnects() = runTest(UnconfinedTestDispatcher()) {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val bike = FakeBike(BikeState(scan = listOf(found)))
+        val vm = PairViewModel(bike, FakeSettings(), pickTimeoutMs = 1_000L)
+        backgroundScope.launch { vm.inputs.collect {} }
+        vm.pick(TEST_ADDRESS)
+        bike.state.value = bike.state.value.copy(link = LinkState.Connecting(TEST_BIKE))
+        assertEquals(TEST_BIKE, vm.inputs.value?.pickedName)
+        assertEquals(false, vm.inputs.value?.timedOut)
+        advanceTimeBy(1_001L)
+        assertEquals(true, vm.inputs.value?.timedOut)
+        vm.pick(TEST_ADDRESS)
+        assertEquals(false, vm.inputs.value?.timedOut, "a new tap starts a new wait")
     }
 }

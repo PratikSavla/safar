@@ -33,9 +33,9 @@ import java.util.Locale
  * bike will draw it. Pass the already-cleaned name (ASCII caps, 19 characters at most).
  */
 @Composable
-fun LcdNamePreview(name: String, modifier: Modifier = Modifier, caption: String? = "how the cluster shows it") {
+fun LcdNamePreview(name: String, modifier: Modifier = Modifier, caption: String? = "on your bike’s display") {
     val c = Atlas.colors
-    Column(modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = if (name.isEmpty()) "Cluster shows WELCOME" else "Cluster shows WELCOME $name" }) {
+    Column(modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = if (name.isEmpty()) "Your bike’s display shows WELCOME" else "Your bike’s display shows WELCOME $name" }) {
         if (caption != null) {
             BasicText(caption.uppercase(Locale.ROOT), Modifier.align(Alignment.End).padding(end = 12.dp, bottom = 8.dp), style = Atlas.type.kicker.copy(fontSize = 9.sp, color = c.ink3))
         }

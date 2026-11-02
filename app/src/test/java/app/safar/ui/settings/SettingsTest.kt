@@ -150,4 +150,16 @@ class SettingsTest {
         advanceUntilIdle()
         assertEquals("$", store.settings.value.currencySymbol)
     }
+
+    @Test
+    fun storedSpeedOutsideTheBikeRangeIsShownAsSuch() = runTest {
+        store.settings.value = store.settings.value.copy(speedAlertKmh = 200)
+        backgroundScope.launch(main.dispatcher) { vm.state.collect {} }
+        assertEquals(120, vm.state.value.speedKmh)
+        assertEquals(200, vm.state.value.speedOutOfRange)
+        vm.setSpeedAlert(110)
+        advanceUntilIdle()
+        assertEquals(110, store.settings.value.speedAlertKmh)
+        assertNull(vm.state.value.speedOutOfRange)
+    }
 }

@@ -69,6 +69,7 @@ internal fun SpeedBlock(state: SettingsState, onSettings: (String, (Settings) ->
         divider = false,
     )
     AtlasSlider(state.speedKmh, onSpeed, r, label = "Speed alert", unit = "km/h", enabled = on)
+    state.speedOutOfRange?.let { LockLine("Saved alert is $it km/h, outside this ${familyWord(state.model)}'s range. Move the slider to set it.") }
 }
 
 /** Tank size: model spec, the rider's override, reset (`.tank-set`). Locked while moving. */

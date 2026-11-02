@@ -43,6 +43,8 @@ data class SettingsState(
     val tankError: String? = null,
     val speedKmh: Int = 100,
     val alertRange: IntRange = DEFAULT_ALERT_RANGE,
+    /** The stored alert speed when this bike's range does not hold it; the slider shows it clamped. */
+    val speedOutOfRange: Int? = null,
     val currencyText: String = "",
     val currencyHint: String? = null,
     val lockReason: String? = null,
@@ -80,6 +82,7 @@ class SettingsViewModel(
             tankError = d.tank?.let { (parseTank(it, model?.tankLitres) as? TankInput.Invalid)?.reason },
             speedKmh = (d.speed ?: s.speedAlertKmh).coerceIn(range),
             alertRange = range,
+            speedOutOfRange = s.speedAlertKmh.takeIf { d.speed == null && it !in range },
             currencyText = d.currency ?: s.currencySymbol,
             currencyHint = d.currency?.takeIf { cleanCurrency(it) == null }?.let { "Enter a symbol, like ₹ or $" },
             lockReason = lock,

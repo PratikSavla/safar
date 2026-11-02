@@ -43,6 +43,12 @@ class LogPrivacyTest {
     }
 
     @Test
+    fun sessionStartedFirstConnectionFlagIsNotANameAndStaysReadable() {
+        assertEquals("F", LogPrivacy.maskDetail("riderFrame", "F"))
+        assertEquals("****", LogPrivacy.maskDetail("rider", "Alex"))
+    }
+
+    @Test
     fun invertedChecksumIsRecalculatedInInvertedMode() {
         val frame = encodeMessage("Rider", 3, MessageSource.WHATSAPP, ChecksumMode.INVERTED)
         val masked = LogPrivacy.maskFrame(frame)

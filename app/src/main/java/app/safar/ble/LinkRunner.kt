@@ -81,7 +81,7 @@ internal class LinkRunner(
         val session = BikeSession(scope, config, inputs, { queue.offer(it) }, log, now, onReading = listener::onReading)
         scope.launch { for (frame in client.notifications) session.onRx(frame) }
         session.start()
-        log.event("Session started", mapOf("bike" to name, "rider" to if (target.firstConnection) "F" else "R"))
+        log.event("Session started", mapOf("bike" to name, "riderFrame" to if (target.firstConnection) "F" else "R"))
         return session
     }
 

@@ -87,7 +87,7 @@ private fun Body(s: WidgetSnapshot, modifier: GlanceModifier) {
                 Text(s.odometer, style = serif(WidgetColors.ink, 34f), maxLines = 1)
                 Text(" km", style = serif(WidgetColors.ink2, 14f, italic = true))
             }
-            Text("TRIP A  ${s.tripA}", style = mono(WidgetColors.ink2, 11f))
+            Text(s.tripALine, style = mono(WidgetColors.ink2, 11f))
         }
         Column(horizontalAlignment = Alignment.End) {
             if (s.bars != null) BarsGauge(s.bars, s.barsMax)

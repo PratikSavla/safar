@@ -30,6 +30,7 @@ class WidgetMappingTest {
         assertEquals("connected" to WidgetTone.MOSS, s.link to s.tone)
         assertEquals("12,301", s.odometer)
         assertEquals("84.6", s.tripA)
+        assertEquals("TRIP A  84.6 km", s.tripALine)
         assertEquals(2, s.bars)
         assertEquals(6, s.barsMax)
         assertNull(s.rangeNote)
@@ -44,6 +45,7 @@ class WidgetMappingTest {
     fun `no bike shows placeholders`() {
         val s = widgetSnapshot(BikeState(), NavState(), emptyList(), Settings(), FuelFixtures.NOW, zone)
         assertEquals(WidgetSnapshot.Empty, s)
+        assertEquals("TRIP A  —", s.tripALine)
         assertEquals("new", s.link)
         assertEquals("Open Safar to pair your bike", s.footer)
         assertEquals("Safar, your bike: Not set up yet.", s.description)

@@ -48,6 +48,9 @@ data class WidgetSnapshot(
     val turn: WidgetTurn?,
     val description: String,
 ) {
+    /** "TRIP A  84.6 km"; the unit is left off the "—" placeholder. */
+    val tripALine: String get() = if (tripA == NONE) "TRIP A  $NONE" else "TRIP A  $tripA km"
+
     companion object {
         /** Before the app has any data (or before its parts are wired): the same as a phone with no bike paired. */
         val Empty = WidgetSnapshot(

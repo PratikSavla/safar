@@ -63,15 +63,17 @@ fun familyWord(model: BikeModel?): String = when (model?.family) {
     null -> "motorcycle"
 }
 
-/** Where the tank size comes from; never claims a model spec when no bike is paired. */
-fun tankSource(model: BikeModel?, own: Double?): String = when {
-    own != null -> "you · override"
-    model != null -> "model spec"
-    else -> "not set · type your tank size"
+/**
+ * Tank row subtitle: the model's tank and, when set, the rider's own value. Never claims a model's tank when no
+ * bike is paired, and asks for the size when nothing is known.
+ */
+fun tankSubtitle(model: BikeModel?, own: Double?): String {
+    val yours = own?.let { "You set ${litresText(it)} L." }
+    if (model == null) return if (yours != null) "No bike paired. $yours" else "No bike paired. Type your tank size."
+    val spec = "The ${model.name} tank holds ${litresText(model.tankLitres)} L."
+    return if (yours != null) "$spec $yours" else spec
 }
 
-/** Tank row subtitle: the model spec and, when set, the rider's own value. */
-fun tankSubtitle(model: BikeModel?, own: Double?): String {
-    val spec = if (model != null) "Model spec ${litresText(model.tankLitres)} L (${model.name})" else "No bike paired · no model spec"
-    return if (own != null) "$spec · using yours: ${litresText(own)} L" else spec
-}
+/** The Backup note in Settings. Android's own backup carries Safar's data; the rider switches it in Settings. */
+const val BACKUP_NOTE =
+    "Your rides, fuel log, places and settings are saved with your phone’s backup. Turn it on or off in your phone’s Settings > Backup."

@@ -28,33 +28,34 @@ import app.safar.ui.components.DisplayTitle
 import app.safar.ui.components.LockLine
 import app.safar.ui.components.Note
 import app.safar.ui.components.SecondaryButton
-import app.safar.ui.components.SourceLine
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.StampTone
 import app.safar.ui.components.SwitchRow
 import app.safar.ui.theme.Atlas
 
-/** Rider name with the cleaned cluster preview (`.set-name`). Locked while moving. */
+/** Rider name with how the bike will greet them (`.set-name`). Locked while moving. */
 @Composable
 internal fun RiderBlock(state: SettingsState, onName: (String) -> Unit) {
     val c = Atlas.colors
     AtlasTextField(
         state.nameText,
         onName,
-        "Rider name · shown on the cluster",
+        "Your name · shown on your bike",
         lockedReason = state.lockReason,
         placeholder = "e.g. Alex",
         trailing = { BasicText(nameCounter(state.nameText), style = Atlas.type.src.copy(color = c.ink3)) },
     )
     state.nameHint?.let { LockLine(it) }
+    val shown = clusterName(state.nameText)
+    if (shown.isEmpty()) return
     BasicText(
         buildAnnotatedString {
-            append("cluster: ")
-            withStyle(SpanStyle(color = c.ink, fontWeight = FontWeight.Medium)) { append("WELCOME ${clusterName(state.nameText)}") }
-            append(" · sent on next connect")
+            append("Your bike will say ")
+            withStyle(SpanStyle(color = c.ink, fontWeight = FontWeight.Medium)) { append("WELCOME $shown") }
+            append(" next time it connects.")
         },
         Modifier.padding(top = 4.dp),
-        style = Atlas.type.src.copy(color = c.ink3),
+        style = Atlas.type.uiSmall.copy(color = c.ink3),
     )
 }
 
@@ -67,14 +68,14 @@ internal fun SpeedBlock(state: SettingsState, onSettings: (String, (Settings) ->
         "Speed alert",
         on,
         { v -> onSettings("speed alert") { it.copy(speedAlertOn = v) } },
-        subtitle = "The cluster warns above this speed (${r.first}–${r.last} km/h for a ${familyWord(state.model)})",
+        subtitle = "Your bike warns you above this speed (${r.first}–${r.last} km/h)",
         divider = false,
     )
     AtlasSlider(state.speedKmh, onSpeed, r, label = "Speed alert", unit = "km/h", enabled = on)
-    state.speedOutOfRange?.let { LockLine("Saved alert is $it km/h, outside this ${familyWord(state.model)}'s range. Move the slider to set it.") }
+    state.speedOutOfRange?.let { LockLine("Your saved alert, $it km/h, is outside this ${familyWord(state.model)}’s range. Move the slider to set it.") }
 }
 
-/** Tank size: model spec, the rider's override, reset (`.tank-set`). Locked while moving. */
+/** Tank size: the model's tank, the rider's own value, reset (`.tank-set`). Locked while moving. */
 @Composable
 internal fun TankBlock(state: SettingsState, onTank: (String) -> Unit, onReset: () -> Unit) {
     val own = state.settings.tankLitres
@@ -92,7 +93,6 @@ internal fun TankBlock(state: SettingsState, onTank: (String) -> Unit, onReset: 
         if (own != null) SecondaryButton("Reset", onReset, enabled = state.lockReason == null, small = true)
     }
     state.tankError?.let { LockLine(it) }
-    SourceLine(tankSource(state.model, own), age = null)
     Note("Used with your fuel-ups to work out litres left and range.", Modifier.padding(top = 6.dp), color = Atlas.colors.ink3)
 }
 
@@ -102,7 +102,7 @@ internal fun CurrencyBlock(state: SettingsState, onCurrency: (String) -> Unit) {
     AtlasTextField(
         state.currencyText,
         onCurrency,
-        "Currency symbol · fuel costs",
+        "Currency · for fuel costs",
         Modifier.padding(top = 12.dp),
         lockedReason = state.lockReason?.let { "Locked while moving. Stop to change the currency." },
         placeholder = "₹",
@@ -125,7 +125,7 @@ internal fun AboutCard(onVersionTap: () -> Unit = {}) {
             Modifier.clickable(onClickLabel = "Count a tap towards Developer mode", role = Role.Button, onClick = onVersionTap),
         )
         Note(
-            "Open source. No account, no server, no analytics. Nothing leaves this phone unless you share a log.",
+            "Open source. No account, no server, no analytics. Safar never sends your data anywhere.",
             Modifier.padding(top = 6.dp),
         )
         FlowRow(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -134,4 +134,11 @@ internal fun AboutCard(onVersionTap: () -> Unit = {}) {
             Stamp("no analytics", tone = StampTone.SLATE)
         }
     }
+}
+
+/** Where the rider's data is kept safe: Android's own backup, switched on or off in the phone's Settings. */
+@Composable
+internal fun BackupBlock(onOpenSettings: () -> Unit) {
+    Note(BACKUP_NOTE)
+    SecondaryButton("Open phone settings", onOpenSettings, Modifier.fillMaxWidth().padding(top = 12.dp))
 }

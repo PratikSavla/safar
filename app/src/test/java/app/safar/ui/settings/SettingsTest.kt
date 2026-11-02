@@ -52,11 +52,11 @@ class SettingsTest {
         assertEquals(TankInput.Invalid("Use a number, like 12.5"), parseTank("twelve", null))
         assertEquals(TankInput.Invalid("Tank size must be between 1 and 40 L"), parseTank("41", null))
         assertEquals("12", litresText(12.0))
-        assertEquals("Model spec 5.2 L (Avenis) · using yours: 6 L", tankSubtitle(BikeCatalog.forBleName("SBS21A1B2C3D"), 6.0))
+        assertEquals("The Avenis tank holds 5.2 L. You set 6 L.", tankSubtitle(BikeCatalog.forBleName("SBS21A1B2C3D"), 6.0))
         val avenis = BikeCatalog.forBleName("SBS21A1B2C3D")
-        assertEquals("you · override", tankSource(avenis, 6.0))
-        assertEquals("model spec", tankSource(avenis, null))
-        assertEquals("not set · type your tank size", tankSource(null, null))
+        assertEquals("The Avenis tank holds 5.2 L.", tankSubtitle(avenis, null))
+        assertEquals("No bike paired. You set 6 L.", tankSubtitle(null, 6.0))
+        assertEquals("No bike paired. Type your tank size.", tankSubtitle(null, null))
     }
 
     @Test
@@ -81,7 +81,7 @@ class SettingsTest {
         vm.setRiderName("   ")
         advanceUntilIdle()
         assertEquals("Alex", store.settings.value.riderName)
-        assertEquals("The cluster needs at least one letter or digit", vm.state.value.nameHint)
+        assertEquals("Use at least one letter or number", vm.state.value.nameHint)
     }
 
     @Test

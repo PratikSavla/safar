@@ -22,6 +22,8 @@ data class Settings(
     /** Rider override of the tank size; null = model spec. */
     val tankLitres: Double? = null,
     val currencySymbol: String = "₹",
+    /** Shows the technical tools and details (sources, exact ages, frames). Off by default; unlocked from Settings. */
+    val developerMode: Boolean = false,
 )
 
 /** Where a fuel-up odometer came from (ux/FUEL.md). */

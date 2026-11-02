@@ -27,11 +27,22 @@ class SettingsPrefsTest {
             onboarded = true, riderName = "Alex", speedAlertOn = true, speedAlertKmh = 85, alertCalls = false,
             alertWhatsAppCalls = false, alertWhatsAppMessages = false, debugLog = true, hideNames = false,
             theme = ThemeMode.DARK, keepScreenOn = false, autoRideMode = false, serviceReminders = false,
-            lowFuelAlert = false, tankLitres = 11.5, currencySymbol = "$",
+            lowFuelAlert = false, tankLitres = 11.5, currencySymbol = "$", developerMode = true,
         )
         val prefs = mutablePreferencesOf()
         writeSettings(prefs, custom)
         assertEquals(custom, readSettings(prefs))
+    }
+
+    @Test
+    fun developerModeIsOffByDefaultAndPersists() {
+        assertEquals(false, readSettings(emptyPreferences()).developerMode)
+        val prefs = mutablePreferencesOf()
+        writeSettings(prefs, Settings(developerMode = true))
+        assertEquals(true, prefs[SettingsKeys.DEVELOPER_MODE])
+        assertTrue(readSettings(prefs).developerMode)
+        writeSettings(prefs, Settings(developerMode = false))
+        assertEquals(false, readSettings(prefs).developerMode)
     }
 
     @Test

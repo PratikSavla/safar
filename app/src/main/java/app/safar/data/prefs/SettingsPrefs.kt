@@ -27,6 +27,7 @@ internal object SettingsKeys {
     val LOW_FUEL_ALERT = booleanPreferencesKey("low_fuel_alert")
     val TANK_LITRES = doublePreferencesKey("tank_litres")
     val CURRENCY = stringPreferencesKey("currency_symbol")
+    val DEVELOPER_MODE = booleanPreferencesKey("developer_mode")
 }
 
 private val DEFAULTS = Settings()
@@ -50,6 +51,7 @@ internal fun readSettings(prefs: Preferences): Settings = with(SettingsKeys) {
         lowFuelAlert = prefs[LOW_FUEL_ALERT] ?: DEFAULTS.lowFuelAlert,
         tankLitres = prefs[TANK_LITRES] ?: DEFAULTS.tankLitres,
         currencySymbol = prefs[CURRENCY] ?: DEFAULTS.currencySymbol,
+        developerMode = prefs[DEVELOPER_MODE] ?: DEFAULTS.developerMode,
     )
 }
 
@@ -72,4 +74,5 @@ internal fun writeSettings(prefs: MutablePreferences, s: Settings) = with(Settin
     val tank = s.tankLitres
     if (tank == null) prefs.remove(TANK_LITRES) else prefs[TANK_LITRES] = tank
     prefs[CURRENCY] = s.currencySymbol
+    prefs[DEVELOPER_MODE] = s.developerMode
 }

@@ -48,10 +48,7 @@ data class NotificationContent(val title: String, val text: String, val canDisco
  * while connected, or else what Safar does about the connection.
  */
 fun notificationContent(state: BikeState, nav: NavState): NotificationContent {
-    val title = when (state.link) {
-        LinkState.Connected -> "Connected to ${LinkCopy.yourBike(LinkCopy.modelName(state))}"
-        else -> LinkCopy.headline(state)
-    }
+    val title = LinkCopy.notificationTitle(state)
     val parts = mutableListOf<String>()
     val snapshot = nav.snapshot
     if (nav.active && snapshot != null) {

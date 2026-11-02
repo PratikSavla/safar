@@ -44,6 +44,7 @@ class RideStateTest {
         assertEquals("waiting for your bike", rideUi(bike.copy(link = LinkState.Reconnecting(1, 0)), RideState(), NavState(), AlertsState(), Settings()).linkNote)
         assertEquals("bike not connected", rideUi(BikeState(), RideState(), NavState(), AlertsState(), Settings()).linkNote)
         assertEquals("bluetooth off", linkNote(LinkState.BluetoothOff))
+        assertEquals("looking for your bike", linkNote(LinkState.Searching))
     }
 
     @Test

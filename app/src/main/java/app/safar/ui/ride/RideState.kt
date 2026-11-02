@@ -9,6 +9,7 @@ import app.safar.core.NavStatusCode
 import app.safar.core.RideState
 import app.safar.data.Settings
 import app.safar.ui.components.ValueOrigin
+import app.safar.ui.copy.LinkCopy
 import app.safar.ui.format.Formatters
 import app.safar.ui.format.ValueSource
 import app.safar.ui.home.DEFAULT_TURN_CODE
@@ -83,14 +84,8 @@ internal fun rideUi(bike: BikeState, ride: RideState, nav: NavState, alerts: Ale
     )
 }
 
-/** The amber stamp under the speed while the bike is not connected, in [app.safar.ui.copy.LinkCopy]'s words. */
-internal fun linkNote(link: LinkState): String? = when (link) {
-    LinkState.Connected -> null
-    is LinkState.Connecting -> "connecting"
-    is LinkState.Reconnecting -> "waiting for your bike"
-    LinkState.BluetoothOff -> "bluetooth off"
-    LinkState.Idle, LinkState.Searching -> "bike not connected"
-}
+/** The amber stamp under the speed while the bike is not connected: [LinkCopy.rideNote]. */
+internal fun linkNote(link: LinkState): String? = LinkCopy.rideNote(link)
 
 internal fun turnUi(nav: NavState): TurnUi? {
     if (!nav.active) return null

@@ -44,6 +44,26 @@ object LinkCopy {
     /** [detail] for a whole [BikeState]. */
     fun detail(bike: BikeState): String = detail(bike.link, modelName(bike), bike.saved != null)
 
+    /**
+     * The ongoing notification's title: the [headline], with the bike named while connected ("Connected to your
+     * V-Strom SX"), since the notification has no screen around it to say which bike.
+     */
+    fun notificationTitle(bike: BikeState): String =
+        if (bike.link == LinkState.Connected) "Connected to ${yourBike(modelName(bike))}" else headline(bike)
+
+    /**
+     * The amber stamp under the speed on Ride mode, a little longer than [stamp] so it reads at a glance with no
+     * headline beside it. Null while connected.
+     */
+    fun rideNote(link: LinkState): String? = when (link) {
+        LinkState.Connected -> null
+        is LinkState.Connecting -> "connecting"
+        is LinkState.Reconnecting -> "waiting for your bike"
+        LinkState.Searching -> "looking for your bike"
+        LinkState.BluetoothOff -> "bluetooth off"
+        LinkState.Idle -> "bike not connected"
+    }
+
     /** One or two words for a stamp beside the headline. */
     fun stamp(link: LinkState, hasSavedBike: Boolean): String = when (link) {
         LinkState.Connected -> "connected"

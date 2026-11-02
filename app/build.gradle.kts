@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -7,6 +8,15 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.baselineprofile)
 }
+
+// Release signing: a keystore that never enters git. Values come from keystore.properties in the project root
+// (git-ignored; see keystore.properties.example) or SAFAR_* environment variables. Without them the release APK
+// is unsigned, and Android will not install it.
+val signingProps = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
+}
+
+fun signingValue(key: String, env: String): String? = signingProps.getProperty(key) ?: System.getenv(env)
 
 android {
     namespace = "app.safar"
@@ -21,8 +31,21 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        val store = signingValue("storeFile", "SAFAR_KEYSTORE_FILE")
+        if (store != null) {
+            create("release") {
+                storeFile = file(store)
+                storePassword = signingValue("storePassword", "SAFAR_KEYSTORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "SAFAR_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "SAFAR_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

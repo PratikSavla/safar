@@ -5,6 +5,7 @@
 local.properties
 *.jks
 *.keystore
+keystore.properties
 CLAUDE.local.md
 
 # Captures, logs and exports: never commit

@@ -66,6 +66,9 @@ You need JDK 25 for the Gradle daemon. The wrapper downloads Gradle 9.8.
 ./gradlew :protocol:test :app:testDebugUnitTest :bikesim:testDebugUnitTest
 ```
 
+To sign the release APK so a phone will install it, copy `keystore.properties.example` to `keystore.properties`
+and point it at your own keystore. Keep the keystore safe: updates must be signed with the same key.
+
 A release build is minified and ships a baseline profile. To regenerate the profile, run this with a device or
 emulator connected:
 

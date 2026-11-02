@@ -22,8 +22,10 @@ import app.safar.ui.components.Stamp
 import app.safar.ui.components.StampTone
 import app.safar.ui.components.SwitchRow
 import app.safar.ui.components.TopoTransform
+import app.safar.ui.copy.Phrases
 import app.safar.ui.nav.Navigator
 import app.safar.ui.nav.Route
+import app.safar.ui.shell.LocalShellUi
 
 class SettingsActions(
     val onName: (String) -> Unit = {},
@@ -36,6 +38,8 @@ class SettingsActions(
     val onTheme: (ThemeMode) -> Unit = {},
     val onAccess: () -> Unit = {},
     val onOpen: (Route) -> Unit = {},
+    val onDeveloperMode: (Boolean) -> Unit = {},
+    val onVersionTap: () -> Unit = {},
 )
 
 /**
@@ -48,7 +52,8 @@ fun SettingsScreen(navigator: Navigator, modifier: Modifier = Modifier, bottomBa
     val state by vm.state.collectAsStateWithLifecycle()
     val access by rememberAccessStatus()
     val context = LocalContext.current
-    val actions = remember(vm, navigator, context) {
+    val shell = LocalShellUi.current
+    val actions = remember(vm, navigator, context, shell) {
         SettingsActions(
             onName = vm::setRiderName,
             onTank = vm::setTank,
@@ -59,6 +64,13 @@ fun SettingsScreen(navigator: Navigator, modifier: Modifier = Modifier, bottomBa
             onTheme = vm::setTheme,
             onAccess = { SystemAccess.openNotificationAccess(context) },
             onOpen = navigator::go,
+            onDeveloperMode = { on ->
+                vm.setDeveloperMode(on)
+                shell.toast(if (on) Phrases.DEVELOPER_ON else Phrases.DEVELOPER_OFF)
+            },
+            onVersionTap = {
+                vm.tapVersion(System.currentTimeMillis())?.let { on -> shell.toast(if (on) Phrases.DEVELOPER_ON else Phrases.DEVELOPER_OFF) }
+            },
         )
     }
     SettingsContent(state, access, actions, modifier, bottomBar)
@@ -98,7 +110,8 @@ internal fun SettingsContent(
         NotificationAccessRow(access.notificationAccess, actions.onAccess, divider = false)
         DiagnosticsSection(state.settings, actions)
         SectionHeader("About")
-        AboutCard()
+        AboutCard(actions.onVersionTap)
+        DeveloperModeRow(state.settings.developerMode, actions.onDeveloperMode)
     }
 }
 

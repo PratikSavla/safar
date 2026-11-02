@@ -1,5 +1,6 @@
 package app.safar.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +11,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -109,11 +111,19 @@ internal fun CurrencyBlock(state: SettingsState, onCurrency: (String) -> Unit) {
     state.currencyHint?.let { LockLine(it) }
 }
 
-/** Version, and the promises: open source, no account, no analytics (`.about`). */
+/**
+ * Version, and the promises: open source, no account, no analytics (`.about`). Tapping the version seven
+ * times flips Developer mode ([onVersionTap]).
+ */
 @Composable
-internal fun AboutCard() {
+internal fun AboutCard(onVersionTap: () -> Unit = {}) {
     AtlasCard(style = CardStyle.LINE, contentPadding = PaddingValues(16.dp)) {
-        DisplayTitle("Safar", " ${BuildConfig.VERSION_NAME}", Atlas.type.displaySmall)
+        DisplayTitle(
+            "Safar",
+            " ${BuildConfig.VERSION_NAME}",
+            Atlas.type.displaySmall,
+            Modifier.clickable(onClickLabel = "Count a tap towards Developer mode", role = Role.Button, onClick = onVersionTap),
+        )
         Note(
             "Open source. No account, no server, no analytics. Nothing leaves this phone unless you share a log.",
             Modifier.padding(top = 6.dp),

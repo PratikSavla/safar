@@ -63,6 +63,7 @@ class SettingsViewModel(
 ) : ViewModel() {
     private val drafts = MutableStateFlow(Drafts())
     private val pending = mutableMapOf<String, PendingSave>()
+    private val versionTaps = VersionTaps()
 
     val state: StateFlow<SettingsState> = combine(store.settings, drafts, ride.state, bike.state, savedBike.saved) { s, d, r, b, saved ->
         val model = b.saved?.model ?: saved?.let { BikeCatalog.forBleName(it.name) }
@@ -124,6 +125,16 @@ class SettingsViewModel(
     }
 
     fun setTheme(mode: ThemeMode) = write("theme") { it.copy(theme = mode) }
+
+    fun setDeveloperMode(on: Boolean) = write("developer mode") { it.copy(developerMode = on) }
+
+    /** A tap on the version number. The seventh quick tap flips Developer mode and returns the new value; else null. */
+    fun tapVersion(atMillis: Long): Boolean? {
+        if (!versionTaps.tap(atMillis)) return null
+        val on = !store.settings.value.developerMode
+        setDeveloperMode(on)
+        return on
+    }
 
     /** Any plain switch: alerts, riding, fuel, diagnostics. */
     fun toggle(what: String, change: (Settings) -> Settings) = write(what, change)

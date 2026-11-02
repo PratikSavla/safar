@@ -26,8 +26,8 @@ private const val OPSZ_DISPLAY = 48f
 /** Optical size for running serif text (ledes, list titles). */
 private const val OPSZ_TEXT = 16f
 
-private fun fraunces(opsz: Float): FontFamily = FontFamily(
-    FRAUNCES_WEIGHTS.flatMap { w ->
+private fun fraunces(opsz: Float, weights: List<Int> = FRAUNCES_WEIGHTS): FontFamily = FontFamily(
+    weights.flatMap { w ->
         listOf(
             frauncesFont(R.font.fraunces, w, FontStyle.Normal, opsz),
             frauncesFont(R.font.fraunces_italic, w, FontStyle.Italic, opsz),
@@ -50,6 +50,12 @@ val FrauncesDisplay: FontFamily = fraunces(OPSZ_DISPLAY)
 
 /** Fraunces tuned for reading sizes. */
 val FrauncesText: FontFamily = fraunces(OPSZ_TEXT)
+
+/** Optical size for glanceable numerals (ride.css `"opsz" 30`): sturdier strokes that survive glare. */
+private const val OPSZ_GLANCE = 30f
+
+/** Heavy Fraunces for values read at a glance while riding (speed, turn distance, caller). */
+val FrauncesGlance: FontFamily = fraunces(OPSZ_GLANCE, listOf(500, 600, 650, 750, 800))
 
 val InstrumentSans: FontFamily = FontFamily(
     SANS_WEIGHTS.map { w ->

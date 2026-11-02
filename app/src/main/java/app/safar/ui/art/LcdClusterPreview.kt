@@ -40,7 +40,7 @@ import app.safar.ui.theme.PlexMono
 import app.safar.ui.theme.SafarTheme
 import java.util.Locale
 
-private val LcdShape = RoundedCornerShape(10.dp, 10.dp, 18.dp, 18.dp)
+internal val LcdShape = RoundedCornerShape(10.dp, 10.dp, 18.dp, 18.dp)
 
 /**
  * Stylised cluster LCD (navigate screen `.lcd`): what the bike shows for the current nav frame.
@@ -107,7 +107,7 @@ private fun LcdFooter(eta: String?, remaining: String, ink: Color, dim: Color) {
 }
 
 /** Segment-display text: mono semibold, wide tracking, a faint glow. */
-private fun seg7(ink: Color, size: TextUnit) = TextStyle(
+internal fun seg7(ink: Color, size: TextUnit) = TextStyle(
     fontFamily = PlexMono,
     fontWeight = FontWeight.SemiBold,
     fontSize = size,
@@ -118,7 +118,7 @@ private fun seg7(ink: Color, size: TextUnit) = TextStyle(
 )
 
 /** Inset shade at the top and faint scan lines over the glass. */
-private fun Modifier.lcdGlass() = drawWithContent {
+internal fun Modifier.lcdGlass() = drawWithContent {
     drawContent()
     drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.22f), 0.12f to Color.Transparent))
     val step = 3.dp.toPx()

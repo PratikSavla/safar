@@ -30,9 +30,10 @@ fun FuelBars(bars: Int, max: Int, modifier: Modifier = Modifier, height: Dp = 34
     val count = max.coerceAtLeast(1)
     val filled = bars.coerceIn(0, count)
     // Empty tank: the rust outlines blink. Only then is there a loop, read while drawing in the gauge's own layer.
-    val blink = if (filled == 0) rememberLoopPhase(1000, "fuelBlink") else null
+    val onScreen = rememberOnScreen()
+    val blink = if (filled == 0) rememberLoopPhase(1000, "fuelBlink", running = onScreen.visible) else null
     val width = barWidth * count + gap * (count - 1)
-    val layer = if (blink != null) Modifier.graphicsLayer() else Modifier
+    val layer = if (filled == 0) onScreen.modifier.graphicsLayer() else Modifier
     Canvas(modifier.size(width, height).then(layer).clearAndSetSemantics { contentDescription = "Fuel $filled of $count bars" }) {
         val bw = barWidth.toPx()
         val g = gap.toPx()

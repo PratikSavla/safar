@@ -38,6 +38,7 @@ import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.CardStyle
 import app.safar.ui.components.SignalBars
 import app.safar.ui.components.rememberLoopPhase
+import app.safar.ui.components.rememberOnScreen
 import app.safar.ui.components.rssiBars
 import app.safar.ui.theme.Atlas
 import java.util.Locale
@@ -60,8 +61,9 @@ fun Radar(on: Boolean, modifier: Modifier = Modifier) {
 @Composable
 private fun ListeningRings() {
     val rust = Atlas.colors.rust
-    val phases = (1..4).map { i -> rememberLoopPhase(2600, "ring$i", easing = PageEase, delayMillis = i * 450) }
-    Canvas(Modifier.size(210.dp).graphicsLayer()) {
+    val onScreen = rememberOnScreen()
+    val phases = (1..4).map { i -> rememberLoopPhase(2600, "ring$i", PageEase, delayMillis = i * 450, running = onScreen.visible) }
+    Canvas(Modifier.size(210.dp).then(onScreen.modifier).graphicsLayer()) {
         val center = Offset(size.width / 2, size.height / 2)
         phases.forEachIndexed { idx, phase ->
             val r = (idx + 1) * 26.dp.toPx()
@@ -117,10 +119,11 @@ fun ScanResult(bike: ScannedBike, onPick: () -> Unit) {
 @Composable
 fun PairLink(family: VehicleFamily) {
     val c = Atlas.colors
-    val phase = rememberLoopPhase(500, "pairLink")
+    val onScreen = rememberOnScreen()
+    val phase = rememberLoopPhase(500, "pairLink", running = onScreen.visible)
     Row(Modifier.fillMaxWidth().padding(top = 40.dp, bottom = 26.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         AtlasIcon(AtlasIcons.phone, size = 34.dp)
-        Canvas(Modifier.weight(1f).height(3.dp).graphicsLayer()) {
+        Canvas(Modifier.weight(1f).height(3.dp).then(onScreen.modifier).graphicsLayer()) {
             val on = 8.dp.toPx()
             val off = 6.dp.toPx()
             drawLine(

@@ -39,9 +39,10 @@ fun WarnLine(text: String, modifier: Modifier = Modifier, color: Color = Atlas.c
 /** Rust dashes marching to the right (`.wait-line`): something is on its way. Decorative. */
 @Composable
 fun MarchingRule(modifier: Modifier = Modifier, color: Color = Atlas.colors.rust) {
-    val phase = rememberLoopPhase(700, "marchPhase")
+    val onScreen = rememberOnScreen()
+    val phase = rememberLoopPhase(700, "marchPhase", running = onScreen.visible)
     // Own layer, phase read while drawing: each frame redraws this 3 dp strip, not the page it sits on.
-    Canvas(modifier.fillMaxWidth().height(3.dp).graphicsLayer()) {
+    Canvas(modifier.fillMaxWidth().height(3.dp).then(onScreen.modifier).graphicsLayer()) {
         val dash = 10.dp.toPx()
         val gap = 8.dp.toPx()
         drawLine(

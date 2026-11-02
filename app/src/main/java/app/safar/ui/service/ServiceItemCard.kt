@@ -33,6 +33,7 @@ import app.safar.ui.components.Stamp
 import app.safar.ui.components.StampTone
 import app.safar.ui.components.blinkShown
 import app.safar.ui.components.rememberLoopPhase
+import app.safar.ui.components.rememberOnScreen
 import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
 import kotlin.math.roundToInt
@@ -105,10 +106,11 @@ internal fun ServiceItemCard(row: ServiceRowUi, onDone: () -> Unit, onInterval: 
 private fun ServiceRoad(row: ServiceRowUi, accent: Color) {
     val c = Atlas.colors
     val overdue = row.status.state == ServiceState.OVERDUE
-    val blink = if (overdue) rememberLoopPhase(1200, "svcBlink") else null
+    val onScreen = rememberOnScreen()
+    val blink = if (overdue) rememberLoopPhase(1200, "svcBlink", running = onScreen.visible) else null
     val spoken = "${(row.drawn * 100).roundToInt()} percent of the way to the next service"
     Box(Modifier.fillMaxWidth().height(26.dp).padding(start = 4.dp).clearAndSetSemantics { contentDescription = spoken }) {
-        Canvas(Modifier.fillMaxWidth().height(26.dp).padding(end = 22.dp).then(if (blink != null) Modifier.graphicsLayer() else Modifier)) {
+        Canvas(Modifier.fillMaxWidth().height(26.dp).padding(end = 22.dp).then(if (overdue) onScreen.modifier.graphicsLayer() else Modifier)) {
             val y = 12.dp.toPx() + 1.25.dp.toPx()
             val w = 2.5.dp.toPx()
             val dash = PathEffect.dashPathEffect(floatArrayOf(7.dp.toPx(), 5.dp.toPx()))

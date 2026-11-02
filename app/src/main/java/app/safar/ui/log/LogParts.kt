@@ -36,6 +36,7 @@ import app.safar.ui.components.Hairline
 import app.safar.ui.components.SwitchRow
 import app.safar.ui.components.blinkShown
 import app.safar.ui.components.rememberLoopPhase
+import app.safar.ui.components.rememberOnScreen
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 
@@ -70,10 +71,11 @@ internal fun SessionBar(sessionActive: Boolean, onSession: () -> Unit, onExport:
 @Composable
 private fun RecordingMark(modifier: Modifier) {
     val c = Atlas.colors
-    val phase = rememberLoopPhase(1000, "recBlink")
+    val onScreen = rememberOnScreen()
+    val phase = rememberLoopPhase(1000, "recBlink", running = onScreen.visible)
     Row(modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         // Layer alpha read in the layer block: a blink only updates a layer property, no recomposition or redraw.
-        Box(Modifier.size(8.dp).graphicsLayer { alpha = if (blinkShown(phase.value)) 1f else 0.2f }.background(c.rust, CircleShape))
+        Box(Modifier.size(8.dp).then(onScreen.modifier).graphicsLayer { alpha = if (blinkShown(phase.value)) 1f else 0.2f }.background(c.rust, CircleShape))
         BasicText("writing to file", style = Atlas.type.src.copy(color = c.rust))
     }
 }

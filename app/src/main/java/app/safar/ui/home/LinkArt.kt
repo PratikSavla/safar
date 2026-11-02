@@ -25,6 +25,7 @@ import app.safar.ui.art.AtlasIcons
 import app.safar.ui.art.BikeSilhouette
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.rememberLoopPhase
+import app.safar.ui.components.rememberOnScreen
 import app.safar.ui.theme.Atlas
 
 private val PageEase = CubicBezierEasing(0.22f, 0.8f, 0.24f, 1f)
@@ -57,7 +58,7 @@ private fun OfflineLine(modifier: Modifier) {
 
 /**
  * Linked, linking or retrying: the phase is read only while drawing, inside the line's own layer, so each frame
- * redraws this 9 dp strip and not the Today page it scrolls with.
+ * redraws this 9 dp strip and not the Today page it scrolls with. Scrolled out of the window, it stops.
  */
 @Composable
 private fun LiveLine(kind: ConnKind, modifier: Modifier) {
@@ -67,8 +68,10 @@ private fun LiveLine(kind: ConnKind, modifier: Modifier) {
         ConnKind.RECONNECTING -> 1400
         else -> 600
     }
-    val phase = rememberLoopPhase(periodMs, "linkPhase", easing = if (kind == ConnKind.CONNECTED) PageEase else LinearEasing)
-    Canvas(modifier.graphicsLayer()) {
+    val onScreen = rememberOnScreen()
+    val easing = if (kind == ConnKind.CONNECTED) PageEase else LinearEasing
+    val phase = rememberLoopPhase(periodMs, "linkPhase", easing, running = onScreen.visible)
+    Canvas(modifier.then(onScreen.modifier).graphicsLayer()) {
         when (kind) {
             ConnKind.CONNECTED -> {
                 dashes(c.moss, 0f)

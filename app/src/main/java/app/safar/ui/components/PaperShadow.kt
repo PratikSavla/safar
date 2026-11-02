@@ -67,21 +67,24 @@ private class PaperShadowNode(private var shape: Shape, private var shadow: Pape
     private var plan: ShadowPlan? = null
     private var edge: Outline? = null
     private var tint: ColorFilter? = null
-    private var builtFor: Triple<Size, Float, LayoutDirection>? = null
+    private var builtSize = Size.Unspecified
+    private var builtDensity = 0f
+    private var builtDirection = LayoutDirection.Ltr
 
     fun update(shape: Shape, shadow: PaperShadow) {
         if (shape == this.shape && shadow == this.shadow) return
         this.shape = shape
         this.shadow = shadow
-        builtFor = null
+        builtSize = Size.Unspecified
         invalidateDraw()
     }
 
     override fun ContentDrawScope.draw() {
-        val key = Triple(size, density, layoutDirection)
-        if (builtFor != key) {
+        if (size != builtSize || density != builtDensity || layoutDirection != builtDirection) {
             build()
-            builtFor = key
+            builtSize = size
+            builtDensity = density
+            builtDirection = layoutDirection
         }
         plan?.let { p -> tint?.let { p.draw(this, it) } }
         val outline = edge

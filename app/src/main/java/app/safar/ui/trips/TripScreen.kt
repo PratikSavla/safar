@@ -83,10 +83,10 @@ fun TripContent(
         },
     ) {
         when (state) {
-            TripDetailState.Loading -> BackTopBar("Journal", "Opening…", onBack)
+            TripDetailState.Loading -> BackTopBar("Trips", "Opening…", onBack)
             TripDetailState.Missing -> {
-                BackTopBar("Journal", "Not found", onBack)
-                EmptyState("This ride isn’t in your journal.", message = "It may have been deleted.", actionLabel = "Back to the journal", onAction = onBack)
+                BackTopBar("Trips", "Not found", onBack)
+                EmptyState("This ride isn’t here any more.", message = "It may have been deleted.", actionLabel = "Back to Trips", onAction = onBack)
             }
             is TripDetailState.Ready -> TripBody(state.trip, onBack, onAsk = { sheet = it })
         }

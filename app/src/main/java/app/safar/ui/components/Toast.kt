@@ -51,7 +51,7 @@ class AtlasToastState {
 fun rememberToastState(): AtlasToastState = remember { AtlasToastState() }
 
 /**
- * Short confirmation slip in ink ("Opening Google Maps…", "Ride ended · added to the journal").
+ * Short confirmation slip in ink ("Opening Google Maps…", "Ride saved to Trips").
  * Put it in a full-screen Box; [bottomPadding] lifts it above the tabs. TalkBack announces it.
  */
 @Composable

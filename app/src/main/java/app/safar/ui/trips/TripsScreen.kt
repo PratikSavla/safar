@@ -82,7 +82,7 @@ fun TripsContent(
 private fun TripsHead(state: TripsUiState, onOpen: (Long) -> Unit) {
     Column {
         Masthead(
-            kicker = "Journal · ${state.bikeName ?: "your bike"}",
+            kicker = "Trips · ${state.bikeName ?: "your bike"}",
             title = "Roads",
             kickerAside = ridesText(state.rows.size),
             titleEm = " already ridden.",
@@ -91,7 +91,11 @@ private fun TripsHead(state: TripsUiState, onOpen: (Long) -> Unit) {
         state.live?.let { LiveEntry(it, Modifier.padding(top = 14.dp), onOpen) }
         SectionHeader("Rides") { Kicker("newest first") }
         if (state.rows.isEmpty() && !state.loading) {
-            EmptyState("No rides yet.", message = "Connect your bike and ride. Each ride is saved here on its own.")
+            if (state.live != null) {
+                EmptyState("Recording your first ride.", message = "It shows here when you stop.")
+            } else {
+                EmptyState("No rides yet.", message = "Connect your bike and ride. Each ride is saved here on its own.")
+            }
         }
     }
 }

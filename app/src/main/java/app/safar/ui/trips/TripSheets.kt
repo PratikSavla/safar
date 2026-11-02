@@ -41,7 +41,7 @@ internal fun DeleteSheet(visible: Boolean, trip: TripDetailUi, onDismiss: () -> 
     AtlasBottomSheet(visible, onDismiss, title = "Delete ${trip.title}?") {
         Kicker("Ride ${entryNumber(trip.number)} · ${trip.day}")
         Note(
-            "The ride (${Formatters.km1(trip.km)} km) and its route leave your journal. Your fuel-ups and odometer stay as they are.",
+            "The ride (${Formatters.km1(trip.km)} km) and its route are deleted. Your fuel-ups and odometer stay as they are.",
             Modifier.padding(top = 8.dp),
         )
         Row(Modifier.fillMaxWidth().padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

@@ -95,7 +95,7 @@ class ShellViewModel(
     /** The rider left Ride by hand: auto mode no longer owns it. The screen then navigates back. */
     fun leaveRide(stillMoving: Boolean) {
         setAutoRide(false)
-        if (stillMoving) toast("Ride mode closed — still recording your trip")
+        if (stillMoving) toast("Ride mode closed — still recording your ride")
     }
 
     /** The ViewModels of one stack entry; dropped when the entry leaves the stack. */
@@ -125,7 +125,7 @@ class ShellViewModel(
                 AutoRideAction.LEAVE -> {
                     setAutoRide(false)
                     back()
-                    toast("Ride saved to your trips")
+                    toast("Ride saved to Trips")
                 }
                 AutoRideAction.NONE -> Unit
             }

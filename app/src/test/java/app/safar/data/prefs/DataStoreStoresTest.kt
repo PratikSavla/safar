@@ -17,7 +17,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /** Real file-backed DataStores in a temp folder (JVM only, no device). */
 class DataStoreStoresTest {
@@ -77,5 +79,18 @@ class DataStoreStoresTest {
         val s = withTimeout(5_000) { store.settings.first { it.onboarded } }
         assertEquals("Alex", s.riderName)
         assertEquals(Settings().theme, s.theme)
+    }
+
+    @Test
+    fun oneTimeFlagSurvivesSettingsUpdatesInTheSameFile() = runBlocking {
+        val data = store("settings")
+        val flags = DataStoreOneTimeFlags(data)
+        val settings = DataStoreSettingsStore(data, scope)
+        assertFalse(flags.isSet("once_test"))
+        flags.set("once_test")
+        settings.update { it.copy(riderName = "Rider") }
+        withTimeout(5_000) { settings.settings.first { it.riderName == "Rider" } }
+        assertTrue(flags.isSet("once_test"))
+        assertFalse(flags.isSet("once_other"))
     }
 }

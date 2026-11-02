@@ -49,9 +49,11 @@
         <package android:name="com.google.android.apps.maps" />
     </queries>
 
+    <!-- Backup: rides, fuel, places, settings and the saved bike go to the rider's Android backup (end-to-end
+         encrypted only) and to device-to-device transfer; debug logs never do. Lists in res/xml/*_rules.xml. -->
     <application
         android:name=".SafarApp"
-        android:allowBackup="false"
+        android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"

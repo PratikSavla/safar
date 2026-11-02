@@ -35,6 +35,11 @@ class RoomTripRepository(private val dao: TripDao) : TripRepository {
         if (points.isNotEmpty()) dao.insertPoints(points.map { it.toEntity() })
     }
 
+    override suspend fun replaceTrack(tripId: Long, points: List<TrackPoint>) {
+        require(points.all { it.tripId == tripId }) { "Every point must belong to trip $tripId" }
+        dao.replaceTrack(tripId, points.map { it.toEntity() })
+    }
+
     /** Also deletes the trip's track (foreign key cascade). */
     override suspend fun delete(id: Long) = dao.delete(id)
 }

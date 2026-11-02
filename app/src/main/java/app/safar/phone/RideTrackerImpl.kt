@@ -9,6 +9,7 @@ import app.safar.core.RideState
 import app.safar.core.RideTracker
 import app.safar.data.GpsFix
 import app.safar.data.ParkedSpot
+import app.safar.data.thinTrack
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -97,7 +98,7 @@ class RideTrackerImpl(context: Context, private val scope: CoroutineScope, priva
     /** Before any event: finish trips a dead process left open, so they do not stay as open 0 km rows. */
     private suspend fun closeOpenTrips() {
         try {
-            val open = recorder.closeOpenTrips()
+            val open = recorder.closeOpenTrips { thinTrack(it) }
             if (open.kept + open.deleted > 0) {
                 log.info("trip.recovered", mapOf("kept" to open.kept.toString(), "deleted" to open.deleted.toString()))
             }
@@ -185,6 +186,20 @@ class RideTrackerImpl(context: Context, private val scope: CoroutineScope, priva
             log.info("trip.discarded", mapOf("reason" to "under $MIN_TRIP_KM km"))
         } else {
             log.info("trip.saved", mapOf("id" to done.id.toString(), "km" to String.format(Locale.ROOT, "%.2f", done.distanceKm)))
+            thinTrack(done.id)
+        }
+    }
+
+    /** Simplifies a finished trip's stored track (keeps backups small). A failure keeps the full track. */
+    private suspend fun thinTrack(tripId: Long) {
+        try {
+            val result = AppContainer.trips.thinTrack(tripId)
+            log.info("trip.thinned", mapOf("id" to tripId.toString(), "before" to "${result.before}", "after" to "${result.after}"))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Thinning the track of trip $tripId failed", e)
+            log.error("trip.thin_failed", mapOf("id" to tripId.toString(), "error" to e.javaClass.simpleName))
         }
     }
 

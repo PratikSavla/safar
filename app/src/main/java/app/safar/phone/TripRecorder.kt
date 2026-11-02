@@ -106,9 +106,9 @@ class TripRecorder(
     /**
      * Finishes trips left open (no end time) by a process that died mid-trip, other than the one recording:
      * distance and speeds from their saved track points, end time from the last point. The last unsaved batch
-     * is lost. Trips under [MIN_TRIP_KM] are deleted.
+     * is lost. Trips under [MIN_TRIP_KM] are deleted. [onClosed] runs with the id of each trip kept.
      */
-    suspend fun closeOpenTrips(): OpenTrips {
+    suspend fun closeOpenTrips(onClosed: suspend (Long) -> Unit = {}): OpenTrips {
         val repo = trips()
         val open = repo.trips.first().filter { it.endMillis == null && it.id != trip?.id }
         var kept = 0
@@ -121,6 +121,7 @@ class TripRecorder(
             }
             repo.update(counted.copy(endMillis = points.maxOfOrNull { it.atMillis } ?: t.startMillis))
             kept++
+            onClosed(t.id)
         }
         return OpenTrips(kept, open.size - kept)
     }

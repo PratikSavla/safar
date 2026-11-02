@@ -6,6 +6,7 @@ import app.safar.ui.nav.Navigator
 import app.safar.ui.nav.Route
 import app.safar.ui.onboarding.OnboardingScreen
 import app.safar.ui.pair.PairScreen
+import app.safar.ui.ride.RideScreen
 
 /** The router: one line per route. Replace a `PendingScreen` line with the real screen when it lands. */
 @Composable
@@ -14,7 +15,7 @@ fun RouteHost(route: Route, navigator: Navigator) {
         Route.Onboarding -> OnboardingScreen(navigator)
         Route.Pair -> PairScreen(navigator)
         Route.Home -> HomeScreen(navigator)
-        Route.Ride -> PendingScreen(navigator, "Ride", "Ride mode")
+        Route.Ride -> RideScreen(navigator)
         Route.Navigate -> PendingScreen(navigator, "Route · via Google Maps", "Where to?", tab = true)
         is Route.Place -> PendingScreen(navigator, "Route", "Save a place")
         Route.Alerts -> PendingScreen(navigator, "Alerts · sent to the cluster", "Alerts", tab = true)

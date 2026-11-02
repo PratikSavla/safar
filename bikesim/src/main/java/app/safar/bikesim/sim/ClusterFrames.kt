@@ -16,11 +16,15 @@ import kotlin.math.floor
  */
 object ClusterFrames {
     private const val RAW25_INDEX = 25
+    private const val SPEED_START = 2
+    private const val ODOMETER_END = 11
+    private const val BAD_DIGIT = '?'
 
-    fun build(cluster: SimCluster, mode: ChecksumMode): ByteArray {
-        val body = CLUSTER_TYPE +
-            digits(cluster.speedKmh, 3) +
-            digits(floor(cluster.odometerKm).toLong(), 6) +
+    fun build(cluster: SimCluster, mode: ChecksumMode): ByteArray =
+        frame(cluster, mode, digits(cluster.speedKmh, 3), digits(floor(cluster.odometerKm).toLong(), 6))
+
+    private fun frame(cluster: SimCluster, mode: ChecksumMode, speed: String, odometer: String): ByteArray {
+        val body = CLUSTER_TYPE + speed + odometer +
             digits(Math.round(cluster.tripAKm * 10), 6) +
             digits(Math.round(cluster.tripBKm * 10), 6) +
             cluster.gear.code +
@@ -46,13 +50,21 @@ object ClusterFrames {
 
     /**
      * A 30-byte cluster frame with a broken start byte, broken end byte and non-digit speed and odometer fields.
-     * The checksum byte is left as computed for the original frame.
+     * The checksum byte is left as computed for the original frame. A receiver rejects it at the framing check,
+     * before it reads any field.
      */
-    fun corrupt(cluster: SimCluster, mode: ChecksumMode): ByteArray {
+    fun badFraming(cluster: SimCluster, mode: ChecksumMode): ByteArray {
         val frame = build(cluster, mode)
         frame[0] = 0x00
         frame[FRAME_LENGTH - 1] = 0x00
-        for (i in 2..10) frame[i] = '?'.code.toByte()
+        for (i in SPEED_START until ODOMETER_END) frame[i] = BAD_DIGIT.code.toByte()
         return frame
     }
+
+    /**
+     * A cluster frame with valid start byte, end byte and checksum whose speed and odometer fields are not
+     * digits, so it passes the framing check and fails in the field decoder.
+     */
+    fun badFields(cluster: SimCluster, mode: ChecksumMode): ByteArray =
+        frame(cluster, mode, BAD_DIGIT.toString().repeat(3), BAD_DIGIT.toString().repeat(6))
 }

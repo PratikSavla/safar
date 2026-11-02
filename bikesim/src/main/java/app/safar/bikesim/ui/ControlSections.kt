@@ -100,7 +100,10 @@ fun ActionsSection(s: SimUiState, vm: SimViewModel) {
     val linked = s.central != null
     Section("Faults") {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SimButton("Send corrupt frame", vm::sendCorrupt, enabled = s.notifyOn, modifier = Modifier.weight(1f))
+            SimButton("Send bad framing", vm::sendBadFraming, enabled = s.notifyOn, modifier = Modifier.weight(1f))
+            SimButton("Send bad fields", vm::sendBadFields, enabled = s.notifyOn, modifier = Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SimButton("Send wrong checksum", vm::sendWrongChecksum, enabled = s.notifyOn, modifier = Modifier.weight(1f))
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

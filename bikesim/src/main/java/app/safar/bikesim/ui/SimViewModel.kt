@@ -105,7 +105,9 @@ class SimViewModel(app: Application) : AndroidViewModel(app), PeripheralEvents {
         }
     }
 
-    fun sendCorrupt() = send(ClusterFrames.corrupt(_state.value.cluster, _state.value.mode), "corrupt")
+    fun sendBadFraming() = send(ClusterFrames.badFraming(_state.value.cluster, _state.value.mode), "bad framing")
+
+    fun sendBadFields() = send(ClusterFrames.badFields(_state.value.cluster, _state.value.mode), "bad fields")
 
     fun sendWrongChecksum() = send(ClusterFrames.wrongChecksum(_state.value.cluster, _state.value.mode), "wrong checksum")
 

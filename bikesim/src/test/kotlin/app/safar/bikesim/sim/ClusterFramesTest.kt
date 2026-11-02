@@ -70,13 +70,27 @@ class ClusterFramesTest {
     }
 
     @Test
-    fun `corrupt frame breaks start, end and digits`() {
-        val frame = ClusterFrames.corrupt(cluster, ChecksumMode.SUM)
+    fun `bad framing frame breaks start, end and digits`() {
+        val frame = ClusterFrames.badFraming(cluster, ChecksumMode.SUM)
         assertEquals(30, frame.size)
         assertEquals(0, frame[0].toInt())
         assertEquals(0, frame[29].toInt())
         assertEquals('?'.code, frame[2].toInt())
-        assertFailsWith<FrameException> { decodeCluster(frame, ChecksumMode.SUM) }
+        assertEquals('?'.code, frame[10].toInt())
+        assertEquals("start byte 0x00, expected 0xa5", validateFrame(frame, ChecksumMode.SUM).reason)
+    }
+
+    @Test
+    fun `bad fields frame passes framing and fails in the field decoder`() {
+        for (mode in ChecksumMode.entries) {
+            val frame = ClusterFrames.badFields(cluster, mode)
+            assertTrue(validateFrame(frame, mode).ok)
+            assertEquals("7?????????", String(frame.copyOfRange(1, 11), Charsets.US_ASCII))
+            val good = ClusterFrames.build(cluster, mode)
+            assertEquals(toHex(good.copyOfRange(11, 28)), toHex(frame.copyOfRange(11, 28)))
+            val error = assertFailsWith<FrameException> { decodeCluster(frame, mode) }
+            assertEquals("speed is not ASCII digits: \"???\"", error.message)
+        }
     }
 
     @Test

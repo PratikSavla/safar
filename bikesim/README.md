@@ -53,7 +53,8 @@ With both devices connected to one computer, pick the target of each install wit
 | Fuel bars | 0-6. With **Drain fuel while riding** on, one bar drops every 5 km of riding. |
 | Gear | `N`, `1`-`6`, sent in byte 23. |
 | Byte 25 | Raw value 0-255, sent in byte 25. |
-| Send corrupt frame | One cluster frame with a broken start byte, end byte and non-digit speed and odometer. |
+| Send bad framing | One cluster frame with a broken start byte and end byte (and non-digit speed and odometer). Safar rejects it at the framing check. |
+| Send bad fields | One cluster frame with valid framing and checksum but non-digit speed and odometer. It passes Safar's framing check and fails in the field decoder. |
 | Send wrong checksum | One correct cluster frame whose checksum matches neither checksum mode. |
 | Drop link | Cancels the connection to the central, as when the bike goes out of range. Advertising starts again. |
 | Pause frames (bike off) | Stops the 5 s cluster frames; the link stays up. Press again to resume. |

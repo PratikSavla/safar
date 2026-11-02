@@ -1,14 +1,27 @@
 package app.safar.ui.shell
 
 import androidx.compose.runtime.Composable
+import app.safar.ui.alerts.AlertsScreen
+import app.safar.ui.bike.BikeScreen
+import app.safar.ui.fuel.FuelScreen
+import app.safar.ui.fuel.FuelUpScreen
 import app.safar.ui.home.HomeScreen
+import app.safar.ui.icontest.IconTestScreen
+import app.safar.ui.log.LogScreen
 import app.safar.ui.nav.Navigator
 import app.safar.ui.nav.Route
+import app.safar.ui.navigate.NavigateScreen
+import app.safar.ui.navigate.PlaceScreen
 import app.safar.ui.onboarding.OnboardingScreen
 import app.safar.ui.pair.PairScreen
+import app.safar.ui.parked.ParkedScreen
 import app.safar.ui.ride.RideScreen
+import app.safar.ui.service.ServiceScreen
+import app.safar.ui.settings.SettingsScreen
+import app.safar.ui.trips.TripScreen
+import app.safar.ui.trips.TripsScreen
 
-/** The router: one line per route. Replace a `PendingScreen` line with the real screen when it lands. */
+/** The router: one line per route. Tab sections reserve room for the shell's stub bar ([TabBarSpace]). */
 @Composable
 fun RouteHost(route: Route, navigator: Navigator) {
     when (route) {
@@ -16,18 +29,18 @@ fun RouteHost(route: Route, navigator: Navigator) {
         Route.Pair -> PairScreen(navigator)
         Route.Home -> HomeScreen(navigator)
         Route.Ride -> RideScreen(navigator)
-        Route.Navigate -> PendingScreen(navigator, "Route · via Google Maps", "Where to?", tab = true)
-        is Route.Place -> PendingScreen(navigator, "Route", "Save a place")
-        Route.Alerts -> PendingScreen(navigator, "Alerts · sent to the cluster", "Alerts", tab = true)
-        Route.Trips -> PendingScreen(navigator, "Journal", "Trips", tab = true)
-        is Route.Trip -> PendingScreen(navigator, "Journal", "Trip")
-        Route.Fuel -> PendingScreen(navigator, "Garage", "Fuel")
-        is Route.FuelUp -> PendingScreen(navigator, "Fuel", "Log fuel")
-        Route.Service -> PendingScreen(navigator, "Garage", "Service")
-        Route.Parked -> PendingScreen(navigator, "Garage", "Parked")
-        Route.Bike -> PendingScreen(navigator, "Garage", "Bike")
-        Route.Log -> PendingScreen(navigator, "Debug", "Debug log")
-        Route.IconTest -> PendingScreen(navigator, "Debug", "Icon test")
-        Route.Settings -> PendingScreen(navigator, "Settings", "Settings", tab = true)
+        Route.Navigate -> NavigateScreen(navigator, bottomBar = TabBarSpace)
+        is Route.Place -> PlaceScreen(navigator, route.placeId, route.sharedText)
+        Route.Alerts -> AlertsScreen(navigator, bottomBar = TabBarSpace)
+        Route.Trips -> TripsScreen(navigator, bottomBar = TabBarSpace)
+        is Route.Trip -> TripScreen(navigator, route.tripId)
+        Route.Fuel -> FuelScreen(navigator)
+        is Route.FuelUp -> FuelUpScreen(navigator, route.fuelUpId)
+        Route.Service -> ServiceScreen(navigator)
+        Route.Parked -> ParkedScreen(navigator)
+        Route.Bike -> BikeScreen(navigator)
+        Route.Log -> LogScreen(navigator)
+        Route.IconTest -> IconTestScreen(navigator)
+        Route.Settings -> SettingsScreen(navigator, bottomBar = TabBarSpace)
     }
 }

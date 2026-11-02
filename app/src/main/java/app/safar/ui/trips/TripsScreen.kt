@@ -33,7 +33,7 @@ private const val PAGE = 30
 
 /** Journal tab: rides as postcards with their ink tracks, week and 30-day totals (trips.js). */
 @Composable
-fun TripsScreen(navigator: Navigator) {
+fun TripsScreen(navigator: Navigator, bottomBar: (@Composable () -> Unit)? = null) {
     val vm: TripsViewModel = viewModel {
         TripsViewModel(AppContainer.trips, AppContainer.ride.state, AppContainer.bike.state)
     }
@@ -45,14 +45,20 @@ fun TripsScreen(navigator: Navigator) {
             val flow = remember(id) { vm.thumb(id) }
             flow.collectAsStateWithLifecycle(TrackThumb.Empty).value
         },
+        bottomBar = bottomBar,
     )
 }
 
 /** Stateless journal page; [thumbFor] loads one postcard's thinned GPS track. */
 @Composable
-fun TripsContent(state: TripsUiState, onOpen: (Long) -> Unit, thumbFor: @Composable (Long) -> TrackThumb) {
+fun TripsContent(
+    state: TripsUiState,
+    onOpen: (Long) -> Unit,
+    thumbFor: @Composable (Long) -> TrackThumb,
+    bottomBar: (@Composable () -> Unit)? = null,
+) {
     var shown by rememberSaveable { mutableIntStateOf(PAGE) }
-    AtlasPage(topo = TopoTransform.Journal) {
+    AtlasPage(topo = TopoTransform.Journal, bottomBar = bottomBar) {
         Masthead(
             kicker = "Journal · ${state.bikeName ?: "your bike"}",
             title = "Roads",

@@ -11,6 +11,7 @@ import app.safar.core.PhoneSnapshot
 import app.safar.log.AppLog
 import app.safar.log.LogFileStore
 import app.safar.protocol.LogHeaderInfo
+import app.safar.service.LowFuelNotifier
 import app.safar.service.ServiceController
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -53,6 +54,7 @@ object BleModule {
         AppContainer.outbox = manager
         manager.start()
         ServiceController.start(app, manager.serviceWanted, log, scope)
+        LowFuelNotifier.start(app, manager.state, AppContainer.settings.settings, log, scope)
         log.event("App started", mapOf("version" to BuildConfig.VERSION_NAME))
     }
 

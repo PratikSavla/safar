@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -60,6 +62,9 @@ fun OnboardingScreen(navigator: Navigator, vm: OnboardingViewModel = viewModel {
 @Composable
 internal fun OnboardingContent(ui: OnboardingUi, onName: (String) -> Unit, onPrev: () -> Unit, onNext: () -> Unit) {
     val shift = with(LocalDensity.current) { 26.dp.roundToPx() }
+    // Held here, not on page 2: the page leaves composition on Back or Next, and a permission Android no longer
+    // asks for would read "not asked" again on return.
+    val askedPermissions = rememberSaveable { mutableStateOf(emptySet<String>()) }
     AtlasPage(topo = TopoTransform.Onboarding) {
         Gap(40.dp)
         AnimatedContent(
@@ -70,7 +75,7 @@ internal fun OnboardingContent(ui: OnboardingUi, onName: (String) -> Unit, onPre
             Column(Modifier.fillMaxWidth()) {
                 when (step) {
                     0 -> CoverPage()
-                    1 -> PermissionsPage()
+                    1 -> PermissionsPage(askedPermissions)
                     else -> RiderPage(ui, onName)
                 }
             }

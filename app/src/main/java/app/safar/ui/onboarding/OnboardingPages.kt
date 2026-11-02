@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -117,9 +118,9 @@ private fun RouteArt() {
 
 /** Page 2: the permissions explainer. */
 @Composable
-internal fun PermissionsPage() {
+internal fun PermissionsPage(asked: MutableState<Set<String>>) {
     ObTitle("Page 2 of 3 · permissions", "What Safar asks for", "and why.")
-    PermissionsList()
+    PermissionsList(asked)
 }
 
 /** Page 3: the rider name with a live LCD preview. Locked while moving (UX rule 3). */

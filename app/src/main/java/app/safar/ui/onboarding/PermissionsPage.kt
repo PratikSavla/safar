@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -60,11 +61,14 @@ private val PERMS by lazy {
     )
 }
 
-/** Live status per item, with real Android requests. Status refreshes when the rider comes back from Settings. */
+/**
+ * Live status per item, with real Android requests. Status refreshes when the rider comes back from Settings.
+ * [askedState] holds the items asked during this run; the caller keeps it so it outlives this page.
+ */
 @Composable
-internal fun PermissionsList() {
+internal fun PermissionsList(askedState: MutableState<Set<String>>) {
     val context = LocalContext.current
-    var asked by rememberSaveable { mutableStateOf(emptySet<String>()) }
+    var asked by askedState
     // The item whose request is on screen. It counts as asked only once Android answers: before the first
     // request shouldShowRequestPermissionRationale is false, which would read as "denied in settings".
     var pending by rememberSaveable { mutableStateOf<String?>(null) }

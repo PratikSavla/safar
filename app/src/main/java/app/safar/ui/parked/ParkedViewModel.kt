@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 
@@ -32,15 +33,19 @@ class ParkedViewModel(
     private val navigation: () -> NavigationBridge,
     location: () -> Flow<GpsFix>,
     heading: () -> Flow<Float>,
+    private val declination: (GpsFix) -> Float = { 0f },
     private val now: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     private val allowed = MutableStateFlow(false)
 
     private val fix: Flow<GpsFix?> = allowed.flatMapLatest { ok -> if (ok) location().onStart<GpsFix?> { emit(null) } else flowOf(null) }
+
+    /** The fix with its magnetic declination, worked out once per fix rather than per compass sample. */
+    private val located: Flow<Pair<GpsFix?, Float>> = fix.map { f -> f to (f?.let(declination) ?: 0f) }
     private val compass: Flow<Float?> = heading().onStart<Float?> { emit(null) }
 
-    val state: StateFlow<ParkedUiState> = combine(parked.parked, fix, compass, allowed) { spot, f, h, ok ->
-        parkedUiState(spot, f, h, ok)
+    val state: StateFlow<ParkedUiState> = combine(parked.parked, located, compass, allowed) { spot, (f, decl), h, ok ->
+        parkedUiState(spot, f, h, ok, decl)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ParkedUiState())
 
     val notices = Notices()

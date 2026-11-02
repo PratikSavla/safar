@@ -64,11 +64,16 @@ fun shareText(spot: ParkedSpot): String {
     return "My bike is parked here: ${placeName(spot)}\nhttps://www.google.com/maps/search/?api=1&query=$q"
 }
 
-fun parkedUiState(spot: ParkedSpot?, fix: GpsFix?, heading: Float?, locationAllowed: Boolean): ParkedUiState {
+/**
+ * [heading] is the compass reading from magnetic north; [declination] (east positive, from the phone fix) turns it
+ * into a true-north heading, the reference [bearingDeg] uses.
+ */
+fun parkedUiState(spot: ParkedSpot?, fix: GpsFix?, heading: Float?, locationAllowed: Boolean, declination: Float = 0f): ParkedUiState {
     if (spot == null) return ParkedUiState(loading = false, phoneFix = fix, locationAllowed = locationAllowed)
+    val trueHeading = heading?.let { ((it + declination) % 360 + 360) % 360 }
     val base = ParkedUiState(
-        loading = false, spot = spot, place = placeName(spot), hasCompass = heading != null,
-        roseDeg = -(heading ?: 0f), phoneFix = fix, locationAllowed = locationAllowed,
+        loading = false, spot = spot, place = placeName(spot), hasCompass = trueHeading != null,
+        roseDeg = -(trueHeading ?: 0f), phoneFix = fix, locationAllowed = locationAllowed,
     )
     if (fix == null) return base
     val metres = haversineM(fix.lat, fix.lng, spot.lat, spot.lng)
@@ -77,7 +82,7 @@ fun parkedUiState(spot: ParkedSpot?, fix: GpsFix?, heading: Float?, locationAllo
     return base.copy(
         distanceM = metres.roundToInt(),
         bearingDeg = bearing.roundToInt() % 360,
-        pointerDeg = pointerAngle(bearing, heading),
+        pointerDeg = pointerAngle(bearing, trueHeading),
         here = metres <= near,
     )
 }

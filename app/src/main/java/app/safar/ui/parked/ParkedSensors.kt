@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.hardware.GeomagneticField
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -119,3 +120,5 @@ private fun remapForDisplay(rotation: Int, matrix: FloatArray, out: FloatArray) 
     SensorManager.remapCoordinateSystem(matrix, x, y, out)
 }
 
+/** Magnetic declination at [fix] in degrees (east positive): true heading = magnetic heading + declination. */
+fun magneticDeclination(fix: GpsFix): Float = GeomagneticField(fix.lat.toFloat(), fix.lng.toFloat(), 0f, fix.atMillis).declination

@@ -62,6 +62,18 @@ class ParkedMappingTest {
     }
 
     @Test
+    fun `declination turns the magnetic heading into true north before the needle is worked out`() {
+        // Magnetic 90, declination 10 degrees west: the top of the phone points 80 degrees from true north.
+        val s = parkedUiState(spot, GpsFix(18.4990, 73.8000, 2_000, 5f), heading = 90f, locationAllowed = true, declination = -10f)
+        assertEquals(0, s.bearingDeg)
+        assertEquals(280f, s.pointerDeg)
+        assertEquals(-80f, s.roseDeg)
+        val east = parkedUiState(spot, GpsFix(18.4990, 73.8000, 2_000, 5f), heading = 355f, locationAllowed = true, declination = 12f)
+        assertEquals(353f, east.pointerDeg)
+        assertEquals(-7f, east.roseDeg)
+    }
+
+    @Test
     fun `place falls back to coordinates and share text carries a maps link`() {
         val unnamed = spot.copy(label = null)
         assertEquals("18.50000, 73.80000", placeName(unnamed))

@@ -56,7 +56,9 @@ fun ParkedScreen(navigator: Navigator) {
     val app = LocalContext.current.applicationContext
     val context = LocalContext.current
     val vm: ParkedViewModel = viewModel {
-        ParkedViewModel(AppContainer.parked, { AppContainer.navigation }, { phoneLocation(app) }, { compassHeading(app) })
+        ParkedViewModel(
+            AppContainer.parked, { AppContainer.navigation }, { phoneLocation(app) }, { compassHeading(app) }, ::magneticDeclination,
+        )
     }
     val state by vm.state.collectAsStateWithLifecycle()
     val toast = rememberToastState()

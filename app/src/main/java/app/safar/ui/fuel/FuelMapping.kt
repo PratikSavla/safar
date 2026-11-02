@@ -10,6 +10,9 @@ import app.safar.data.MileageSegment
 import app.safar.data.OdoSource
 import app.safar.data.Settings
 import app.safar.data.fuelStats
+import app.safar.ui.components.ValueOrigin
+import app.safar.ui.format.Formatters
+import app.safar.ui.format.ValueSource
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -19,13 +22,24 @@ import kotlin.math.min
 // Pure state mapping for the fuel page (ux/variant-b/js/screens/fuel.js). All maths come from data/FuelStats.
 
 private const val DEFAULT_BARS = 6
+private const val AVERAGE_TANKS = 3
 private val shortDate = DateTimeFormatter.ofPattern("d MMM", Locale.UK)
 
-/** The cluster's fuel bars: live while connected, else the last reading kept after a disconnect. */
-data class BarsReading(val bars: Int?, val max: Int, val atMillis: Long?, val live: Boolean)
+/**
+ * The bike's fuel bars: live while connected, else the last reading kept after a disconnect. [connected] is the
+ * link itself, so a connected bike with no reading yet says "Waiting for the bike".
+ */
+data class BarsReading(val bars: Int?, val max: Int, val atMillis: Long?, val live: Boolean, val connected: Boolean = live) {
+    /** Where the bars came from, for [app.safar.ui.components.Freshness]. */
+    val origin: ValueOrigin get() = ValueOrigin(ValueSource.BIKE, atMillis, connected = if (atMillis == null) connected else live)
+}
 
 /** Badge for where a fuel-up's odometer came from (fuel.js `ODO_BADGE`). */
-enum class OdoBadge(val label: String) { BIKE("bike"), EDITED("edited"), TYPED("typed") }
+enum class OdoBadge(val label: String, val spoken: String) {
+    BIKE("from bike", "read from your bike"),
+    EDITED("edited", "edited by you"),
+    TYPED("typed", "typed by you"),
+}
 
 data class FuelUpRowUi(
     val id: Long,
@@ -60,19 +74,43 @@ fun jsNumber(v: Double): String = if (v == Math.floor(v) && kotlin.math.abs(v) <
 /** "12 Mar". */
 fun fuelDate(atMillis: Long, zone: ZoneId): String = shortDate.format(Instant.ofEpochMilli(atMillis).atZone(zone))
 
+/** "last full tank", "last 3 full tanks": the tanks the average is taken over. */
+fun averageOver(segments: Int): String = min(AVERAGE_TANKS, segments).let { if (it == 1) "last full tank" else "last $it full tanks" }
+
 /** How the range was worked out, under the big number (fuel.js `methodLine`). */
 fun methodLine(stats: FuelStats): String = when (stats.method) {
-    FuelMethod.HISTORY -> "from your fuel-ups · avg ${stats.avgKmpl?.let(::jsNumber)} km/L, last ${min(3, stats.segments.size)} fills"
-    FuelMethod.BARS -> "rough · from fuel bars only, log a full tank to improve"
-    FuelMethod.NONE -> "no estimate yet · log a full tank to start"
+    FuelMethod.HISTORY -> "Worked out from your ${averageOver(stats.segments.size)}: ${stats.avgKmpl?.let(::jsNumber)} km/L."
+    FuelMethod.BARS -> "A rough guess from the fuel bars. Log a full tank for a better one."
+    FuelMethod.NONE -> "No estimate yet. Log a full tank to start."
 }
 
-/** Source caption for the range figure. */
+/** Developer mode only: the technical source of the range figure. */
 fun rangeSource(method: FuelMethod): String = when (method) {
     FuelMethod.HISTORY -> "calculated · fuel-ups"
     FuelMethod.BARS -> "rough · bars"
     FuelMethod.NONE -> "log a full tank"
 }
+
+/** What TalkBack reads for the tank bar: "About 5.2 of 12 litres left." */
+fun tankDescription(stats: FuelStats): String = stats.remainingL?.let { "About ${jsNumber(it)} of ${jsNumber(stats.tank)} litres left." }
+    ?: "${jsNumber(stats.tank)} litre tank. Fuel left not known yet."
+
+/** The calm hint when the bars and the fuel-ups disagree. */
+fun gaugeHint(stats: FuelStats): String =
+    "Your bike shows ${stats.bars} of ${stats.barsMax} bars, but your fuel-ups say about ${stats.remainingL?.let(::jsNumber)} L is left. " +
+        "Log your next fuel-up, or check the tank size in Settings."
+
+/** "1 fuel-up", "3 fuel-ups". */
+fun fuelUpsText(count: Int): String = if (count == 1) "1 fuel-up" else "$count fuel-ups"
+
+/** "1 tank", "4 tanks". */
+fun tanksText(count: Int): String = if (count == 1) "1 tank" else "$count tanks"
+
+/** What TalkBack reads for a receipt: "31 Oct: 6.7 litres for ₹712, ₹106.27 a litre. 12,164 km, read from your bike. Full tank." */
+fun fuelUpSpoken(row: FuelUpRowUi, currency: String): String =
+    "${row.date}: ${jsNumber(row.litres)} litres for ${Formatters.money(row.total, currency)}, " +
+        "${Formatters.money(row.perLitre, currency, 2)} a litre. ${Formatters.odometer(row.odometerKm)} km, ${row.badge.spoken}. " +
+        if (row.full) "Full tank." else "Top-up."
 
 /** Share of the tank still in it, 0..1, for the tank bar. */
 fun tankFraction(stats: FuelStats): Float =
@@ -80,9 +118,10 @@ fun tankFraction(stats: FuelStats): Float =
 
 fun barsReading(bike: BikeState): BarsReading {
     val max = bike.saved?.model?.fuelBars ?: DEFAULT_BARS
-    val live = bike.link == LinkState.Connected && bike.cluster != null
+    val connected = bike.link == LinkState.Connected
+    val live = connected && bike.cluster != null
     val reading = bike.cluster ?: bike.lastCluster
-    return BarsReading(reading?.fuelBars, max, reading?.receivedAtMillis, live)
+    return BarsReading(reading?.fuelBars, max, reading?.receivedAtMillis, live, connected)
 }
 
 /** History rows, highest odometer first, then newest first (fuel.js `history`). */

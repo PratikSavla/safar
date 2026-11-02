@@ -86,7 +86,7 @@ fun TripContent(
             TripDetailState.Loading -> BackTopBar("Journal", "Opening…", onBack)
             TripDetailState.Missing -> {
                 BackTopBar("Journal", "Not found", onBack)
-                EmptyState("This ride is not in the journal.", message = "It may have been deleted.", actionLabel = "Back to the journal", onAction = onBack)
+                EmptyState("This ride isn’t in your journal.", message = "It may have been deleted.", actionLabel = "Back to the journal", onAction = onBack)
             }
             is TripDetailState.Ready -> TripBody(state.trip, onBack, onAsk = { sheet = it })
         }
@@ -95,7 +95,7 @@ fun TripContent(
 
 @Composable
 private fun TripBody(trip: TripDetailUi, onBack: () -> Unit, onAsk: (TripSheet) -> Unit) {
-    BackTopBar("Entry ${entryNumber(trip.number)} · ${trip.day}", trip.title, onBack)
+    BackTopBar("Ride ${entryNumber(trip.number)} · ${trip.day}", trip.title, onBack)
     TrackFigure(trip)
     TripStats(trip)
     OdometerRun(trip)

@@ -20,7 +20,7 @@ data class TripDetailUi(
     val day: String,
     val title: String,
     val km: Double,
-    /** "bike odometer" when both odometer readings exist, else "phone GPS". */
+    /** Developer mode only: "bike odometer" when both odometer readings exist, else "phone GPS". */
     val distanceSource: String,
     val minutes: Long,
     val avgKmh: Float,
@@ -43,18 +43,19 @@ sealed interface TripDetailState {
 
 private const val MAX_DRAWN_POINTS = 600
 
-/** Aside and note for the fuel row (trips.js): bars used, km per bar, or a refill on the way. */
+/** Aside and note for the fuel row (trips.js): bars used, km per bar, or a fill-up on the way. */
 fun tripFuel(start: Int?, end: Int?, max: Int, km: Double): TripFuelUi? {
     if (start == null || end == null) return null
     val used = start - end
     val aside = when {
         used > 0 -> "$used bar${if (used > 1) "s" else ""} used"
+        end > start -> "filled up"
         else -> "no change"
     }
     val note = when {
-        end > start -> "refilled on the way"
-        used > 0 -> "≈ ${(km / used).roundToInt()} km per bar"
-        else -> "under one bar"
+        end > start -> "You filled up on the way"
+        used > 0 -> "About ${(km / used).roundToInt()} km per bar"
+        else -> "Less than one bar used"
     }
     return TripFuelUi(start, end, max, aside, note)
 }

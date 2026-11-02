@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,13 +27,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.CardStyle
+import app.safar.ui.components.Freshness
 import app.safar.ui.components.NumberWithUnit
-import app.safar.ui.components.SourceLine
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.StatCell
 import app.safar.ui.components.StatGrid
 import app.safar.ui.components.atlasShadow
 import app.safar.ui.format.Formatters
+import app.safar.ui.format.ValueSource
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 import kotlin.math.roundToInt
@@ -48,7 +50,7 @@ private fun totalsCell(label: String, t: TripTotals) = StatCell(
     label = label,
     value = Formatters.groupDigits(t.km.roundToInt().toLong(), indian = false),
     unit = "km",
-    note = "${t.rides} ride${if (t.rides == 1) "" else "s"} · ${durationText(t.minutes)} · top ${t.topKmh.roundToInt()}",
+    note = totalsNote(t),
 )
 
 /** The ride being written right now (`.live-entry`). */
@@ -56,16 +58,15 @@ private fun totalsCell(label: String, t: TripTotals) = StatCell(
 internal fun LiveEntry(live: LiveRideUi, modifier: Modifier = Modifier, onOpen: (Long) -> Unit = {}) {
     val c = Atlas.colors
     val open = live.tripId?.let { id -> { onOpen(id) } }
-    AtlasCard(modifier, style = CardStyle.LINE, contentPadding = PaddingValues(16.dp, 14.dp), onClick = open, onClickLabel = "Open the ride being recorded") {
+    AtlasCard(modifier, style = CardStyle.LINE, contentPadding = PaddingValues(16.dp, 14.dp), onClick = open, onClickLabel = "Open today’s ride") {
         Stamp("recording", tilted = false, solid = true)
         BasicText(
-            "Today’s ride, still being written.",
+            "Today’s ride, in progress.",
             Modifier.padding(top = 6.dp, bottom = 2.dp),
             style = Atlas.type.serifItalic.copy(color = c.ink, fontSize = Atlas.type.serifItalic.fontSize * 1.15f),
         )
-        val speed = live.speedKmh?.roundToInt()?.toString() ?: "—"
-        BasicText("GPS $speed km/h · top ${live.topKmh.roundToInt()} km/h", style = Atlas.type.src.copy(color = c.ink3))
-        SourceLine("phone GPS", live.atMillis)
+        BasicText(liveLine(live), style = Atlas.type.src.copy(color = c.ink3))
+        Freshness(ValueSource.PHONE_GPS, live.atMillis)
     }
 }
 
@@ -73,8 +74,7 @@ internal fun LiveEntry(live: LiveRideUi, modifier: Modifier = Modifier, onOpen: 
 @Composable
 internal fun Postcard(row: TripRowUi, tilt: Float, thumb: TrackThumb, onClick: () -> Unit) {
     val c = Atlas.colors
-    val spoken = "Entry ${row.number}, ${row.title}, ${row.day}, ${Formatters.km1(row.km)} kilometres, " +
-        "${durationText(row.minutes)}, top ${row.topKmh.roundToInt()} km/h"
+    val spoken = postcardSpoken(row)
     Box(
         Modifier
             .fillMaxWidth()
@@ -116,12 +116,13 @@ private fun PostcardText(row: TripRowUi, modifier: Modifier) {
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
+        // Wraps at a large font scale rather than clipping the top speed.
+        FlowRow(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), itemVerticalAlignment = Alignment.Bottom) {
             val numStyle = Atlas.type.numberSmall.copy(fontSize = Atlas.type.numberSmall.fontSize * 0.81f)
             NumberWithUnit(Formatters.km1(row.km), "km", numStyle, unitScale = 0.55f, unitColor = c.ink3)
             val mono = Atlas.type.src.copy(color = c.ink2, fontSize = Atlas.type.src.fontSize * 1.09f)
             BasicText(durationText(row.minutes), Modifier.padding(bottom = 3.dp), style = mono, maxLines = 1)
-            BasicText("top ${row.topKmh.roundToInt()}", Modifier.padding(bottom = 3.dp), style = mono, maxLines = 1)
+            BasicText("top ${row.topKmh.roundToInt()} km/h", Modifier.padding(bottom = 3.dp), style = mono, maxLines = 1)
         }
     }
 }

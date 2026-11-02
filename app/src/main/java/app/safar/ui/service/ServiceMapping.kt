@@ -18,8 +18,27 @@ private const val BIG_STEP = 500
 private const val SMALL_STEP = 50
 private const val BIG_FROM = 2000
 
+/** Where the logbook's odometer came from. [developer] is the Developer mode caption. */
+enum class OdoFrom(val developer: String) {
+    BIKE("bike"),
+    LAST_RIDE("bike · last known"),
+    FUEL_UP("last fuel-up · no bike reading"),
+    SERVICE("last service · no bike reading"),
+}
+
 /** The odometer the logbook counts from, and where it came from. [km] is null before any reading or item. */
-data class OdoNowUi(val km: Int?, val atMillis: Long?, val live: Boolean, val source: String)
+data class OdoNowUi(val km: Int?, val atMillis: Long?, val live: Boolean, val from: OdoFrom)
+
+/**
+ * The rider's note under a typed odometer: where it came from, or how to get one. Null for a bike reading, which
+ * [app.safar.ui.components.Freshness] words (nothing while fresh, "From your last ride" after a disconnect).
+ */
+fun odoNote(odo: OdoNowUi): String? = when {
+    odo.km == null -> "Connect your bike or log a fuel-up to see it."
+    odo.from == OdoFrom.FUEL_UP -> "From your last fuel-up"
+    odo.from == OdoFrom.SERVICE -> "From your last service"
+    else -> null
+}
 
 data class ServiceRowUi(
     val status: ServiceStatus,
@@ -33,7 +52,7 @@ data class ServiceRowUi(
 
 data class ServiceUiState(
     val loading: Boolean = true,
-    val odo: OdoNowUi = OdoNowUi(null, null, false, "no bike reading"),
+    val odo: OdoNowUi = OdoNowUi(null, null, false, OdoFrom.SERVICE),
     val rows: List<ServiceRowUi> = emptyList(),
     val needYou: Int = 0,
     val reminders: Boolean = true,
@@ -50,10 +69,10 @@ fun odoNow(bike: BikeState, items: List<ServiceItem>, fuelUps: List<FuelUp> = em
     val fuel = fuelUps.maxByOrNull { it.odometerKm }
     val service = items.maxOfOrNull { it.lastDoneOdoKm }
     return when {
-        reading != null && live -> OdoNowUi(reading.odometerKm, reading.receivedAtMillis, true, "bike")
-        reading != null -> OdoNowUi(reading.odometerKm, reading.receivedAtMillis, false, "bike · last known")
-        fuel != null && fuel.odometerKm >= (service ?: 0) -> OdoNowUi(fuel.odometerKm, fuel.atMillis, false, "last fuel-up · no bike reading")
-        else -> OdoNowUi(service, null, false, "last service · no bike reading")
+        reading != null && live -> OdoNowUi(reading.odometerKm, reading.receivedAtMillis, true, OdoFrom.BIKE)
+        reading != null -> OdoNowUi(reading.odometerKm, reading.receivedAtMillis, false, OdoFrom.LAST_RIDE)
+        fuel != null && fuel.odometerKm >= (service ?: 0) -> OdoNowUi(fuel.odometerKm, fuel.atMillis, false, OdoFrom.FUEL_UP)
+        else -> OdoNowUi(service, null, false, OdoFrom.SERVICE)
     }
 }
 
@@ -63,12 +82,12 @@ fun stateWord(state: ServiceState): String = when (state) {
     ServiceState.OK -> "on track"
 }
 
-/** "Due in 1,234 km · at 15,000" or "Overdue by 120 km". */
+/** "Due in 1,234 km, at 15,000 km" or "Overdue by 120 km". */
 fun dueLine(s: ServiceStatus): String =
     if (s.kmToNext < 0) {
         "Overdue by ${Formatters.odometer(-s.kmToNext)} km"
     } else {
-        "Due in ${Formatters.odometer(s.kmToNext)} km · at ${Formatters.odometer(s.dueAtKm)}"
+        "Due in ${Formatters.odometer(s.kmToNext)} km, at ${Formatters.odometer(s.dueAtKm)} km"
     }
 
 fun serviceRow(s: ServiceStatus) = ServiceRowUi(
@@ -123,5 +142,5 @@ fun cleanLabel(input: String, max: Int = 32): String? = input.trim().take(max).i
 
 /** Where a new item starts counting; it cannot be added before any odometer is known. */
 fun addFromLine(odoKm: Int?): String =
-    odoKm?.let { "Counted from ${Formatters.odometer(it)} km, the odometer now." }
-        ?: "Needs the odometer first: connect the bike or log a fuel-up."
+    odoKm?.let { "Counted from ${Formatters.odometer(it)} km, your odometer now." }
+        ?: "We need your odometer first. Connect your bike or log a fuel-up."

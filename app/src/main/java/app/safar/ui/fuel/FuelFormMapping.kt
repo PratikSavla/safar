@@ -7,7 +7,10 @@ import app.safar.data.OdoSource
 import app.safar.data.OdoSuggestion
 import app.safar.data.OdoSuggestionSource
 import app.safar.data.validateFuelUp
+import app.safar.ui.copy.Phrases
 import app.safar.ui.format.Formatters
+import app.safar.ui.format.FreshnessText
+import java.time.ZoneId
 
 // Pure logic of the fuel-up form (ux/variant-b/js/screens/fuel-form.js). Validation is data/validateFuelUp.
 
@@ -31,7 +34,7 @@ data class OdoLabel(val text: String, val tone: OdoTone)
 /** "5,2" and "5.2" both read as 5.2; empty or junk is null. */
 fun parseDecimal(text: String): Double? = text.trim().replace(',', '.').takeIf { it.isNotEmpty() }?.toDoubleOrNull()
 
-/** Whole km only, as on the cluster. Null when empty or not a whole number. */
+/** Whole km only, as on the bike's display. Null when empty or not a whole number. */
 fun parseOdo(text: String): Int? = text.trim().takeIf { it.isNotEmpty() }?.toIntOrNull()
 
 /** First form state: the saved entry, or empty with the bike's odometer (read-only while it is live). */
@@ -76,26 +79,38 @@ fun odoSourceFor(form: FuelForm, entry: FuelUp?, sugg: OdoSuggestion): OdoSource
     return if (odo == sugg.value) OdoSource.BIKE else OdoSource.EDITED
 }
 
-/** The odometer's source line (fuel-form.js `odoBlock`). [age] is "3 s ago" for the suggestion's time. */
-fun odoLabel(entry: FuelUp?, sugg: OdoSuggestion, age: String?): OdoLabel {
-    if (entry != null) return OdoLabel("saved as ${odoBadge(entry.odoSource).label}", OdoTone.INK)
+/**
+ * Where the odometer came from, in the rider's words (fuel-form.js `odoBlock`). No age while the bike is live;
+ * a reading kept from the last ride says which day it is from. Exact ages are Developer mode only.
+ */
+fun odoLabel(entry: FuelUp?, sugg: OdoSuggestion, nowMillis: Long, zone: ZoneId = ZoneId.systemDefault()): OdoLabel {
+    if (entry != null) return OdoLabel(savedAs(entry.odoSource), OdoTone.INK)
     return when (sugg.source) {
-        OdoSuggestionSource.BIKE -> OdoLabel("from bike · ${age ?: "now"}", OdoTone.MOSS)
-        OdoSuggestionSource.BIKE_LAST -> OdoLabel("last seen on bike · ${age ?: "earlier"} · check it", OdoTone.AMBER)
-        OdoSuggestionSource.NONE -> OdoLabel("Bike not connected. Type the odometer from the cluster.", OdoTone.RUST)
+        OdoSuggestionSource.BIKE -> OdoLabel("From your bike", OdoTone.MOSS)
+        OdoSuggestionSource.BIKE_LAST -> {
+            val from = sugg.atMillis?.let { FreshnessText.lastRide(it, nowMillis, zone) } ?: "From your last ride"
+            OdoLabel("$from. Check it on your bike.", OdoTone.AMBER)
+        }
+        OdoSuggestionSource.NONE -> OdoLabel("Bike not connected. Type the odometer from ${Phrases.YOUR_BIKES_DISPLAY}.", OdoTone.RUST)
     }
 }
 
-/** "bike said 12,164" once the rider changed the bike's number on a new entry. */
+private fun savedAs(source: OdoSource): String = when (source) {
+    OdoSource.BIKE -> "Saved from your bike"
+    OdoSource.EDITED -> "Saved with your correction"
+    OdoSource.MANUAL -> "Saved as you typed it"
+}
+
+/** "Your bike showed 12,164 km" once the rider changed the bike's number on a new entry. */
 fun bikeSaid(form: FuelForm, entry: FuelUp?, sugg: OdoSuggestion): String? {
     val said = sugg.value ?: return null
     if (entry != null || parseOdo(form.odo) == said) return null
-    return "bike said ${Formatters.odometer(said)}"
+    return "Your bike showed ${Formatters.odometer(said)} km"
 }
 
 /** "₹106.27 per litre", or the placeholder until litres and amount are both in. */
 fun perLitreLine(perLitre: Double?, currency: String): String =
-    if (perLitre == null) "price per litre appears here" else "${Formatters.money(perLitre, currency, 2)} per litre"
+    if (perLitre == null) "Price per litre shows here" else "${Formatters.money(perLitre, currency, 2)} per litre"
 
 /** The record to save, or null while the form has errors. [barsNow] = live fuel bars, if connected. */
 fun toFuelUp(form: FuelForm, v: FuelUpValidation, entry: FuelUp?, sugg: OdoSuggestion, nowMillis: Long, barsNow: Int?): FuelUp? {

@@ -7,6 +7,7 @@ import app.safar.data.FuelUp
 import app.safar.data.OdoSource
 import app.safar.data.OdoSuggestion
 import app.safar.data.OdoSuggestionSource
+import java.time.ZoneOffset
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -73,11 +74,20 @@ class FuelFormMappingTest {
 
     @Test
     fun `odometer labels and the bike-said hint`() {
-        assertEquals(OdoLabel("from bike · 3 s ago", OdoTone.MOSS), odoLabel(null, live, "3 s ago"))
-        assertEquals(OdoLabel("last seen on bike · 2 h ago · check it", OdoTone.AMBER), odoLabel(null, last, "2 h ago"))
-        assertEquals(OdoTone.RUST, odoLabel(null, none, null).tone)
-        assertEquals(OdoLabel("saved as typed", OdoTone.INK), odoLabel(ups[2], none, null))
-        assertEquals("bike said 12,301", bikeSaid(FuelForm(odo = "12310"), null, live))
+        val day = 86_400_000L
+        assertEquals(OdoLabel("From your bike", OdoTone.MOSS), odoLabel(null, live, 4_000, ZoneOffset.UTC))
+        assertEquals(OdoLabel("From your last ride. Check it on your bike.", OdoTone.AMBER), odoLabel(null, last, 7_200_000, ZoneOffset.UTC))
+        assertEquals(
+            OdoLabel("From your last ride · yesterday. Check it on your bike.", OdoTone.AMBER),
+            odoLabel(null, last, day + 1_000, ZoneOffset.UTC),
+        )
+        assertEquals(
+            OdoLabel("Bike not connected. Type the odometer from your bike’s display.", OdoTone.RUST),
+            odoLabel(null, none, 4_000, ZoneOffset.UTC),
+        )
+        assertEquals(OdoLabel("Saved as you typed it", OdoTone.INK), odoLabel(ups[2], none, 4_000, ZoneOffset.UTC))
+        assertEquals(OdoLabel("Saved from your bike", OdoTone.INK), odoLabel(ups[5], none, 4_000, ZoneOffset.UTC))
+        assertEquals("Your bike showed 12,301 km", bikeSaid(FuelForm(odo = "12310"), null, live))
         assertNull(bikeSaid(FuelForm(odo = "12301"), null, live))
         assertNull(bikeSaid(FuelForm(odo = "12310"), ups[5], live))
     }
@@ -103,13 +113,13 @@ class FuelFormMappingTest {
         assertFalse(moving.canSave)
         val still = fuelUpUiState(null, false, live, form, ups, 12.0, "₹", RideState())
         assertTrue(still.canSave)
-        assertEquals("price per litre appears here", perLitreLine(null, "₹"))
+        assertEquals("Price per litre shows here", perLitreLine(null, "₹"))
     }
 
     @Test
     fun `fuel notices are taken once and expire`() {
-        FuelNotices.post("Saved · range updated", nowMillis = 1_000)
-        assertEquals("Saved · range updated", FuelNotices.take(nowMillis = 2_000))
+        FuelNotices.post("Fuel-up saved. Range updated.", nowMillis = 1_000)
+        assertEquals("Fuel-up saved. Range updated.", FuelNotices.take(nowMillis = 2_000))
         assertNull(FuelNotices.take(nowMillis = 2_000))
         FuelNotices.post("Old", nowMillis = 1_000)
         assertNull(FuelNotices.take(nowMillis = 10_000))

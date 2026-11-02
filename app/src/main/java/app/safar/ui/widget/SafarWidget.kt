@@ -35,7 +35,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 
 /**
- * The 4x2 home-screen widget in Atlas dress (widget.js): link state, odometer and Trip A, fuel bars and range,
+ * The 4x2 home-screen widget in Atlas dress (widget.js): connection, odometer and Trip A, fuel bars and range,
  * and the next turn while Google Maps navigates. A tap opens the app.
  */
 class SafarWidget : GlanceAppWidget() {
@@ -47,7 +47,7 @@ class SafarWidget : GlanceAppWidget() {
             val snapshot = WidgetData.updates.collectAsState().value ?: first
             GlanceTheme(colors = WidgetColors.theme) {
                 var root = GlanceModifier.fillMaxSize().background(GlanceTheme.colors.widgetBackground).cornerRadius(22.dp)
-                    .semantics { contentDescription = "Safar: ${snapshot.link}, odometer ${snapshot.odometer} km, range ${snapshot.range} km" }
+                    .semantics { contentDescription = snapshot.description }
                 if (open != null) root = root.clickable(actionStartActivity(open))
                 Column(root.padding(horizontal = 16.dp, vertical = 12.dp)) {
                     Head(snapshot)
@@ -95,7 +95,7 @@ private fun Body(s: WidgetSnapshot, modifier: GlanceModifier) {
                 Text(s.range, style = serif(WidgetColors.ink, 22f), maxLines = 1)
                 Text(" km", style = serif(WidgetColors.ink2, 11f, italic = true))
             }
-            Text(s.rangeSource, style = mono(WidgetColors.ink3, 8f))
+            s.rangeNote?.let { Text(it, style = mono(WidgetColors.ink3, 8f)) }
         }
     }
 }

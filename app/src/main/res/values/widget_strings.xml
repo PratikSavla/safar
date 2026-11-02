@@ -2,5 +2,5 @@
 <resources>
     <!-- Home-screen widget (ui/widget). -->
     <string name="widget_label">Safar bike</string>
-    <string name="widget_description">Link state, odometer, fuel bars, range and the next turn</string>
+    <string name="widget_description">Your bike’s connection, odometer, fuel, range and the next turn</string>
 </resources>

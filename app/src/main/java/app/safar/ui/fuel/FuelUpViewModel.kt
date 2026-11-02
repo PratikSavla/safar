@@ -78,16 +78,16 @@ class FuelUpViewModel(
         val barsNow = if (b.link == LinkState.Connected) b.cluster?.fuelBars else null
         val record = toFuelUp(form.value, s.validation ?: return, sd.entry, sd.sugg, now(), barsNow) ?: return
         if (!busy.compareAndSet(expect = false, update = true)) return
-        launchLogged(TAG, "save of fuel-up ${record.id}", { busy.value = false; notices.post("Could not save the fuel-up") }) {
+        launchLogged(TAG, "save of fuel-up ${record.id}", { busy.value = false; notices.post("Couldn’t save the fuel-up. Try again.") }) {
             if (sd.entry == null) fuel.add(record) else fuel.update(record)
-            _done.value = if (sd.entry == null) "Saved · range updated" else "Fuel-up updated · range updated"
+            _done.value = if (sd.entry == null) "Fuel-up saved. Range updated." else "Changes saved. Range updated."
         }
     }
 
     fun delete() {
         val entry = seed.value?.entry ?: return
         if (!busy.compareAndSet(expect = false, update = true)) return
-        launchLogged(TAG, "delete of fuel-up ${entry.id}", { busy.value = false; notices.post("Could not delete the fuel-up") }) {
+        launchLogged(TAG, "delete of fuel-up ${entry.id}", { busy.value = false; notices.post("Couldn’t delete the fuel-up. Try again.") }) {
             fuel.delete(entry.id)
             _done.value = "Fuel-up deleted"
         }

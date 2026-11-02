@@ -22,7 +22,10 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -51,9 +54,9 @@ internal fun MileageSection(stats: FuelStats, zone: ZoneId) {
     val unit = "km/L"
     StatGrid(
         listOf(
-            StatCell("Average", stats.avgKmpl?.let(::jsNumber) ?: "—", unit, source = "last 3 tanks", valueColor = Atlas.colors.rust),
-            StatCell("Last tank", stats.lastKmpl?.let(::jsNumber) ?: "—", unit, source = "most recent"),
-            StatCell("Lifetime", stats.lifetimeKmpl?.let(::jsNumber) ?: "—", unit, source = "${stats.segments.size} tanks"),
+            StatCell("Average", stats.avgKmpl?.let(::jsNumber) ?: "—", unit, note = stats.avgKmpl?.let { averageOver(stats.segments.size) }, valueColor = Atlas.colors.rust),
+            StatCell("Last tank", stats.lastKmpl?.let(::jsNumber) ?: "—", unit),
+            StatCell("Lifetime", stats.lifetimeKmpl?.let(::jsNumber) ?: "—", unit, note = stats.lifetimeKmpl?.let { tanksText(stats.segments.size) }),
         ),
         columns = 3,
         numberStyle = Atlas.type.numberSmall.copy(fontSize = Atlas.type.numberSmall.fontSize * 1.1f),
@@ -71,7 +74,8 @@ private fun TrendCanvas(stats: FuelStats, zone: ZoneId) {
     val axis = Atlas.type.src.copy(color = c.ink3, fontSize = Atlas.type.src.fontSize * 0.78f)
     val avgStyle = axis.copy(color = c.rust)
     val dates = stats.segments.map { fuelDate(it.atMillis, zone) }
-    val spoken = "Mileage per full tank: " + stats.segments.joinToString { jsNumber(it.kmpl) }
+    val spoken = "Mileage per full tank, oldest first: " + stats.segments.joinToString { jsNumber(it.kmpl) } + " km/L." +
+        stats.avgKmpl?.let { " Average ${jsNumber(it)} km/L." }.orEmpty()
     Canvas(Modifier.fillMaxWidth().height(118.dp).semantics { contentDescription = spoken }) {
         val chart = trendChart(stats.segments, stats.avgKmpl, size.width, size.height, 14.dp.toPx(), 22.dp.toPx(), 22.dp.toPx())
             ?: return@Canvas
@@ -111,9 +115,9 @@ private fun DrawScope.centred(measurer: TextMeasurer, text: String, x: Float, bo
 internal fun CostCard(stats: FuelStats, currency: String) {
     AtlasCard(style = CardStyle.LINE, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)) {
         LeaderRow("Cost per km", stats.costPerKm?.let { Formatters.money(it, currency, 2) } ?: "—")
-        LeaderRow("Last 30 days", "${stats.month.count} fill-ups · ${jsNumber(stats.month.litres)} L · ${Formatters.money(stats.month.money.toDouble(), currency)}")
+        LeaderRow("Last 30 days", "${fuelUpsText(stats.month.count)} · ${jsNumber(stats.month.litres)} L · ${Formatters.money(stats.month.money.toDouble(), currency)}")
         LeaderRow("Last price", stats.lastPerLitre?.let { "${Formatters.money(it, currency, 2)} / L" } ?: "—")
-        LeaderRow("All logged", "${jsNumber(stats.spentL)} L · ${Formatters.money(stats.spentMoney.toDouble(), currency)}")
+        LeaderRow("All time", "${jsNumber(stats.spentL)} L · ${Formatters.money(stats.spentMoney.toDouble(), currency)}")
     }
 }
 
@@ -128,7 +132,16 @@ private fun OdoBadge.tone(): StampTone = when (this) {
 internal fun FuelUpRow(row: FuelUpRowUi, currency: String, onClick: () -> Unit) {
     val c = Atlas.colors
     val mono = Atlas.type.src.copy(color = c.ink3)
-    Column(Modifier.fillMaxWidth().clickable(onClickLabel = "Edit fuel-up", role = Role.Button, onClick = onClick)) {
+    val spoken = fuelUpSpoken(row, currency)
+    Column(
+        Modifier.fillMaxWidth()
+            .clickable(onClickLabel = "Edit fuel-up", role = Role.Button, onClick = onClick)
+            .clearAndSetSemantics {
+                contentDescription = spoken
+                role = Role.Button
+                onClick("Edit fuel-up") { onClick(); true }
+            },
+    ) {
         Row(
             Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,

@@ -36,7 +36,7 @@ object TripsPreviewData {
         id = 2, number = 2, day = "SAT 31 OCT", title = "Morning ride on NH 48", km = 128.6,
         distanceSource = "bike odometer", minutes = 142, avgKmh = 54f, topKmh = 104f,
         odoStart = 12_036, odoEnd = 12_164,
-        fuel = TripFuelUi(5, 3, 6, "2 bars used", "≈ 64 km per bar"),
+        fuel = TripFuelUi(5, 3, 6, "2 bars used", "About 64 km per bar"),
         trackLat = track.map { it.lat }, trackLng = track.map { it.lng }, fixes = track.size, recording = false,
     )
 }

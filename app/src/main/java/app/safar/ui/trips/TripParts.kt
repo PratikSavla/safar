@@ -22,21 +22,24 @@ import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.DashedRule
+import app.safar.ui.components.DevOnly
+import app.safar.ui.components.DeveloperLine
 import app.safar.ui.components.FuelBars
 import app.safar.ui.components.Kicker
 import app.safar.ui.components.Note
 import app.safar.ui.components.NumberWithUnit
 import app.safar.ui.components.SectionHeader
-import app.safar.ui.components.SourceLine
 import app.safar.ui.components.StatCell
 import app.safar.ui.components.StatGrid
+import app.safar.ui.components.byMode
 import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
 import kotlin.math.roundToInt
 
 private val MAP_HEIGHT = 300.dp
+private const val NO_ROUTE = "No route saved for this ride"
 
-/** The big ink track with north mark, fix count and a scale bar (`.sheet-map`). */
+/** The big ink track with north mark and a scale bar (`.sheet-map`); the fix count is Developer mode only. */
 @Composable
 internal fun TrackFigure(trip: TripDetailUi) {
     val c = Atlas.colors
@@ -51,7 +54,7 @@ internal fun TrackFigure(trip: TripDetailUi) {
                 Box {
                     TrackMap(
                         trip.trackLat, trip.trackLng, Modifier.fillMaxWidth().height(MAP_HEIGHT), big = true,
-                        description = "GPS track of ${trip.title}, ${trip.fixes} fixes",
+                        description = if (trip.fixes == 0) NO_ROUTE else "Map of the route for ${trip.title}",
                     )
                     BasicText("N ↑", Modifier.align(Alignment.TopEnd).padding(10.dp, 12.dp), style = Atlas.type.src.copy(color = c.rust))
                 }
@@ -66,7 +69,8 @@ private fun MapCaption(fixes: Int, bar: ScaleBar?) {
     val c = Atlas.colors
     val style = Atlas.type.src.copy(color = c.ink3, fontSize = Atlas.type.src.fontSize * 0.9f)
     Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        BasicText(if (fixes == 0) "no GPS fixes for this ride" else "phone GPS · $fixes fixes", Modifier.weight(1f), style = style)
+        val caption = if (fixes == 0) NO_ROUTE else byMode(null, "phone GPS · $fixes fixes")
+        BasicText(caption.orEmpty(), Modifier.weight(1f), style = style)
         if (bar != null) {
             val w = with(LocalDensity.current) { bar.px.toDp() }
             Canvas(Modifier.size(w, 6.dp)) {
@@ -80,13 +84,13 @@ private fun MapCaption(fixes: Int, bar: ScaleBar?) {
     }
 }
 
-/** Distance, duration, average and top speed, each with its source (`.trip-grid`). */
+/** Distance, riding time, average and top speed (`.trip-grid`); sources are Developer mode only. */
 @Composable
 internal fun TripStats(trip: TripDetailUi) {
     StatGrid(
         listOf(
             StatCell("Distance", Formatters.km1(trip.km), "km", source = trip.distanceSource),
-            StatCell("Duration", durationText(trip.minutes), source = if (trip.recording) "phone · live" else "phone"),
+            StatCell("Riding time", durationText(trip.minutes), source = if (trip.recording) "phone · live" else "phone"),
             StatCell("Average", trip.avgKmh.roundToInt().toString(), "km/h", source = "calculated"),
             StatCell("Top speed", trip.topKmh.roundToInt().toString(), "km/h", source = "phone GPS", valueColor = Atlas.colors.rust),
         ),
@@ -100,7 +104,7 @@ internal fun TripStats(trip: TripDetailUi) {
 internal fun OdometerRun(trip: TripDetailUi) {
     SectionHeader("Odometer")
     if (trip.odoStart == null || trip.odoEnd == null) {
-        Note("No odometer for this ride: the bike was not connected at the start or the end.")
+        Note("No odometer reading for this ride. Your bike wasn’t connected when it started or ended.")
         return
     }
     val style = Atlas.type.numberSmall.copy(fontSize = Atlas.type.numberSmall.fontSize * 0.94f)
@@ -109,7 +113,7 @@ internal fun OdometerRun(trip: TripDetailUi) {
         DashedRule(Modifier.weight(1f), color = Atlas.colors.ink2, thickness = 2.dp, dash = 6.dp, gap = 5.dp)
         NumberWithUnit(Formatters.odometer(trip.odoEnd), "km", style)
     }
-    SourceLine("bike · at connect and disconnect", Modifier.padding(top = 6.dp))
+    DevOnly { DeveloperLine("↳ bike · odometer at connect and disconnect", Modifier.padding(top = 6.dp)) }
 }
 
 /** Fuel bars at the start and the end of the ride (`.fuel-run`). */
@@ -127,5 +131,5 @@ internal fun FuelRun(trip: TripDetailUi) {
         FuelBars(fuel.end, fuel.max, barWidth = 11.dp)
     }
     BasicText(fuel.note, Modifier.padding(top = 10.dp), style = Atlas.type.src.copy(color = Atlas.colors.ink3))
-    SourceLine("bike · fuel bars at connect and disconnect")
+    DevOnly { DeveloperLine("↳ bike · fuel bars at connect and disconnect") }
 }

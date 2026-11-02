@@ -66,7 +66,7 @@ class ParkedViewModelTest {
         vm.parkHere()
         advanceUntilIdle()
         assertEquals(ParkedSpot(18.499, 73.8, 4f, 2_000, null), repo.spot.value)
-        assertEquals("Parking spot saved", vm.notices.current.value?.second)
+        assertEquals("Spot saved", vm.notices.current.value?.second)
         job.cancel()
     }
 
@@ -82,7 +82,7 @@ class ParkedViewModelTest {
         vm.parkHere()
         advanceUntilIdle()
         assertEquals(saved, repo.spot.value)
-        assertEquals("Waiting for a fresh GPS fix… try again in a moment", vm.notices.current.value?.second)
+        assertEquals("Finding your location. Try again in a moment.", vm.notices.current.value?.second)
         job.cancel()
     }
 }

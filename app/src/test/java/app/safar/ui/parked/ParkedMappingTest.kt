@@ -2,6 +2,7 @@ package app.safar.ui.parked
 
 import app.safar.data.GpsFix
 import app.safar.data.ParkedSpot
+import java.time.ZoneOffset
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -74,14 +75,36 @@ class ParkedMappingTest {
     }
 
     @Test
-    fun `place falls back to coordinates and share text carries a maps link`() {
+    fun `place falls back to plain words and share text carries a maps link`() {
         val unnamed = spot.copy(label = null)
-        assertEquals("18.50000, 73.80000", placeName(unnamed))
+        assertEquals("Your parked spot", placeName(unnamed))
+        assertEquals("18.50000, 73.80000", coordinates(unnamed))
         assertEquals(
             "My bike is parked here: Main Rd\nhttps://www.google.com/maps/search/?api=1&query=18.500000,73.800000",
             shareText(spot),
         )
+        assertEquals(
+            "My bike is parked here\nhttps://www.google.com/maps/search/?api=1&query=18.500000,73.800000",
+            shareText(unnamed),
+        )
         assertNull(parkedUiState(null, null, null, true).spot)
+    }
+
+    @Test
+    fun `parked page words never show seconds or raw bearings`() {
+        assertEquals("Parked under a minute ago", parkedAgo(1_000, 31_000, ZoneOffset.UTC))
+        assertEquals("Parked 12 min ago", parkedAgo(1_000, 1_000 + 12 * 60_000L, ZoneOffset.UTC))
+        assertEquals("to the north-east", directionText(44))
+        assertEquals("Compass. Waiting for your phone’s location.", compassDescription(parkedUiState(spot, null, null, true)))
+        val near = parkedUiState(spot, GpsFix(18.5000, 73.8000, 2_000, 5f), null, true)
+        assertEquals("You’re at your bike.", compassDescription(near))
+        val south = parkedUiState(spot, GpsFix(18.4990, 73.8000, 2_000, 5f), null, true)
+        assertEquals("Your bike is 110 m away, to the north.", compassDescription(south))
+        assertEquals(
+            "The spot is accurate to about 8 m. Hold your phone flat and the arrow points to your bike.",
+            accuracyText(8f, hasCompass = true),
+        )
+        assertTrue(accuracyText(8f, hasCompass = false).contains("no compass"))
     }
 
     @Test

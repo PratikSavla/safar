@@ -26,29 +26,34 @@ class ServiceMappingTest {
 
     @Test
     fun `odometer comes from the live bike, the last reading, or the last service`() {
-        assertEquals(OdoNowUi(12_301, 5_000, true, "bike"), odoNow(BikeState(link = LinkState.Connected, cluster = reading(12_301)), items))
-        assertEquals(OdoNowUi(12_250, 5_000, false, "bike · last known"), odoNow(BikeState(lastCluster = reading(12_250)), items))
-        assertEquals(OdoNowUi(11_820, null, false, "last service · no bike reading"), odoNow(BikeState(), items))
+        assertEquals(OdoNowUi(12_301, 5_000, true, OdoFrom.BIKE), odoNow(BikeState(link = LinkState.Connected, cluster = reading(12_301)), items))
+        assertEquals(OdoNowUi(12_250, 5_000, false, OdoFrom.LAST_RIDE), odoNow(BikeState(lastCluster = reading(12_250)), items))
+        assertEquals(OdoNowUi(11_820, null, false, OdoFrom.SERVICE), odoNow(BikeState(), items))
         assertNull(odoNow(BikeState(), emptyList()).km)
+        assertNull(odoNote(OdoNowUi(12_301, 5_000, true, OdoFrom.BIKE)))
+        assertNull(odoNote(OdoNowUi(12_250, 5_000, false, OdoFrom.LAST_RIDE)))
+        assertEquals("From your last service", odoNote(OdoNowUi(11_820, null, false, OdoFrom.SERVICE)))
+        assertEquals("From your last fuel-up", odoNote(OdoNowUi(12_300, 2_000, false, OdoFrom.FUEL_UP)))
+        assertEquals("Connect your bike or log a fuel-up to see it.", odoNote(odoNow(BikeState(), emptyList())))
     }
 
     @Test
     fun `without a bike reading the typed fuel-up odometer counts, so Home and the logbook agree`() {
         val fills = listOf(fill(12_000, 1_000), fill(12_300, 2_000))
         val coolant = ServiceItem(4, "Coolant", 1_100, 12_300, null, ServiceIcon.GENERIC)
-        assertEquals(OdoNowUi(12_300, 2_000, false, "last fuel-up · no bike reading"), odoNow(BikeState(), emptyList(), fills))
+        assertEquals(OdoNowUi(12_300, 2_000, false, OdoFrom.FUEL_UP), odoNow(BikeState(), emptyList(), fills))
         // A later service odometer beats an older fuel-up; a live bike beats both.
         assertEquals(12_300, odoNow(BikeState(), listOf(coolant), listOf(fill(12_000, 1_000))).km)
         assertEquals(12_400, odoNow(BikeState(link = LinkState.Connected, cluster = reading(12_400)), listOf(coolant), fills).km)
         val s = serviceUiState(listOf(coolant), BikeState(), RideState(), reminders = true, fuelUps = fills)
-        assertEquals("Due in 1,100 km · at 13,400", s.rows.single().line)
+        assertEquals("Due in 1,100 km, at 13,400 km", s.rows.single().line)
         assertEquals(0, s.needYou)
     }
 
     @Test
     fun `a new item needs a known odometer`() {
-        assertEquals("Counted from 12,300 km, the odometer now.", addFromLine(12_300))
-        assertEquals("Needs the odometer first: connect the bike or log a fuel-up.", addFromLine(null))
+        assertEquals("Counted from 12,300 km, your odometer now.", addFromLine(12_300))
+        assertEquals("We need your odometer first. Connect your bike or log a fuel-up.", addFromLine(null))
     }
 
     @Test
@@ -57,7 +62,7 @@ class ServiceMappingTest {
         assertEquals(listOf("Engine oil", "Chain clean & lube", "Air filter"), s.rows.map { it.status.item.label })
         assertEquals(listOf("overdue", "due soon", "on track"), s.rows.map { it.word })
         assertEquals("Overdue by 101 km", s.rows[0].line)
-        assertEquals("Due in 19 km · at 12,320", s.rows[1].line)
+        assertEquals("Due in 19 km, at 12,320 km", s.rows[1].line)
         assertEquals(1f, s.rows[0].drawn)
         assertEquals(2, s.needYou)
         assertEquals(", 2 need you.", titleTail(s.needYou))
@@ -69,7 +74,7 @@ class ServiceMappingTest {
     fun `due line for an item on track`() {
         val st = serviceStatus(air, 10_000)
         assertEquals(ServiceState.OK, st.state)
-        assertEquals("Due in 5,200 km · at 15,200", dueLine(st))
+        assertEquals("Due in 5,200 km, at 15,200 km", dueLine(st))
         assertEquals(800f / 6000f, serviceRow(st).drawn, 1e-6f)
     }
 
@@ -86,8 +91,8 @@ class ServiceMappingTest {
 
     @Test
     fun `mark done uses the current odometer, else the item's last service`() {
-        assertEquals(12_301, markDoneOdo(OdoNowUi(12_301, 1, true, "bike"), oil))
-        assertEquals(9_200, markDoneOdo(OdoNowUi(null, null, false, "x"), oil))
+        assertEquals(12_301, markDoneOdo(OdoNowUi(12_301, 1, true, OdoFrom.BIKE), oil))
+        assertEquals(9_200, markDoneOdo(OdoNowUi(null, null, false, OdoFrom.SERVICE), oil))
     }
 
     @Test

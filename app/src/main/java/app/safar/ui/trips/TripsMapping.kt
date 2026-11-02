@@ -6,10 +6,12 @@ import app.safar.data.TrackPoint
 import app.safar.data.Trip
 import app.safar.data.filterTrack
 import app.safar.data.toFix
+import app.safar.ui.format.Formatters
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.roundToInt
 
 // Pure state mapping for the journal (ux/variant-b/js/screens/trips.js). No Android imports.
 
@@ -19,6 +21,7 @@ private const val DAY_MS = 86_400_000L
 /** Points drawn on a postcard thumbnail. */
 const val THUMB_POINTS = 120
 private val dayFormat = DateTimeFormatter.ofPattern("EEE dd MMM", Locale.UK)
+private val spokenDayFormat = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.UK)
 
 /** Week or 30-day sums: distance, riding time, ride count and the top speed of any ride. */
 data class TripTotals(val km: Double, val minutes: Long, val rides: Int, val topKmh: Float)
@@ -32,6 +35,8 @@ data class TripRowUi(
     val km: Double,
     val minutes: Long,
     val topKmh: Float,
+    /** [day] for TalkBack: "Monday 2 November". */
+    val spokenDay: String = day,
 )
 
 /** The ride being recorded right now, from phone GPS. [tripId] opens its page. */
@@ -67,6 +72,33 @@ fun tripTotals(trips: List<Trip>, nowMillis: Long, days: Int): TripTotals {
 fun durationText(minutes: Long): String =
     if (minutes >= 60) "${minutes / 60} h ${(minutes % 60).toString().padStart(2, '0')}" else "$minutes min"
 
+/** "42 minutes", "1 hour 5 minutes", "2 hours": [durationText] for TalkBack. */
+fun spokenDuration(minutes: Long): String {
+    val h = minutes / 60
+    val m = minutes % 60
+    val hours = if (h == 1L) "1 hour" else "$h hours"
+    val mins = if (m == 1L) "1 minute" else "$m minutes"
+    return when {
+        h == 0L -> mins
+        m == 0L -> hours
+        else -> "$hours $mins"
+    }
+}
+
+/** "1 ride", "3 rides". */
+fun ridesText(count: Int): String = if (count == 1) "1 ride" else "$count rides"
+
+/** Under a total: "3 rides · 4 h 05 · top 104 km/h", or "No rides" for an empty window. */
+fun totalsNote(t: TripTotals): String =
+    if (t.rides == 0) "No rides" else "${ridesText(t.rides)} · ${durationText(t.minutes)} · top ${t.topKmh.roundToInt()} km/h"
+
+/** What TalkBack reads for a postcard: "Evening ride, Monday 2 November. 42.3 km in 1 hour 4 minutes, top speed 88 km/h." */
+fun postcardSpoken(row: TripRowUi): String =
+    "${row.title}, ${row.spokenDay}. ${Formatters.km1(row.km)} km in ${spokenDuration(row.minutes)}, top speed ${row.topKmh.roundToInt()} km/h."
+
+/** "Monday 2 November", for TalkBack. */
+fun spokenDay(atMillis: Long, zone: ZoneId): String = spokenDayFormat.format(Instant.ofEpochMilli(atMillis).atZone(zone))
+
 /** "SAT 12 OCT" (trips.js `day`). */
 fun dayLabel(atMillis: Long, zone: ZoneId): String =
     dayFormat.format(Instant.ofEpochMilli(atMillis).atZone(zone)).uppercase(Locale.UK).replace(".", "")
@@ -76,7 +108,16 @@ fun entryNumber(number: Int): String = "№" + number.toString().padStart(3, '0'
 
 /** [trips] arrive newest first; numbers count up from the oldest. */
 fun tripRows(trips: List<Trip>, nowMillis: Long, zone: ZoneId): List<TripRowUi> = trips.mapIndexed { i, t ->
-    TripRowUi(t.id, trips.size - i, dayLabel(t.startMillis, zone), t.title, t.distanceKm, tripMinutes(t, nowMillis), t.topSpeedKmh)
+    TripRowUi(
+        t.id, trips.size - i, dayLabel(t.startMillis, zone), t.title, t.distanceKm, tripMinutes(t, nowMillis), t.topSpeedKmh,
+        spokenDay(t.startMillis, zone),
+    )
+}
+
+/** Under the recording card: "42 km/h now · top 61 km/h", or just the top speed before the first GPS speed. */
+fun liveLine(live: LiveRideUi): String {
+    val top = "top ${live.topKmh.roundToInt()} km/h"
+    return live.speedKmh?.let { "${it.roundToInt()} km/h now · $top" } ?: top
 }
 
 fun liveRide(ride: RideState): LiveRideUi? =

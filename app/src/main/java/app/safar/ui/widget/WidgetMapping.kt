@@ -9,12 +9,19 @@ import app.safar.data.FuelUp
 import app.safar.data.Settings
 import app.safar.data.fuelStats
 import app.safar.ui.art.TurnCodes
+import app.safar.ui.copy.LinkCopy
+import app.safar.ui.copy.Phrases
 import app.safar.ui.format.Formatters
+import app.safar.ui.format.FreshnessText
 import java.time.ZoneId
 
 // Pure mapping for the home-screen widget (ux/variant-b/js/screens/widget.js `safarWidget`). No Android imports.
 
 private const val DEFAULT_BARS = 6
+private const val NONE = "—"
+private const val YOUR_BIKE = "your bike"
+private const val LOG_FULL_TANK = "log a full tank"
+private const val PAIR_IN_APP = "Open Safar to pair your bike"
 
 /** Ink of the link word and dot. */
 enum class WidgetTone { MOSS, AMBER, SLATE, RUST }
@@ -22,7 +29,10 @@ enum class WidgetTone { MOSS, AMBER, SLATE, RUST }
 /** Next turn while Google Maps navigates: what, and how far. */
 data class WidgetTurn(val code: Int, val text: String, val distance: String?)
 
-/** Everything the 4x2 widget prints. Times are clock times so the text never goes stale between updates. */
+/**
+ * Everything the 4x2 widget prints. The footer never counts seconds or minutes, so the text does not go stale
+ * between updates. [rangeNote] is null when the range needs no explanation. [description] is what TalkBack reads.
+ */
 data class WidgetSnapshot(
     val model: String,
     val link: String,
@@ -32,63 +42,92 @@ data class WidgetSnapshot(
     val bars: Int?,
     val barsMax: Int,
     val range: String,
-    val rangeSource: String,
+    val rangeNote: String?,
     val footer: String,
     val turn: WidgetTurn?,
+    val description: String,
 ) {
     companion object {
-        /** Before the app has any data (or before its parts are wired). */
-        val Empty = WidgetSnapshot("no bike", "not linked", WidgetTone.RUST, "—", "—", null, DEFAULT_BARS, "—", "log a full tank", "waiting for the bike", null)
+        /** Before the app has any data (or before its parts are wired): the same as a phone with no bike paired. */
+        val Empty = WidgetSnapshot(
+            YOUR_BIKE, LinkCopy.stamp(LinkState.Idle, hasSavedBike = false), WidgetTone.RUST, "—", "—", null, DEFAULT_BARS, "—",
+            LOG_FULL_TANK, PAIR_IN_APP, null,
+            widgetDescription(YOUR_BIKE, LinkCopy.headline(LinkState.Idle, null, hasSavedBike = false), "—", "—", "—", null),
+        )
     }
 }
 
-/** The link in one word with its tone (widget.js `connWord` and tones). */
-fun linkWord(link: LinkState): Pair<String, WidgetTone> = when (link) {
-    LinkState.Connected -> "linked" to WidgetTone.MOSS
-    is LinkState.Reconnecting -> "reconnecting" to WidgetTone.AMBER
-    is LinkState.Connecting -> "connecting" to WidgetTone.SLATE
-    LinkState.Searching -> "searching" to WidgetTone.SLATE
-    LinkState.BluetoothOff -> "bluetooth off" to WidgetTone.RUST
-    LinkState.Idle -> "not linked" to WidgetTone.RUST
+/** The link in one word with its tone (widget.js `connWord` and tones), in the same words as the app. */
+fun linkWord(link: LinkState, hasSavedBike: Boolean = true): Pair<String, WidgetTone> = LinkCopy.stamp(link, hasSavedBike) to when (link) {
+    LinkState.Connected -> WidgetTone.MOSS
+    is LinkState.Reconnecting -> WidgetTone.AMBER
+    is LinkState.Connecting, LinkState.Searching -> WidgetTone.SLATE
+    LinkState.BluetoothOff, LinkState.Idle -> WidgetTone.RUST
+}
+
+/** One spoken summary: "Safar, V-Strom SX: Connected. Odometer 12,301 km, Trip A 84.6 km. Range about 180 km." */
+fun widgetDescription(model: String, headline: String, odometer: String, tripA: String, range: String, turn: WidgetTurn?): String {
+    val parts = mutableListOf("Safar, $model: $headline.")
+    if (odometer != NONE) parts += "Odometer $odometer km" + if (tripA != NONE) ", Trip A $tripA km." else "."
+    if (range != NONE) parts += "Range ${range.replace("≈", "about ")} km."
+    turn?.let { parts += "Next: ${it.text}" + (it.distance?.let { d -> " in $d." } ?: ".") }
+    return parts.joinToString(" ")
+}
+
+/** The line along the bottom when Maps is not navigating. Developer mode keeps the source and clock time. */
+fun widgetFooter(bike: BikeState, nowMillis: Long, zone: ZoneId, developer: Boolean): String {
+    val reading = bike.cluster ?: bike.lastCluster
+    val live = bike.link == LinkState.Connected && bike.cluster != null
+    if (developer && reading != null) {
+        val clock = Formatters.clock(reading.receivedAtMillis, zone)
+        return if (live) "bike · $clock" else "last seen on bike · $clock"
+    }
+    return when {
+        bike.saved == null && reading == null -> PAIR_IN_APP
+        reading == null -> Phrases.WAITING_FOR_BIKE
+        live -> "Ready to ride"
+        else -> FreshnessText.lastRide(reading.receivedAtMillis, nowMillis, zone)
+    }
 }
 
 /** The turn line, or null when Maps is not navigating. */
 fun widgetTurn(nav: NavState): WidgetTurn? {
     if (!nav.active) return null
-    val snap = nav.snapshot ?: return if (nav.waiting) WidgetTurn(0, "Waiting for Google Maps…", null) else null
+    val snap = nav.snapshot ?: return if (nav.waiting) WidgetTurn(0, Phrases.WAITING_FOR_MAPS, null) else null
     if (snap.status == NavStatusCode.ARRIVED) return WidgetTurn(snap.iconCode, "Arrived", null)
     return WidgetTurn(snap.iconCode, TurnCodes.spec(snap.iconCode).name, Formatters.navDistance(snap.distanceToTurnM).toString())
 }
 
-private fun rangeSource(method: FuelMethod): String = when (method) {
-    FuelMethod.HISTORY -> "fuel-ups"
-    FuelMethod.BARS -> "rough · bars"
-    FuelMethod.NONE -> "log a full tank"
+/** Under the range: nothing when it comes from the rider's fuel-ups, else how rough it is or how to get one. */
+fun rangeNote(method: FuelMethod): String? = when (method) {
+    FuelMethod.HISTORY -> null
+    FuelMethod.BARS -> "rough guess"
+    FuelMethod.NONE -> LOG_FULL_TANK
 }
 
 fun widgetSnapshot(bike: BikeState, nav: NavState, fuelUps: List<FuelUp>, settings: Settings, nowMillis: Long, zone: ZoneId): WidgetSnapshot {
     val reading = bike.cluster ?: bike.lastCluster
-    val live = bike.link == LinkState.Connected && bike.cluster != null
     val model = bike.saved?.model
     val stats = fuelStats(fuelUps, settings, model, reading, nowMillis)
-    val (word, tone) = linkWord(bike.link)
-    val footer = when {
-        reading == null -> "waiting for the bike"
-        live -> "bike · ${Formatters.clock(reading.receivedAtMillis, zone)}"
-        else -> "last seen on bike · ${Formatters.clock(reading.receivedAtMillis, zone)}"
-    }
+    val (word, tone) = linkWord(bike.link, bike.saved != null)
+    val name = LinkCopy.modelName(bike) ?: YOUR_BIKE
+    val odometer = reading?.let { Formatters.odometer(it.odometerKm) } ?: NONE
+    val tripA = reading?.let { Formatters.km1(it.tripAKm) } ?: NONE
+    val range = Formatters.approx(stats.rangeKm?.toDouble())
+    val turn = widgetTurn(nav)
     return WidgetSnapshot(
-        model = model?.name ?: "no bike",
+        model = name,
         link = word,
         tone = tone,
-        odometer = reading?.let { Formatters.odometer(it.odometerKm) } ?: "—",
-        tripA = reading?.let { Formatters.km1(it.tripAKm) } ?: "—",
+        odometer = odometer,
+        tripA = tripA,
         bars = reading?.fuelBars,
         barsMax = model?.fuelBars ?: DEFAULT_BARS,
-        range = Formatters.approx(stats.rangeKm?.toDouble()),
-        rangeSource = rangeSource(stats.method),
-        footer = footer,
-        turn = widgetTurn(nav),
+        range = range,
+        rangeNote = rangeNote(stats.method),
+        footer = widgetFooter(bike, nowMillis, zone, settings.developerMode),
+        turn = turn,
+        description = widgetDescription(name, LinkCopy.headline(bike), odometer, tripA, range, turn),
     )
 }
 

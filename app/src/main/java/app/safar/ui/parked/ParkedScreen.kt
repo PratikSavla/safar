@@ -86,7 +86,7 @@ private fun share(context: Context, spot: ParkedSpot): Boolean {
         .putExtra(Intent.EXTRA_SUBJECT, "My bike is parked here")
         .putExtra(Intent.EXTRA_TEXT, shareText(spot))
     return try {
-        context.startActivity(Intent.createChooser(send, "Share the parked spot").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        context.startActivity(Intent.createChooser(send, "Share where you parked").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         true
     } catch (e: ActivityNotFoundException) {
         Log.w(TAG, "no activity for the parked-spot share", e)
@@ -98,7 +98,7 @@ private fun share(context: Context, spot: ParkedSpot): Boolean {
 @Composable
 fun ParkedContent(state: ParkedUiState, toast: AtlasToastState, actions: ParkedActions) {
     AtlasPage(topo = TopoTransform.Quiet, overlay = { AtlasToastHost(toast, bottomPadding = 40.dp) }) {
-        BackTopBar("Parked · saved at disconnect", "Where you", actions.onBack, titleEm = " left it.")
+        BackTopBar("Parked · saved automatically", "Where you", actions.onBack, titleEm = " left it.")
         val spot = state.spot
         if (spot == null) {
             if (!state.loading) NoSpot(state, actions)
@@ -108,11 +108,11 @@ fun ParkedContent(state: ParkedUiState, toast: AtlasToastState, actions: ParkedA
         CompassBlock(state, actions)
         AccuracyNote(spot, state.hasCompass)
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            PrimaryButton("Navigate back in Google Maps", actions.onMaps, Modifier.fillMaxWidth(), icon = AtlasIcons.maps)
+            PrimaryButton("Walk back with Google Maps", actions.onMaps, Modifier.fillMaxWidth(), icon = AtlasIcons.maps)
             SecondaryButton("Share", { actions.onShare(spot) }, Modifier.fillMaxWidth(), icon = AtlasIcons.share)
-            TextAction("I moved the bike: park here", actions.onParkHere, icon = AtlasIcons.pin, enabled = state.phoneFix != null)
+            TextAction("Moved the bike? Save this spot", actions.onParkHere, icon = AtlasIcons.pin, enabled = state.phoneFix != null)
         }
-        ParkedFootnote("No map here: Google Maps does the walking directions.")
+        ParkedFootnote("Google Maps gives you the walking directions.")
     }
 }
 
@@ -120,12 +120,12 @@ fun ParkedContent(state: ParkedUiState, toast: AtlasToastState, actions: ParkedA
 private fun NoSpot(state: ParkedUiState, actions: ParkedActions) {
     EmptyState(
         "No parked spot yet.",
-        message = "Safar saves the phone’s location when the bike disconnects.",
+        message = "When you switch your bike off, Safar saves where you parked.",
     )
     if (!state.locationAllowed) {
         LocationOff(actions.onAllowLocation, Modifier.padding(top = 14.dp))
     } else {
-        TextAction("Park here now", actions.onParkHere, Modifier.padding(top = 10.dp), icon = AtlasIcons.pin, enabled = state.phoneFix != null)
+        TextAction("Save this spot now", actions.onParkHere, Modifier.padding(top = 10.dp), icon = AtlasIcons.pin, enabled = state.phoneFix != null)
     }
 }
 

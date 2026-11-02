@@ -27,16 +27,19 @@ import app.safar.data.FuelMethod
 import app.safar.data.FuelStats
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasIcon
+import app.safar.ui.components.DevOnly
+import app.safar.ui.components.DeveloperLine
+import app.safar.ui.components.Freshness
 import app.safar.ui.components.FuelBars
 import app.safar.ui.components.Kicker
 import app.safar.ui.components.NumberWithUnit
-import app.safar.ui.components.SourceLine
+import app.safar.ui.components.rememberStale
 import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
 
 private const val LOW_FRACTION = 0.2f
 
-/** Range left, how it was worked out, the tank bar and the bike's own bars (`.range-hero`). */
+/** Range left, how it was worked out, the tank bar and the bike's own bars (`.range-hero`). Sources: Developer mode. */
 @Composable
 internal fun RangeHero(stats: FuelStats, reading: BarsReading) {
     val c = Atlas.colors
@@ -44,9 +47,9 @@ internal fun RangeHero(stats: FuelStats, reading: BarsReading) {
         Kicker("Range left")
         val big = Atlas.type.numberLarge.copy(fontSize = Atlas.type.numberLarge.fontSize * 1.53f)
         NumberWithUnit(Formatters.approx(stats.rangeKm?.toDouble()), "km", big, Modifier.padding(top = 6.dp), unitScale = 0.32f)
-        SourceLine(rangeSource(stats.method))
+        DevOnly { DeveloperLine("↳ ${rangeSource(stats.method)}") }
         BasicText(methodLine(stats), Modifier.padding(top = 6.dp, bottom = 14.dp), style = Atlas.type.serifItalic.copy(color = c.ink2))
-        TankBar(tankFraction(stats), stats.barsMax, "About ${stats.remainingL ?: "unknown"} of ${jsNumber(stats.tank)} litres")
+        TankBar(tankFraction(stats), stats.barsMax, tankDescription(stats))
         Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val mono = Atlas.type.src.copy(color = c.ink2)
             val left = if (stats.remainingL == null) "—" else "≈${jsNumber(stats.remainingL)} L"
@@ -81,16 +84,14 @@ private fun TankBar(fraction: Float, bars: Int, description: String) {
 @Composable
 private fun BikeBars(reading: BarsReading) {
     val c = Atlas.colors
+    val origin = reading.origin
+    val stale = rememberStale(origin)
     Row(Modifier.padding(top = 14.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         if (reading.bars != null) FuelBars(reading.bars, reading.max, height = 30.dp, barWidth = 9.dp)
         val style = Atlas.type.numberSmall.copy(fontSize = Atlas.type.numberSmall.fontSize * 0.875f)
-        NumberWithUnit(reading.bars?.toString() ?: "—", "/${reading.max} bars", style, unitScale = 0.55f, unitColor = c.ink3)
+        NumberWithUnit(reading.bars?.toString() ?: "—", "/${reading.max} bars", style, color = if (stale) c.ink2 else c.ink, unitScale = 0.55f, unitColor = c.ink3)
     }
-    when {
-        reading.atMillis == null -> SourceLine("no bike reading")
-        reading.live -> SourceLine("bike", reading.atMillis)
-        else -> SourceLine("bike · last known", reading.atMillis)
-    }
+    Freshness(origin)
 }
 
 /** Calm note when the history and the gauge disagree (`.calm-hint`). */
@@ -107,10 +108,6 @@ private fun GaugeHint(stats: FuelStats) {
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         AtlasIcon(AtlasIcons.info, Modifier.width(18.dp), tint = c.slate, size = 18.dp)
-        BasicText(
-            "Bars show ${stats.bars}/${stats.barsMax}, your history says about ${stats.remainingL?.let(::jsNumber)} L. " +
-                "Log a fuel-up or check the tank size in Settings.",
-            style = Atlas.type.note.copy(color = c.ink2),
-        )
+        BasicText(gaugeHint(stats), style = Atlas.type.note.copy(color = c.ink2))
     }
 }

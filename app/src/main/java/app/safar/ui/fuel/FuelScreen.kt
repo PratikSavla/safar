@@ -70,7 +70,7 @@ fun FuelContent(
     AtlasLazyPage(topo = TopoTransform.Quiet, overlay = { AtlasToastHost(toast, bottomPadding = 40.dp) }) {
         item(key = "top", contentType = "top") {
             Column {
-                BackTopBar("Fuel · receipts and bars", "The tank", onBack, titleEm = ", by the litre.")
+                BackTopBar("Fuel · mileage and cost", "The tank", onBack, titleEm = ", by the litre.")
                 PrimaryButton("Log fuel", onLog, Modifier.fillMaxWidth().heightIn(min = 58.dp).padding(bottom = 18.dp), icon = AtlasIcons.fuel)
             }
         }
@@ -93,7 +93,7 @@ private fun FuelStatsBlock(state: FuelUiState, stats: FuelStats, zone: ZoneId, o
         CostCard(stats, state.currency)
         SectionHeader("Fuel-ups") { Kicker("${state.rows.size} logged · tap to edit") }
         if (state.rows.isEmpty()) {
-            EmptyState("No receipts yet.", message = "Log a full tank at the pump to start your mileage.", actionLabel = "Log fuel", onAction = onLog)
+            EmptyState("No fuel-ups yet.", message = "Log a full tank at the pump to start tracking mileage.", actionLabel = "Log fuel", onAction = onLog)
         }
     }
 }
@@ -101,10 +101,10 @@ private fun FuelStatsBlock(state: FuelUiState, stats: FuelStats, zone: ZoneId, o
 @Composable
 private fun FuelAlertBlock(on: Boolean, onLowFuelAlert: (Boolean) -> Unit) {
     Column {
-        SectionHeader("Alert")
-        SwitchRow("Low-fuel reminder", on, onLowFuelAlert, subtitle = "A phone notification when the cluster reads 1 bar")
+        SectionHeader("Reminder")
+        SwitchRow("Low-fuel reminder", on, onLowFuelAlert, subtitle = "A phone notification when your bike shows 1 bar")
         Note(
-            "The bike reports fuel only as bars, so litres and price come from your receipts. The odometer comes from the bike.",
+            "Your bike shows fuel only as bars, so litres and prices come from your fuel-ups. The odometer comes from your bike.",
             Modifier.padding(top = 12.dp),
         )
     }

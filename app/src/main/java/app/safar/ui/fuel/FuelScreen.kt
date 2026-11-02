@@ -47,8 +47,8 @@ fun FuelScreen(navigator: Navigator) {
         state = state,
         toast = toast,
         onBack = navigator::back,
-        onLog = { navigator.go(Route.FuelUp(null)) },
-        onEdit = { navigator.go(Route.FuelUp(it)) },
+        onLog = { FuelNotices.markOpenedFromFuel(); navigator.go(Route.FuelUp(null)) },
+        onEdit = { FuelNotices.markOpenedFromFuel(); navigator.go(Route.FuelUp(it)) },
         onLowFuelAlert = vm::setLowFuelAlert,
     )
 }

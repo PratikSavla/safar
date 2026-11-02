@@ -31,6 +31,7 @@ import app.safar.ui.components.TopoTransform
 import app.safar.ui.components.rememberToastState
 import app.safar.ui.fuel.preview.FuelPreviewData
 import app.safar.ui.nav.Navigator
+import app.safar.ui.nav.Route
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.SafarTheme
 import app.safar.ui.vm.NoticeToasts
@@ -56,12 +57,15 @@ fun FuelUpScreen(navigator: Navigator, fuelUpId: Long?) {
     }
     val state by vm.state.collectAsStateWithLifecycle()
     val done by vm.done.collectAsStateWithLifecycle()
+    val fromFuel = rememberSaveable { FuelNotices.takeOpenedFromFuel() }
     val toast = rememberToastState()
     NoticeToasts(vm.notices, toast)
     LaunchedEffect(done) {
         val message = done ?: return@LaunchedEffect
         FuelNotices.post(message)
         navigator.back()
+        // Only the fuel page shows the toast: a new receipt logged from elsewhere lands there (fuel-form.js).
+        if (!fromFuel && fuelUpId == null) navigator.go(Route.Fuel)
     }
     val actions = FuelUpActions(
         vm::setLitres, vm::setTotal, vm::setOdo, vm::editOdo, vm::setFull, vm::save, vm::delete, navigator::back,

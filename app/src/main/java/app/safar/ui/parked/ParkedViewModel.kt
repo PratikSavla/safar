@@ -60,17 +60,17 @@ class ParkedViewModel(
         notices.post("Opening Google Maps…")
     }
 
-    /** "I moved the bike: park here" with the phone's current fix, if it is fresh enough. */
+    /** "Moved the bike? Save this spot" with the phone's current fix, if it is fresh enough. */
     fun parkHere() {
         val f = state.value.phoneFix ?: return
         val spot = parkHereSpot(f, now())
         if (spot == null) {
-            notices.post("Waiting for a fresh GPS fix… try again in a moment")
+            notices.post("Finding your location. Try again in a moment.")
             return
         }
-        launchLogged(TAG, "save of the parked spot", { notices.post("Could not save the spot") }) {
+        launchLogged(TAG, "save of the parked spot", { notices.post("Couldn’t save the spot. Try again.") }) {
             parked.save(spot)
-            notices.post("Parking spot saved")
+            notices.post("Spot saved")
         }
     }
 }

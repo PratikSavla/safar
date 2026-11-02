@@ -5,6 +5,8 @@ import app.safar.data.ParkedSpot
 import app.safar.data.haversineM
 import app.safar.data.latLngQuery
 import app.safar.ui.format.Formatters
+import app.safar.ui.format.FreshnessText
+import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -50,9 +52,41 @@ fun dirWord(deg: Double): String = DIRS[((((deg % 360) + 360) % 360) / 45).round
 /** Needle angle: towards the bike relative to where the top of the phone points. */
 fun pointerAngle(bearing: Double, heading: Float?): Float = (((bearing - (heading ?: 0f)) % 360 + 360) % 360).toFloat()
 
-/** The spot's label, else its coordinates. */
-fun placeName(spot: ParkedSpot): String =
-    spot.label?.takeIf { it.isNotBlank() } ?: String.format(Locale.US, "%.5f, %.5f", spot.lat, spot.lng)
+/** The spot's label, else plain words (the coordinates help nobody on screen; the Maps link carries them). */
+fun placeName(spot: ParkedSpot): String = spotLabel(spot) ?: "Your parked spot"
+
+private fun spotLabel(spot: ParkedSpot): String? = spot.label?.takeIf { it.isNotBlank() }
+
+/** Developer mode only: "18.50000, 73.80000". */
+fun coordinates(spot: ParkedSpot): String = String.format(Locale.US, "%.5f, %.5f", spot.lat, spot.lng)
+
+/** "Parked 12 min ago", "Parked today, 14:05", "Parked yesterday, 18:40": never seconds. */
+fun parkedAgo(atMillis: Long, nowMillis: Long, zone: ZoneId = ZoneId.systemDefault()): String =
+    "Parked ${FreshnessText.calmAge(atMillis, nowMillis, zone)}"
+
+/** "to the north-east": the direction in words, under the distance. */
+fun directionText(bearing: Int): String = "to the ${dirWord(bearing.toDouble())}"
+
+/** What TalkBack reads for the compass. */
+fun compassDescription(state: ParkedUiState): String {
+    val distance = state.distanceM
+    val bearing = state.bearingDeg
+    return when {
+        distance == null || bearing == null -> "Compass. Waiting for your phone’s location."
+        state.here -> "You’re at your bike."
+        else -> "Your bike is ${distanceText(distance)} away, ${directionText(bearing)}."
+    }
+}
+
+/** How good the spot is and how to read the arrow. */
+fun accuracyText(accuracyM: Float, hasCompass: Boolean): String {
+    val hold = if (hasCompass) {
+        "Hold your phone flat and the arrow points to your bike."
+    } else {
+        "Your phone has no compass, so north is at the top and the arrow shows the way from there."
+    }
+    return "The spot is accurate to about ${accuracyM.roundToInt()} m. $hold"
+}
 
 /** "85 m" (to 5 m) under a kilometre, then "1.2 km". */
 fun distanceText(metres: Int): String =
@@ -61,7 +95,8 @@ fun distanceText(metres: Int): String =
 /** Text for the share sheet: plain words and a Google Maps link anyone can open. */
 fun shareText(spot: ParkedSpot): String {
     val q = latLngQuery(spot.lat, spot.lng)
-    return "My bike is parked here: ${placeName(spot)}\nhttps://www.google.com/maps/search/?api=1&query=$q"
+    val where = spotLabel(spot)?.let { "My bike is parked here: $it" } ?: "My bike is parked here"
+    return "$where\nhttps://www.google.com/maps/search/?api=1&query=$q"
 }
 
 /**

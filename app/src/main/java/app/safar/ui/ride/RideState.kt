@@ -8,8 +8,11 @@ import app.safar.core.NavState
 import app.safar.core.NavStatusCode
 import app.safar.core.RideState
 import app.safar.data.Settings
+import app.safar.ui.components.ValueOrigin
 import app.safar.ui.format.Formatters
+import app.safar.ui.format.ValueSource
 import app.safar.ui.home.DEFAULT_TURN_CODE
+import app.safar.ui.home.NO_GEAR
 import app.safar.ui.home.navStatusWord
 import app.safar.ui.shell.callForwarded
 import kotlin.math.roundToInt
@@ -25,7 +28,7 @@ sealed interface TurnUi {
     data class Turn(val code: Int, val value: String, val unit: String) : TurnUi
 }
 
-/** The call banner while riding: caller, and whether the cluster shows it. */
+/** The call banner while riding: caller, and whether your bike's display shows it. */
 data class RideCallUi(val name: String, val source: AlertSource, val label: String, val answered: Boolean)
 
 /** Everything on the ride screen. Few elements, all large (docs 12.5 rule 2). */
@@ -41,13 +44,12 @@ data class RideUi(
     val readingAt: Long?,
     val turn: TurnUi?,
     val call: RideCallUi?,
-    /** "bike link · retrying" / "bike not connected", or null while linked. */
+    /** "waiting for your bike" / "bike not connected" stamp, or null while connected. */
     val linkNote: String?,
     val moving: Boolean,
-) {
-    /** Source caption for gear and fuel, worded like the home ledger ("waiting" age before any frame). */
-    val bikeSource: String get() = if (bikeLive || readingAt == null) "bike" else "bike · last known"
-}
+    /** Where gear and fuel come from, for [app.safar.ui.components.Freshness] under them. */
+    val bikeOrigin: ValueOrigin = ValueOrigin(ValueSource.BIKE, readingAt, connected = bikeLive),
+)
 
 private const val ARRIVED_CODE = 9
 private const val STATUS_CODE = 46
@@ -60,7 +62,7 @@ internal fun rideUi(bike: BikeState, ride: RideState, nav: NavState, alerts: Ale
     return RideUi(
         speedKmh = speed,
         overLimit = settings.speedAlertOn && speed != null && speed > settings.speedAlertKmh,
-        gear = reading?.gear?.toString() ?: "–",
+        gear = reading?.gear?.toString() ?: NO_GEAR,
         fuelBars = reading?.fuelBars,
         fuelMax = bike.saved?.model?.fuelBars ?: DEFAULT_FUEL_BARS,
         bikeLive = live,
@@ -69,18 +71,25 @@ internal fun rideUi(bike: BikeState, ride: RideState, nav: NavState, alerts: Ale
         call = alerts.call?.let { c ->
             val label = when {
                 c.answered -> "on call"
-                callForwarded(c.source, bike.link, settings) -> "on cluster"
+                callForwarded(c.source, bike.link, settings) -> "ringing · on your bike"
                 else -> "ringing"
             }
             RideCallUi(c.name, c.source, label, c.answered)
         },
-        linkNote = when (bike.link) {
-            LinkState.Connected -> null
-            is LinkState.Reconnecting -> "bike link · retrying"
-            else -> "bike not connected"
-        },
+        linkNote = linkNote(bike.link),
         moving = ride.moving,
+        // No reading at all: "Waiting for the bike" only while it is connected.
+        bikeOrigin = ValueOrigin(ValueSource.BIKE, reading?.receivedAtMillis, connected = if (reading == null) bike.link == LinkState.Connected else live),
     )
+}
+
+/** The amber stamp under the speed while the bike is not connected, in [app.safar.ui.copy.LinkCopy]'s words. */
+internal fun linkNote(link: LinkState): String? = when (link) {
+    LinkState.Connected -> null
+    is LinkState.Connecting -> "connecting"
+    is LinkState.Reconnecting -> "waiting for your bike"
+    LinkState.BluetoothOff -> "bluetooth off"
+    LinkState.Idle, LinkState.Searching -> "bike not connected"
 }
 
 internal fun turnUi(nav: NavState): TurnUi? {

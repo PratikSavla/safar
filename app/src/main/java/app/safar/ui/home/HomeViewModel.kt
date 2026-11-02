@@ -28,6 +28,7 @@ import app.safar.data.fuelStats
 import app.safar.ui.copy.LinkCopy
 import app.safar.ui.service.odoNow
 import app.safar.ui.shell.ShellDeps
+import app.safar.ui.trips.finishedTrips
 import app.safar.ui.vm.throttleLatest
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,7 +39,7 @@ import kotlinx.coroutines.flow.stateIn
 
 /**
  * Everything Today shows, except phone GPS speed ([HomeViewModel.speed]), which changes every second and is read
- * by its one ledger cell. [rideCount] is the number of trips on this phone ("12 rides").
+ * by its one ledger cell. [rideCount] is the number of finished rides on this phone ("12 rides"), as Trips counts them.
  */
 @Immutable
 data class HomeUi(
@@ -84,7 +85,7 @@ internal fun homeUi(live: HomeLive, stored: HomeStored, logCount: Int, nowMillis
         counts = CountsUi(live.alerts.missed, live.alerts.messages),
         nav = nav,
         garage = garageTiles(garage),
-        rideCount = stored.trips.size,
+        rideCount = finishedTrips(stored.trips).size,
     )
 }
 

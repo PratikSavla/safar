@@ -159,4 +159,17 @@ class HomeStateTest {
         assertEquals(0, ui.rideCount)
         assertEquals(TEST_BIKE, ui.conn.bikeName)
     }
+
+    @Test
+    fun rideCountLeavesOutTheRideBeingRecordedLikeTrips() {
+        val done = Trip(1, "Ride", 0, 60_000, 42.3, 88f, 40f, null, null, null, null)
+        val open = Trip(2, "Ride", 120_000, null, 0.0, 0f, 0f, null, null, null, null)
+        fun count(trips: List<Trip>) = homeUi(
+            HomeLive(BikeState(saved = testSaved), NavState(), AlertsState(), Settings()),
+            HomeStored(emptyList(), emptyList(), null, trips, 0),
+            logCount = 0, nowMillis = 0,
+        ).rideCount
+        assertEquals(0, count(listOf(open)))
+        assertEquals(1, count(listOf(open, done)))
+    }
 }

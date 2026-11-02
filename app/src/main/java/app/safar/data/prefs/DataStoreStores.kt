@@ -6,9 +6,11 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import app.safar.data.OneTimeFlags
 import app.safar.data.SavedBikeRecord
 import app.safar.data.SavedBikeStore
 import app.safar.data.Settings
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
@@ -85,6 +88,16 @@ class DataStoreSettingsStore(
 
     override suspend fun update(transform: (Settings) -> Settings) =
         dataStore.editLogged("settings") { prefs -> writeSettings(prefs, transform(readSettings(prefs))) }
+}
+
+/**
+ * [OneTimeFlags] as boolean keys in a Preferences DataStore. Safar keeps them in the settings file, beside
+ * (never inside) the [Settings] keys, so they are backed up and restored with the settings.
+ */
+class DataStoreOneTimeFlags(private val dataStore: DataStore<Preferences>) : OneTimeFlags {
+    override suspend fun isSet(name: String): Boolean = dataStore.data.first()[booleanPreferencesKey(name)] == true
+
+    override suspend fun set(name: String) = dataStore.editLogged("flag $name") { it[booleanPreferencesKey(name)] = true }
 }
 
 /** [SavedBikeStore] on its own Preferences DataStore. Null until a bike is saved, or when either key is missing. */

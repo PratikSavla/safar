@@ -76,9 +76,9 @@ internal fun CoverPage() {
     ObTitle("1 of 3 · welcome", "Safar", "turns and calls on your Suzuki’s display.")
     RouteArt()
     listOf(
-        "Reads" to "Odometer, trips, fuel and gear from your bike.",
+        "Reads" to "Odometer, trip meters, fuel and gear from your bike.",
         "Shows" to "Google Maps turns, who’s calling, WhatsApp alerts, the time and your name on your bike’s display.",
-        "Keeps" to "Your trips, fuel history, service dates and where you parked. On this phone only.",
+        "Keeps" to "Your rides, fuel history, service dates and where you parked. On this phone only.",
     ).forEach { (k, v) ->
         DashedRule(thickness = 1.dp, dash = 4.dp, gap = 3.dp)
         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp).semantics(mergeDescendants = true) { }, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -131,10 +131,10 @@ internal fun RiderPage(ui: OnboardingUi, onName: (String) -> Unit) {
     AtlasTextField(
         value = ui.name,
         onValueChange = onName,
-        label = "Rider name",
+        label = "Your name · shown on your bike",
         modifier = Modifier.padding(top = 10.dp),
         lockedReason = if (ui.locked) MOVING_LOCK_REASON else null,
-        placeholder = "Your name",
+        placeholder = "e.g. Alex",
         maxLength = NAME_FIELD_MAX,
         trailing = { BasicText("${ui.cleaned.length}/19", style = Atlas.type.src.copy(color = Atlas.colors.ink3)) },
     )

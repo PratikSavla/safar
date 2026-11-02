@@ -1,6 +1,7 @@
 package app.safar.protocol
 
 import org.junit.Test
+import java.time.LocalTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
@@ -46,6 +47,49 @@ class ProtocolTest {
     fun `fuel byte outside 1 to 6 gives 0 bars`() {
         val frame = encodeCluster(ClusterData(0, 0, 0.0, 0.0, 0), ChecksumMode.SUM)
         assertEquals(0, decodeCluster(frame, ChecksumMode.SUM).fuelBars)
+    }
+
+    @Test
+    fun `distance and ETA use the cluster text format`() {
+        assertEquals(Distance("0250", DistanceUnit.METRES), formatDistance(248))
+        assertEquals(Distance("01.2", DistanceUnit.KILOMETRES), formatDistance(1234))
+        assertEquals(Distance("12.5", DistanceUnit.KILOMETRES), formatDistance(12_480))
+        assertEquals(Distance("0123", DistanceUnit.KILOMETRES), formatDistance(123_400))
+        assertEquals("0530PM", formatEta(LocalTime.of(17, 30)))
+        assertEquals("1205AM", formatEta(LocalTime.of(0, 5)))
+    }
+
+    @Test
+    fun `navigation frame puts each field at the documented byte`() {
+        val frame = encodeNavigation(
+            NavigationData(
+                iconCode = 1, // turn left
+                distanceToTurnM = 250,
+                eta = LocalTime.of(17, 30),
+                remainingM = 12_480,
+                status = NavStatus.NORMAL,
+                active = true,
+            ),
+            ChecksumMode.SUM,
+        )
+        assertEquals(0x31, frame.u8(1))
+        assertEquals(1, frame.u8(2))
+        assertEquals(0xFF, frame.u8(3))
+        assertEquals("0250M", ascii(frame, 4, 9))
+        assertEquals("0530PM", ascii(frame, 9, 15))
+        assertEquals(listOf(0xFF, 0xFF, 0xFF), listOf(frame.u8(15), frame.u8(16), frame.u8(17)))
+        assertEquals("12.5K11", ascii(frame, 18, 25))
+        assertEquals(true, validateFrame(frame, ChecksumMode.SUM).ok)
+    }
+
+    @Test
+    fun `navigation frame sends icon 46 when the status is not normal`() {
+        val frame = encodeNavigation(
+            NavigationData(4, 0, LocalTime.of(9, 0), 0, NavStatus.GPS_OFF, active = true),
+            ChecksumMode.SUM,
+        )
+        assertEquals(46, frame.u8(2))
+        assertEquals('4', frame.u8(23).toChar())
     }
 
     @Test

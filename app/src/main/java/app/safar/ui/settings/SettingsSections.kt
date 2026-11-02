@@ -86,7 +86,7 @@ internal fun TankBlock(state: SettingsState, onTank: (String) -> Unit, onReset: 
             keyboardType = KeyboardType.Decimal,
             trailing = { BasicText("L", style = Atlas.type.serifItalic.copy(color = Atlas.colors.ink2)) },
         )
-        if (own != null) SecondaryButton("Reset", onReset, small = true)
+        if (own != null) SecondaryButton("Reset", onReset, enabled = state.lockReason == null, small = true)
     }
     state.tankError?.let { LockLine(it) }
     SourceLine(if (own != null) "you · override" else "model spec", age = null)

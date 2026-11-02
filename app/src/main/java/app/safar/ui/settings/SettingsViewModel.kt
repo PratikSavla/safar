@@ -102,6 +102,7 @@ class SettingsViewModel(
     }
 
     fun resetTank() {
+        if (state.value.lockReason != null) return
         pending.remove("tank")?.job?.cancel()
         drafts.update { it.copy(tank = null) }
         write("tank size") { it.copy(tankLitres = null) }

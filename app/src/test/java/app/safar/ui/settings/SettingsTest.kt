@@ -89,6 +89,10 @@ class SettingsTest {
         advanceUntilIdle()
         assertEquals("Rider", vm.state.value.nameText)
         assertNull(store.settings.value.tankLitres)
+        store.settings.value = store.settings.value.copy(tankLitres = 6.0)
+        vm.resetTank()
+        advanceUntilIdle()
+        assertEquals(6.0, store.settings.value.tankLitres)
         vm.setTheme(ThemeMode.DARK)
         vm.toggle("debug log") { it.copy(debugLog = true) }
         advanceUntilIdle()

@@ -3,6 +3,7 @@ package app.safar.log
 import app.safar.core.LogKind
 import app.safar.protocol.CallStatus
 import app.safar.protocol.ChecksumMode
+import app.safar.protocol.LogEntry
 import app.safar.protocol.LogHeaderInfo
 import app.safar.protocol.MessageSource
 import app.safar.protocol.encodeCall
@@ -16,6 +17,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -140,5 +142,16 @@ class AppLogTest {
         assertTrue(lines.any { it.contains("\"name\":\"Connected\"") })
         assertTrue(lines.last().contains("Log session stopped"))
         assertFalse(log.sessionActive.value)
+    }
+
+    @Test
+    fun errorEventKeepsItsMessageNextToTheErrorFlagInTheFile() {
+        val line = eventLine(1, 0, "Connection error", mapOf("error" to "GATT 133"), error = true)
+        val detail = (line.entry as LogEntry.Event).detail.orEmpty()
+        assertEquals(JsonPrimitive(true), detail["error"])
+        assertEquals(JsonPrimitive("GATT 133"), detail["message"])
+        assertEquals("GATT 133", line.record.detail["error"])
+        val plain = eventLine(2, 0, "Note", mapOf("error" to "none"), error = false)
+        assertEquals(JsonPrimitive("none"), (plain.entry as LogEntry.Event).detail.orEmpty()["error"])
     }
 }

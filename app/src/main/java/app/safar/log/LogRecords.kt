@@ -26,6 +26,8 @@ fun frameLabel(type: Char): String = when (type) {
 /** Detail key that marks an error event in the JSON Lines file. */
 internal const val ERROR_KEY = "error"
 internal const val NOTE_KEY = "note"
+/** Where a caller's own "error" detail goes in the file, so the error flag does not overwrite its message. */
+internal const val MESSAGE_KEY = "message"
 
 /** One log line in both shapes: [record] for the screen, [entry] for the JSON Lines file and the export. */
 internal class LogLine(val record: LogRecord, val entry: LogEntry)
@@ -55,7 +57,8 @@ internal fun eventLine(id: Long, atMillis: Long, name: String, detail: Map<Strin
         name = name,
         detail = detail,
     )
-    val pairs = detail.entries.map { (key, value) -> key to (value as Any) }.toMutableList()
+    val moved = if (MESSAGE_KEY in detail) "error_$MESSAGE_KEY" else MESSAGE_KEY
+    val pairs = detail.entries.map { (key, value) -> (if (error && key == ERROR_KEY) moved else key) to (value as Any) }.toMutableList()
     if (error) pairs += ERROR_KEY to true
     val json = if (pairs.isEmpty()) null else logDetail(*pairs.toTypedArray())
     return LogLine(record, LogEntry.Event(Instant.ofEpochMilli(atMillis), name, json))

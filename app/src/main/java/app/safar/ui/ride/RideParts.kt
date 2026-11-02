@@ -56,10 +56,6 @@ internal fun glance(size: Dp, weight: Int = 800, color: Color = Atlas.colors.ink
     return TextStyle(fontFamily = FrauncesGlance, fontWeight = FontWeight(weight), fontSize = sp, lineHeight = sp, letterSpacing = (-0.04).em, color = color, fontFeatureSettings = "lnum, tnum")
 }
 
-/**
- * Clock, gear in a ring, fuel bars, over a 2 dp ink rule (ride.css `.r-top`). Gear and fuel carry their
- * source and age underneath, and fade to ink-2 when they are the last known frame (docs 12.5 rule 4).
- */
 /** "14:05": reads the shared clock at minute steps in its own scope, so a tick recomposes this text only. */
 @Composable
 private fun RideClock(modifier: Modifier) {
@@ -69,6 +65,10 @@ private fun RideClock(modifier: Modifier) {
     BasicText(clock, modifier.clearAndSetSemantics { contentDescription = "Time $clock" }, style = glance(35.dp, 600), maxLines = 1)
 }
 
+/**
+ * Clock, gear in a ring, fuel bars, over a 2 dp ink rule (ride.css `.r-top`). Gear and fuel carry their
+ * source and age underneath, and fade to ink-2 when they are the last known frame (docs 12.5 rule 4).
+ */
 @Composable
 internal fun RideTop(ui: RideUi) {
     val c = Atlas.colors

@@ -48,12 +48,16 @@ class IconTestViewModel(private val bike: BikeController, private val clock: () 
         IconTestState(s.current, b.link == LinkState.Connected, s.code, s.atMillis)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), IconTestState())
 
-    /** Sends one navigation frame with [code]. The BLE layer drops it while not connected. */
+    /**
+     * Sends one navigation frame with [code]. The BLE layer drops it while not connected, so only a send on a
+     * connected link is recorded as sent; otherwise just the selection moves.
+     */
     fun send(code: Int) {
         val c = code.coerceIn(MIN_ICON_CODE, MAX_ICON_CODE)
         try {
             bike.sendIconTest(c)
-            sent.update { Sent(c, c, clock()) }
+            val connected = bike.state.value.link == LinkState.Connected
+            sent.update { if (connected) Sent(c, c, clock()) else it.copy(current = c) }
         } catch (e: RuntimeException) {
             Log.e(TAG, "Could not send icon test $c", e)
             sent.update { it.copy(current = c) }

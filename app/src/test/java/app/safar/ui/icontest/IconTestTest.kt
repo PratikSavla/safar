@@ -46,4 +46,18 @@ class IconTestTest {
         assertEquals(5_000L, vm.state.value.lastSentAtMillis)
         assertTrue(vm.state.value.connected)
     }
+
+    @Test
+    fun sendWhileDisconnectedIsNotRecordedAsSent() = runTest {
+        val bike = FakeBike(BikeState(link = LinkState.Connected))
+        val vm = IconTestViewModel(bike) { 5_000L }
+        backgroundScope.launch(main.dispatcher) { vm.state.collect {} }
+        vm.send(7)
+        bike.state.value = BikeState()
+        vm.send(30)
+        assertEquals(30, vm.state.value.current)
+        assertEquals(7, vm.state.value.lastSentCode)
+        assertEquals(5_000L, vm.state.value.lastSentAtMillis)
+        assertEquals(false, vm.state.value.connected)
+    }
 }

@@ -78,7 +78,7 @@ internal fun CoverPage() {
     listOf(
         "Reads" to "Odometer, trip meters, fuel and gear from your bike.",
         "Shows" to "Google Maps turns, who’s calling, WhatsApp alerts, the time and your name on your bike’s display.",
-        "Keeps" to "Your rides, fuel history, service dates and where you parked. On this phone only.",
+        "Keeps" to "Your rides, fuel history, service dates and where you parked. On this phone and in its backup.",
     ).forEach { (k, v) ->
         DashedRule(thickness = 1.dp, dash = 4.dp, gap = 3.dp)
         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp).semantics(mergeDescendants = true) { }, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

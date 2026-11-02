@@ -3,19 +3,21 @@ package app.safar.ui.components
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import app.safar.ui.art.Contours
 import app.safar.ui.art.splinePath
@@ -47,11 +49,18 @@ private const val VIEW_W = 540f
 private const val VIEW_H = 1040f
 private val PageEase = CubicBezierEasing(0.22f, 0.8f, 0.24f, 1f)
 
-private class TopoPaths(val plain: List<Path>, val index: List<Path>)
+private class TopoPaths(val plain: List<Path>, val index: List<Path>) {
+    val all: List<Path> = plain + index
+}
 
 /**
  * Procedural topographic contour lines behind a page (art.js `contours()`). Subtle by design:
  * the colours come from `contour` / `contourIdx`. The layer glides when [transform] changes.
+ *
+ * About 25 page-sized spline strokes (twice in dark mode, for the glow) are costly to replay, so they are
+ * drawn into an offscreen layer that HWUI keeps as a texture: it is re-rendered only when the size, the
+ * colours or the transform change (a page glide), and every other frame, scrolling included, composites
+ * one bitmap. Strokes are built once per size; the animated transform is read only while drawing.
  */
 @Composable
 fun TopoBackground(modifier: Modifier = Modifier, transform: TopoTransform = TopoTransform(), seed: Int = 3) {
@@ -63,37 +72,47 @@ fun TopoBackground(modifier: Modifier = Modifier, transform: TopoTransform = Top
         )
     }
     val spec = tween<Float>(1100, easing = PageEase)
-    val dx by animateFloatAsState(transform.dx, spec, label = "topoDx")
-    val dy by animateFloatAsState(transform.dy, spec, label = "topoDy")
-    val rot by animateFloatAsState(transform.rotation, spec, label = "topoRot")
-    val scale by animateFloatAsState(transform.scale, spec, label = "topoScale")
-    val alpha by animateFloatAsState(transform.alpha, tween(600), label = "topoAlpha")
+    val dx = animateFloatAsState(transform.dx, spec, label = "topoDx")
+    val dy = animateFloatAsState(transform.dy, spec, label = "topoDy")
+    val rot = animateFloatAsState(transform.rotation, spec, label = "topoRot")
+    val scale = animateFloatAsState(transform.scale, spec, label = "topoScale")
+    val alpha = animateFloatAsState(transform.alpha, tween(600), label = "topoAlpha")
     val colors = Atlas.colors
-    Canvas(modifier.fillMaxSize()) {
-        if (alpha <= 0f) return@Canvas
-        val bleed = 60.dp.toPx()
-        val w = size.width + bleed * 2
-        val h = size.height + bleed * 2
-        val fit = max(w / VIEW_W, h / VIEW_H) // preserveAspectRatio="xMidYMid slice"
-        val shiftX = dx.dp.toPx()
-        val shiftY = dy.dp.toPx()
-        withTransform({
-            translate(shiftX, shiftY)
-            rotate(rot, Offset(size.width / 2, size.height / 2))
-            scale(scale, scale, Offset(size.width / 2, size.height / 2))
-            translate((size.width - VIEW_W * fit) / 2, (size.height - VIEW_H * fit) / 2)
-            scale(fit, fit, Offset.Zero)
-        }) {
-            val unit = 1.dp.toPx() / fit
-            if (colors.contourGlow.alpha > 0f) {
-                (paths.plain + paths.index).forEach { drawPath(it, colors.contourGlow, alpha = alpha, style = Stroke(unit * 4f)) }
-            }
-            drawRings(paths.plain, colors.contour, unit, alpha)
-            drawRings(paths.index, colors.contourIdx, unit * 1.4f, alpha)
-        }
-    }
+    val contour = colors.contour
+    val contourIdx = colors.contourIdx
+    val glow = colors.contourGlow
+    Spacer(
+        modifier
+            .fillMaxSize()
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithCache {
+                val bleed = 60.dp.toPx()
+                val fit = max((size.width + bleed * 2) / VIEW_W, (size.height + bleed * 2) / VIEW_H) // xMidYMid slice
+                val unit = 1.dp.toPx() / fit
+                val plainStroke = Stroke(unit)
+                val indexStroke = Stroke(unit * 1.4f)
+                val glowStroke = Stroke(unit * 4f)
+                onDrawBehind {
+                    val a = alpha.value
+                    if (a <= 0f) return@onDrawBehind
+                    val shiftX = dx.value.dp.toPx()
+                    val shiftY = dy.value.dp.toPx()
+                    withTransform({
+                        translate(shiftX, shiftY)
+                        rotate(rot.value, Offset(size.width / 2, size.height / 2))
+                        scale(scale.value, scale.value, Offset(size.width / 2, size.height / 2))
+                        translate((size.width - VIEW_W * fit) / 2, (size.height - VIEW_H * fit) / 2)
+                        scale(fit, fit, Offset.Zero)
+                    }) {
+                        if (glow.alpha > 0f) drawRings(paths.all, glow, glowStroke, a)
+                        drawRings(paths.plain, contour, plainStroke, a)
+                        drawRings(paths.index, contourIdx, indexStroke, a)
+                    }
+                }
+            },
+    )
 }
 
-private fun DrawScope.drawRings(paths: List<Path>, color: Color, width: Float, alpha: Float) {
-    paths.forEach { drawPath(it, color, alpha = alpha, style = Stroke(width)) }
+private fun DrawScope.drawRings(paths: List<Path>, color: Color, stroke: Stroke, alpha: Float) {
+    paths.forEach { drawPath(it, color, alpha = alpha, style = stroke) }
 }

@@ -100,7 +100,7 @@ private fun EditingRow(d: Destination, actions: NavigateActions) {
 @Composable
 private fun EditButton(icon: ImageVector, label: String, rotation: Float = 0f, onClick: () -> Unit) {
     Box(
-        Modifier.size(44.dp, 48.dp).clickable(onClickLabel = label, role = Role.Button, onClick = onClick).semantics(mergeDescendants = true) {},
+        Modifier.size(Atlas.dimens.touchTarget).clickable(onClickLabel = label, role = Role.Button, onClick = onClick).semantics(mergeDescendants = true) {},
         contentAlignment = Alignment.Center,
     ) {
         AtlasIcon(icon, Modifier.rotate(rotation), contentDescription = label, tint = Atlas.colors.ink2, size = 20.dp)

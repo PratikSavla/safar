@@ -34,7 +34,7 @@ fun TrackMap(
     modifier: Modifier = Modifier,
     big: Boolean = false,
     gridStep: Dp = if (big) 30.dp else 16.dp,
-    description: String = "GPS track",
+    description: String = "Map of the route",
 ) {
     val c = Atlas.colors
     val measurer = rememberTextMeasurer()

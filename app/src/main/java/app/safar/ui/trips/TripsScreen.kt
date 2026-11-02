@@ -69,9 +69,9 @@ fun TripsContent(
         item(key = "foot", contentType = "foot") {
             Column {
                 if (state.rows.size > shown) {
-                    TextAction("Show older entries", { shown += PAGE }, Modifier.padding(top = 12.dp))
+                    TextAction("Show older rides", { shown += PAGE }, Modifier.padding(top = 12.dp))
                 }
-                Footnote("Tracks come from phone GPS. Distances from the bike’s odometer at connect and disconnect.")
+                Footnote("Routes come from your phone’s GPS. Distances come from your bike’s odometer.")
                 Gap(72.dp) // clear of the shell's ticket-stub tabs
             }
         }
@@ -84,14 +84,14 @@ private fun TripsHead(state: TripsUiState, onOpen: (Long) -> Unit) {
         Masthead(
             kicker = "Journal · ${state.bikeName ?: "your bike"}",
             title = "Roads",
-            kickerAside = "${state.rows.size} entries",
+            kickerAside = ridesText(state.rows.size),
             titleEm = " already ridden.",
         )
         TotalsRow(state.week, state.month)
         state.live?.let { LiveEntry(it, Modifier.padding(top = 14.dp), onOpen) }
-        SectionHeader("Entries") { Kicker("newest first") }
+        SectionHeader("Rides") { Kicker("newest first") }
         if (state.rows.isEmpty() && !state.loading) {
-            EmptyState("No rides yet.", message = "Connect the bike and ride; trips land here by themselves.")
+            EmptyState("No rides yet.", message = "Connect your bike and ride. Each ride is saved here on its own.")
         }
     }
 }

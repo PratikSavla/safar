@@ -22,7 +22,7 @@ private const val TAG = "TripViewModel"
 private const val DEFAULT_BARS = 6
 
 /** Why the ride being recorded cannot be deleted; shown on the page and as a toast. */
-internal const val RECORDING_DELETE = "Recording. Stop the ride to delete it."
+internal const val RECORDING_DELETE = "Still recording. You can delete this ride once it ends."
 
 /** One journal entry: track, stats, rename and delete. */
 class TripViewModel(
@@ -63,9 +63,9 @@ class TripViewModel(
         val trip = current ?: return
         val title = cleanTitle(input, trip.title)
         if (title == trip.title) return
-        launchLogged(TAG, "rename of trip $tripId", { notices.post("Could not rename the ride") }) {
+        launchLogged(TAG, "rename of trip $tripId", { notices.post("Couldn’t rename the ride. Try again.") }) {
             trips.update(trip.copy(title = title))
-            notices.post("Renamed")
+            notices.post("Ride renamed")
         }
     }
 
@@ -75,7 +75,7 @@ class TripViewModel(
             notices.post(RECORDING_DELETE)
             return
         }
-        launchLogged(TAG, "delete of trip $tripId", { notices.post("Could not delete the ride") }) {
+        launchLogged(TAG, "delete of trip $tripId", { notices.post("Couldn’t delete the ride. Try again.") }) {
             trips.delete(tripId)
             _deleted.value = true
         }

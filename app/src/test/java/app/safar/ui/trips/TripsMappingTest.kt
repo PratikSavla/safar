@@ -47,6 +47,26 @@ class TripsMappingTest {
     }
 
     @Test
+    fun `durations and totals read in plain words with units`() {
+        assertEquals("42 minutes", spokenDuration(42))
+        assertEquals("1 hour", spokenDuration(60))
+        assertEquals("1 hour 1 minute", spokenDuration(61))
+        assertEquals("2 hours 5 minutes", spokenDuration(125))
+        assertEquals("1 ride", ridesText(1))
+        assertEquals("3 rides", ridesText(3))
+        assertEquals("2 rides · 1 h 34 · top 88 km/h", totalsNote(TripTotals(62.3, 94, 2, 88f)))
+        assertEquals("No rides", totalsNote(TripTotals(0.0, 0, 0, 0f)))
+    }
+
+    @Test
+    fun `a postcard and the live ride speak in sentences`() {
+        val row = TripRowUi(4, 4, "SUN 01 NOV", "Evening ride", 42.3, 64, 88f, "Sunday 1 November")
+        assertEquals("Evening ride, Sunday 1 November. 42.3 km in 1 hour 4 minutes, top speed 88 km/h.", postcardSpoken(row))
+        assertEquals("42 km/h now · top 61 km/h", liveLine(LiveRideUi(42f, 61f, now)))
+        assertEquals("top 61 km/h", liveLine(LiveRideUi(null, 61f, null)))
+    }
+
+    @Test
     fun `a ride still being written counts up to now`() {
         val open = trip(9, 0, 3.0, 0, 30f, end = false).copy(startMillis = now - 25 * min)
         assertEquals(25, tripMinutes(open, now))
@@ -57,6 +77,7 @@ class TripsMappingTest {
         val rows = tripRows(trips, now, zone)
         assertEquals(listOf(4, 3, 2, 1), rows.map { it.number })
         assertEquals("SUN 01 NOV", rows[0].day)
+        assertEquals("Sunday 1 November", rows[0].spokenDay)
         assertEquals("№004", entryNumber(rows[0].number))
     }
 
@@ -73,10 +94,10 @@ class TripsMappingTest {
 
     @Test
     fun `fuel line reports bars used, km per bar or a refill`() {
-        assertEquals(TripFuelUi(5, 3, 6, "2 bars used", "≈ 64 km per bar"), tripFuel(5, 3, 6, 128.6))
+        assertEquals(TripFuelUi(5, 3, 6, "2 bars used", "About 64 km per bar"), tripFuel(5, 3, 6, 128.6))
         assertEquals("1 bar used", tripFuel(5, 4, 6, 40.0)?.aside)
-        assertEquals("refilled on the way", tripFuel(2, 6, 6, 80.0)?.note)
-        assertEquals("under one bar", tripFuel(4, 4, 6, 10.0)?.note)
+        assertEquals(TripFuelUi(2, 6, 6, "filled up", "You filled up on the way"), tripFuel(2, 6, 6, 80.0))
+        assertEquals(TripFuelUi(4, 4, 6, "no change", "Less than one bar used"), tripFuel(4, 4, 6, 10.0))
         assertNull(tripFuel(null, 4, 6, 10.0))
     }
 

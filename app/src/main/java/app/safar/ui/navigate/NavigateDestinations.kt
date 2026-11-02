@@ -29,6 +29,7 @@ import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.CardStyle
+import app.safar.ui.components.DevOnly
 import app.safar.ui.components.TicketShape
 import app.safar.ui.components.developerMode
 import app.safar.ui.components.liveAge
@@ -59,7 +60,7 @@ internal fun DestinationList(state: NavigateState, actions: NavigateActions) {
             }
         }
         AtlasCard(style = CardStyle.LINE, contentPadding = PaddingValues(0.dp), onClick = actions.onOther, onClickLabel = "Search in Google Maps") {
-            RowBody(AtlasIcons.search, "Somewhere else", "search in Google Maps · Safar joins when you start", selected = false) {
+            RowBody(AtlasIcons.search, "Somewhere else", "Search in Google Maps", selected = false) {
                 AtlasIcon(AtlasIcons.chev, tint = Atlas.colors.ink3, size = 18.dp)
             }
         }
@@ -76,7 +77,8 @@ private fun PickRow(d: Destination, selected: Boolean, onClick: () -> Unit) {
         .then(if (selected) Modifier.border(2.dp, c.rust, shape) else Modifier)
     AtlasCard(mod, style = CardStyle.TICKET, contentPadding = PaddingValues(0.dp), onClick = onClick, onClickLabel = "Choose ${d.label}") {
         RowBody(d.kind.icon(), d.label, detailText(d), selected) {
-            BasicText(d.via.uppercase(Locale.ROOT), style = Atlas.type.src.copy(color = c.ink3, letterSpacing = Atlas.type.kicker.letterSpacing))
+            // Where the place came from is a source label: Developer mode only. The detail line already names the place.
+            DevOnly { BasicText(d.via.uppercase(Locale.ROOT), style = Atlas.type.src.copy(color = c.ink3, letterSpacing = Atlas.type.kicker.letterSpacing)) }
         }
     }
 }
@@ -139,7 +141,7 @@ private fun RowBody(
         ) { AtlasIcon(icon, tint = if (selected) c.onRust else c.ink) }
         Column(Modifier.weight(1f)) {
             BasicText(label, style = Atlas.type.serifTitle.copy(color = c.ink), maxLines = 2, overflow = TextOverflow.Ellipsis)
-            BasicText(detail, style = Atlas.type.src.copy(color = c.ink3), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            BasicText(detail, style = Atlas.type.src.copy(color = c.ink3), maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         trailing()
     }

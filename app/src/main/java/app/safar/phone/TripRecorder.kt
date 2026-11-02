@@ -8,8 +8,7 @@ import app.safar.data.Trip
 import app.safar.data.TripRepository
 import app.safar.data.autoTripTitle
 import app.safar.data.avgMovingSpeedKmh
-import app.safar.data.toFix
-import app.safar.data.trackDistanceKm
+import app.safar.data.withTrackStats
 import kotlinx.coroutines.flow.first
 import java.time.ZoneId
 
@@ -114,22 +113,13 @@ class TripRecorder(
         val open = repo.trips.first().filter { it.endMillis == null && it.id != trip?.id }
         var kept = 0
         for (t in open) {
-            val points = repo.track(t.id).first().sortedBy { it.atMillis }
-            val fixes = points.map { it.toFix() }
-            val distance = trackDistanceKm(fixes)
-            if (!keepTrip(distance)) {
+            val points = repo.track(t.id).first()
+            val counted = t.withTrackStats(points)
+            if (!keepTrip(counted.distanceKm)) {
                 repo.delete(t.id)
                 continue
             }
-            val top = points.maxOfOrNull { p -> p.speedKmh.takeIf { it <= MAX_GPS_KMH } ?: 0f } ?: 0f
-            repo.update(
-                t.copy(
-                    endMillis = points.lastOrNull()?.atMillis ?: t.startMillis,
-                    distanceKm = distance,
-                    topSpeedKmh = top,
-                    avgSpeedKmh = avgMovingSpeedKmh(fixes).toFloat(),
-                ),
-            )
+            repo.update(counted.copy(endMillis = points.maxOfOrNull { it.atMillis } ?: t.startMillis))
             kept++
         }
         return OpenTrips(kept, open.size - kept)

@@ -62,7 +62,7 @@ private fun serviceTile(items: List<ServiceItem>, odo: Int?): GarageTile {
 }
 
 private fun tripsHint(trips: List<Trip>): String {
-    val last = trips.firstOrNull() ?: return "no rides yet"
+    val last = trips.firstOrNull { it.endMillis != null } ?: return if (trips.isEmpty()) "no rides yet" else "recording"
     return "last ${Formatters.km1(last.distanceKm)} km"
 }
 

@@ -5,6 +5,7 @@ import app.safar.data.Trip
 import app.safar.data.avgMovingSpeedKmh
 import app.safar.data.filterTrack
 import app.safar.data.toFix
+import app.safar.data.withTrackStats
 import java.time.ZoneId
 import kotlin.math.roundToInt
 
@@ -72,6 +73,8 @@ fun tripDetail(
     nowMillis: Long,
     zone: ZoneId,
 ): TripDetailUi {
+    // An open trip's row holds zeros until it ends: count it from the track saved so far.
+    val trip = if (trip.endMillis == null) trip.withTrackStats(track) else trip
     val index = trips.indexOfFirst { it.id == trip.id }
     val kept = thin(filterTrack(track.map { it.toFix() }), MAX_DRAWN_POINTS)
     return TripDetailUi(

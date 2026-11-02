@@ -66,7 +66,7 @@ fun TripsContent(
             titleEm = " already ridden.",
         )
         TotalsRow(state.week, state.month)
-        state.live?.let { LiveEntry(it, Modifier.padding(top = 14.dp)) }
+        state.live?.let { LiveEntry(it, Modifier.padding(top = 14.dp), onOpen) }
         SectionHeader("Entries") { Kicker("newest first") }
         if (state.rows.isEmpty() && !state.loading) {
             EmptyState("No rides yet.", message = "Connect the bike and ride; trips land here by themselves.")

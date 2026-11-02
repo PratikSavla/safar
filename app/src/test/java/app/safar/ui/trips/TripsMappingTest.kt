@@ -64,7 +64,7 @@ class TripsMappingTest {
     fun `live ride shows only while recording`() {
         assertNull(liveRide(RideState()))
         val live = liveRide(RideState(speedKmh = 42f, topSpeedKmh = 61f, moving = true, recordingTripId = 9, lastFixAtMillis = now))
-        assertEquals(LiveRideUi(42f, 61f, now), live)
+        assertEquals(LiveRideUi(42f, 61f, now, tripId = 9), live)
         val state = tripsUiState(trips, RideState(), "V-Strom SX", now, zone)
         assertEquals("V-Strom SX", state.bikeName)
         assertEquals(4, state.rows.size)
@@ -95,6 +95,28 @@ class TripsMappingTest {
         assertEquals(4, d.fixes)
         val gpsOnly = tripDetail(trips[2].copy(odoEndKm = null), trips, emptyList(), 6, null, now, zone)
         assertEquals("phone GPS", gpsOnly.distanceSource)
+    }
+
+    @Test
+    fun `an open trip is counted from its track, not from the zeros in its row`() {
+        val open = trip(9, 0, 0.0, 0, 0f, end = false).copy(avgSpeedKmh = 0f, odoStartKm = null, odoEndKm = null)
+        // About 111 m north every 6 s: 66.7 km/h, 10 legs.
+        val track = List(11) { i -> TrackPoint(9, 6_000L * i, 18.5 + i * 0.001, 73.8, 66f + i % 2) }
+        val d = tripDetail(open, listOf(open) + trips, track, 6, recordingTripId = 9, nowMillis = now, zone = zone)
+        assertEquals(1.11, d.km, 0.01)
+        assertEquals(67f, d.topKmh)
+        assertEquals(66.7f, d.avgKmh, 0.2f)
+        assertEquals(5, d.number)
+        assertTrue(d.recording)
+    }
+
+    @Test
+    fun `an open trip stays out of the entries and totals`() {
+        val open = trip(9, 0, 0.0, 0, 0f, end = false).copy(startMillis = now - 10 * min)
+        val state = tripsUiState(listOf(open) + trips, RideState(recordingTripId = 9, topSpeedKmh = 67f), null, now, zone)
+        assertEquals(listOf(4, 3, 2, 1), state.rows.map { it.number })
+        assertEquals(TripTotals(62.3, 94, 2, 88f), state.week)
+        assertEquals(9L, state.live?.tripId)
     }
 
     @Test

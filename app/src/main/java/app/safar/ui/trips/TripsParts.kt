@@ -53,9 +53,10 @@ private fun totalsCell(label: String, t: TripTotals) = StatCell(
 
 /** The ride being written right now (`.live-entry`). */
 @Composable
-internal fun LiveEntry(live: LiveRideUi, modifier: Modifier = Modifier) {
+internal fun LiveEntry(live: LiveRideUi, modifier: Modifier = Modifier, onOpen: (Long) -> Unit = {}) {
     val c = Atlas.colors
-    AtlasCard(modifier, style = CardStyle.LINE, contentPadding = PaddingValues(16.dp, 14.dp)) {
+    val open = live.tripId?.let { id -> { onOpen(id) } }
+    AtlasCard(modifier, style = CardStyle.LINE, contentPadding = PaddingValues(16.dp, 14.dp), onClick = open, onClickLabel = "Open the ride being recorded") {
         Stamp("recording", tilted = false, solid = true)
         BasicText(
             "Today’s ride, still being written.",

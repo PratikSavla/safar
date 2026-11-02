@@ -11,6 +11,7 @@ import app.safar.core.VehicleFamily
 import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
 import app.safar.data.Settings
+import app.safar.data.Trip
 import app.safar.data.fuelStats
 import app.safar.ui.TEST_BIKE
 import app.safar.ui.components.StampTone
@@ -115,6 +116,17 @@ class HomeStateTest {
         assertEquals("40 in memory", tiles.getValue("log").hint)
         assertEquals("firmware, serial", tiles.getValue("bike").hint)
         assertEquals(9, tiles.size)
+    }
+
+    @Test
+    fun tripsTileSkipsTheTripStillBeingRecorded() {
+        val done = Trip(1, "Ride", 0, 60_000, 42.3, 88f, 40f, null, null, null, null)
+        val open = Trip(2, "Ride", 120_000, null, 0.0, 0f, 0f, null, null, null, null)
+        fun hint(trips: List<Trip>) = garageTiles(
+            GarageInputs(stats(BikeState()), null, emptyList(), null, trips, 0, null, 0, LinkState.Idle, false, 0),
+        ).first { it.key == "trips" }.hint
+        assertEquals("last 42.3 km", hint(listOf(open, done)))
+        assertEquals("recording", hint(listOf(open)))
     }
 
     @Test

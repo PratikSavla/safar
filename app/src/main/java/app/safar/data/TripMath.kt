@@ -96,6 +96,17 @@ fun trackDistanceKm(fixes: List<GpsFix>): Double {
 fun TrackPoint.toFix(): GpsFix = GpsFix(lat, lng, atMillis)
 
 /**
+ * A trip's distance, top and moving average worked out from its saved [points]. Used for a trip still open
+ * (its row holds zeros until it ends) and to close one a dead process left open.
+ */
+fun Trip.withTrackStats(points: List<TrackPoint>): Trip {
+    val sorted = points.sortedBy { it.atMillis }
+    val fixes = sorted.map { it.toFix() }
+    val top = sorted.maxOfOrNull { p -> p.speedKmh.takeIf { it <= MAX_SPEED_KMH } ?: 0f } ?: 0f
+    return copy(distanceKm = trackDistanceKm(fixes), topSpeedKmh = top, avgSpeedKmh = avgMovingSpeedKmh(fixes).toFloat())
+}
+
+/**
  * Average speed while moving, in km/h: distance over time, counting only legs [TrackFilter] keeps whose speed is
  * at least 3 km/h (stops at lights and fuel stops are left out). 0 when the track never moved.
  */

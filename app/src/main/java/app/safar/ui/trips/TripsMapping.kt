@@ -33,8 +33,8 @@ data class TripRowUi(
     val topKmh: Float,
 )
 
-/** The ride being recorded right now, from phone GPS. */
-data class LiveRideUi(val speedKmh: Float?, val topKmh: Float, val atMillis: Long?)
+/** The ride being recorded right now, from phone GPS. [tripId] opens its page. */
+data class LiveRideUi(val speedKmh: Float?, val topKmh: Float, val atMillis: Long?, val tripId: Long? = null)
 
 data class TripsUiState(
     val loading: Boolean = true,
@@ -78,17 +78,25 @@ fun tripRows(trips: List<Trip>, nowMillis: Long, zone: ZoneId): List<TripRowUi> 
 }
 
 fun liveRide(ride: RideState): LiveRideUi? =
-    if (ride.recordingTripId == null) null else LiveRideUi(ride.speedKmh, ride.topSpeedKmh, ride.lastFixAtMillis)
+    ride.recordingTripId?.let { LiveRideUi(ride.speedKmh, ride.topSpeedKmh, ride.lastFixAtMillis, it) }
 
-fun tripsUiState(trips: List<Trip>, ride: RideState, bikeName: String?, nowMillis: Long, zone: ZoneId): TripsUiState =
-    TripsUiState(
+/**
+ * Finished trips only. An open trip's row holds zeros until it ends, so it is left out of the entries and
+ * totals; the recording card stands for it. Entry numbers stay the same: the open trip is always the newest.
+ */
+fun finishedTrips(trips: List<Trip>): List<Trip> = trips.filter { it.endMillis != null }
+
+fun tripsUiState(trips: List<Trip>, ride: RideState, bikeName: String?, nowMillis: Long, zone: ZoneId): TripsUiState {
+    val done = finishedTrips(trips)
+    return TripsUiState(
         loading = false,
         bikeName = bikeName,
-        week = tripTotals(trips, nowMillis, days = 7),
-        month = tripTotals(trips, nowMillis, days = 30),
-        rows = tripRows(trips, nowMillis, zone),
+        week = tripTotals(done, nowMillis, days = 7),
+        month = tripTotals(done, nowMillis, days = 30),
+        rows = tripRows(done, nowMillis, zone),
         live = liveRide(ride),
     )
+}
 
 /** A postcard's ink track, filtered and thinned, as parallel latitude and longitude lists. */
 data class TrackThumb(val lat: List<Double>, val lng: List<Double>) {

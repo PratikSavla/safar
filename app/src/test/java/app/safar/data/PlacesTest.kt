@@ -22,6 +22,15 @@ class PlacesTest {
     }
 
     @Test
+    fun acceptsOnlyPlausiblySizedShares() {
+        assertEquals("Main Rd", acceptShare("Main Rd"))
+        assertNull(acceptShare("   "))
+        assertNull(acceptShare(null))
+        assertEquals(SHARE_MAX_CHARS, acceptShare("x".repeat(SHARE_MAX_CHARS))?.length)
+        assertNull(acceptShare("x".repeat(SHARE_MAX_CHARS + 1)))
+    }
+
+    @Test
     fun joinsMultipleAddressLinesAndTrimsCrLf() {
         val p = parseMapsShare("  Fuel stop \r\nMain Rd\r\n\r\nNH 48\r\n")
         assertEquals("Fuel stop", p?.label)

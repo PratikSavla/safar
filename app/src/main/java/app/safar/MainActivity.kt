@@ -11,6 +11,7 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.safar.core.AppContainer
+import app.safar.data.acceptShare
 import app.safar.ui.shell.SafarShell
 import app.safar.ui.shell.ShellDeps
 import app.safar.ui.shell.ShellViewModel
@@ -59,7 +60,9 @@ class MainActivity : ComponentActivity() {
         if (intent?.action != Intent.ACTION_SEND || intent.type != "text/plain") return null
         // Reopened from Recents: Android hands back the share that started the task. It was handled then.
         if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return null
-        return intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }
+        val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+        // Any app can share to Safar; a huge text would sit in the saved back stack and overflow the Binder.
+        return acceptShare(text).also { if (it == null && text != null) Log.w(TAG, "Ignored a share of ${text.length} chars") }
     }
 
     private companion object {

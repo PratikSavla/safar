@@ -17,6 +17,12 @@ data class LatLng(val lat: Double, val lng: Double)
 private val HTTP_LINK = Regex("^https?://")
 private val LAT_LNG = Regex("""^\s*(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$""")
 
+/** Longest shared text accepted. Google Maps place shares are well under 2 KB; the text rides in saved state. */
+const val SHARE_MAX_CHARS = 4_000
+
+/** [text] when it is a plausible place share: not blank and at most [SHARE_MAX_CHARS] long. */
+fun acceptShare(text: String?): String? = text?.takeIf { it.isNotBlank() && it.length <= SHARE_MAX_CHARS }
+
 /**
  * Parses text that Google Maps shares (ACTION_SEND, text/plain): first line = name, the first http(s) line =
  * link, the other lines = address. Returns null when nothing usable is in it.

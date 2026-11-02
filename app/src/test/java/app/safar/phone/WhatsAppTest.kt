@@ -35,6 +35,7 @@ class WhatsAppTest {
         assertEquals(WaKind.MISSED_CALL, classifyWhatsApp(wa(text = "missed voice call")))
         assertEquals(WaKind.MISSED_CALL, classifyWhatsApp(wa(text = "2 missed calls")))
         assertEquals(WaKind.MESSAGE, classifyWhatsApp(wa(text = "hi").copy(messagingStyle = true)))
+        assertEquals(WaKind.MESSAGE, classifyWhatsApp(wa(text = "I saw your missed call").copy(messagingStyle = true)))
         assertEquals(WaKind.IGNORE, classifyWhatsApp(wa(text = "Checking for new messages", title = "WhatsApp")))
         assertEquals(WaKind.IGNORE, classifyWhatsApp(wa(text = "Backing up", title = "WhatsApp").copy(ongoing = true)))
     }

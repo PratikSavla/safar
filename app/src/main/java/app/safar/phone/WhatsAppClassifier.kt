@@ -74,11 +74,11 @@ private fun classifyCall(n: WaNotification): WaKind {
 private fun classifyByText(n: WaNotification): WaKind {
     val text = n.text.orEmpty()
     return when {
+        // A chat whose last message reads "missed call" is still a chat.
+        n.messagingStyle && n.title != null && !n.ongoing -> WaKind.MESSAGE
         INCOMING_CALL.containsMatchIn(text) -> WaKind.CALL_RINGING
         ONGOING_CALL.containsMatchIn(text) -> WaKind.CALL_ONGOING
         MISSED_CALL.containsMatchIn(text) -> WaKind.MISSED_CALL
-        n.ongoing -> WaKind.IGNORE
-        n.messagingStyle && n.title != null -> WaKind.MESSAGE
         else -> WaKind.IGNORE
     }
 }

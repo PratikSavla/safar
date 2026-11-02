@@ -52,12 +52,12 @@ private fun MacrobenchmarkScope.awaitOnboardingOrToday(): Boolean {
 }
 
 private fun MacrobenchmarkScope.completeOnboarding() {
-    for (label in listOf("Begin", "Continue", "Find my bike")) {
+    for (label in listOf("Begin", "Continue", "Look for your bike")) {
         val button = device.wait(Until.findObject(By.text(label)), WAIT_MS) ?: error("Onboarding button \"$label\" not found")
         button.click()
         device.waitForIdle()
     }
-    device.wait(Until.hasObject(By.text("Scan for my bike")), WAIT_MS)
+    device.wait(Until.hasObject(By.text("Look for your bike")), WAIT_MS)
 }
 
 /** The page's vertical scroller (AtlasPage), kept clear of the gesture-navigation edges. */

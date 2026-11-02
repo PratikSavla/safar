@@ -70,14 +70,14 @@ internal fun ObTitle(kicker: String, title: String, em: String) {
     }
 }
 
-/** Page 1: what Safar reads, sends and keeps, and the three promises. */
+/** Page 1: what Safar reads, shows and keeps, and the three promises. */
 @Composable
 internal fun CoverPage() {
-    ObTitle("Page 1 of 3 · the idea", "Safar", "a field notebook for your Suzuki.")
+    ObTitle("1 of 3 · welcome", "Safar", "turns and calls on your Suzuki’s display.")
     RouteArt()
     listOf(
-        "Reads" to "Odometer, trips, fuel and gear from the bike, every 5 s.",
-        "Sends" to "Turns from Google Maps, caller names, WhatsApp alerts, battery, clock, your name and a speed alert.",
+        "Reads" to "Odometer, trips, fuel and gear from your bike.",
+        "Shows" to "Google Maps turns, who’s calling, WhatsApp alerts, the time and your name on your bike’s display.",
         "Keeps" to "Your trips, fuel history, service dates and where you parked. On this phone only.",
     ).forEach { (k, v) ->
         DashedRule(thickness = 1.dp, dash = 4.dp, gap = 3.dp)
@@ -88,8 +88,8 @@ internal fun CoverPage() {
     }
     FlowRow(Modifier.padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Stamp("no account")
-        Stamp("no server", Modifier.rotate(4.5f), tone = StampTone.MOSS)
-        Stamp("no analytics", Modifier.rotate(1.5f), tone = StampTone.SLATE)
+        Stamp("no cloud", Modifier.rotate(4.5f), tone = StampTone.MOSS)
+        Stamp("no tracking", Modifier.rotate(1.5f), tone = StampTone.SLATE)
     }
 }
 
@@ -119,15 +119,15 @@ private fun RouteArt() {
 /** Page 2: the permissions explainer. */
 @Composable
 internal fun PermissionsPage(asked: MutableState<Set<String>>) {
-    ObTitle("Page 2 of 3 · permissions", "What Safar asks for", "and why.")
+    ObTitle("2 of 3 · permissions", "What Safar asks for", "and why.")
     PermissionsList(asked)
 }
 
 /** Page 3: the rider name with a live LCD preview. Locked while moving (UX rule 3). */
 @Composable
 internal fun RiderPage(ui: OnboardingUi, onName: (String) -> Unit) {
-    ObTitle("Page 3 of 3 · your name", "Sign the first page", "with your name.")
-    Lede("The cluster greets you by name when it connects.")
+    ObTitle("3 of 3 · your name", "Your name", "for your bike’s welcome.")
+    Lede("Your bike’s display says WELCOME and your name each time it connects.")
     AtlasTextField(
         value = ui.name,
         onValueChange = onName,
@@ -139,5 +139,5 @@ internal fun RiderPage(ui: OnboardingUi, onName: (String) -> Unit) {
         trailing = { BasicText("${ui.cleaned.length}/19", style = Atlas.type.src.copy(color = Atlas.colors.ink3)) },
     )
     LcdNamePreview(ui.cleaned, Modifier.padding(top = 26.dp, bottom = 16.dp))
-    Note("Plain letters and digits only: other characters become spaces. Capitals, 19 characters at most.")
+    Note("The display shows capital letters and numbers, up to 19. Other characters become spaces.")
 }

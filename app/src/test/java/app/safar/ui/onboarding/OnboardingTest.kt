@@ -54,10 +54,11 @@ class OnboardingTest {
         assertEquals(PermStatus.BLOCKED, permStatus(false, asked = true, canAskAgain = false))
         assertNull(permAction(PermId.LOCATION, PermStatus.ALLOWED))
         assertEquals("Allow", permAction(PermId.LOCATION, PermStatus.NOT_ASKED))
-        assertEquals("Retry", permAction(PermId.PHONE, PermStatus.DENIED))
-        assertEquals("Open", permAction(PermId.NOTIFICATION_ACCESS, PermStatus.DENIED))
+        assertEquals("Ask again", permAction(PermId.PHONE, PermStatus.DENIED))
+        assertEquals("Allow", permAction(PermId.NOTIFICATION_ACCESS, PermStatus.DENIED))
         assertEquals("Settings", permAction(PermId.NEARBY, PermStatus.BLOCKED))
-        assertEquals("denied", permLabel(PermStatus.DENIED))
+        assertEquals("not allowed", permLabel(PermStatus.DENIED))
+        assertEquals("turn on in Settings", permLabel(PermStatus.BLOCKED))
     }
 
     @Test
@@ -69,7 +70,7 @@ class OnboardingTest {
         vm.next { done++ }
         vm.next { done++ }
         assertEquals(2, vm.ui.value.step)
-        assertEquals("Find my bike", vm.ui.value.nextLabel)
+        assertEquals("Look for your bike", vm.ui.value.nextLabel)
         vm.setName("Alex")
         assertEquals("ALEX", vm.ui.value.cleaned)
         vm.next { done++ }

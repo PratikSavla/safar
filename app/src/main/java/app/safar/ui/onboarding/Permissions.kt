@@ -52,19 +52,22 @@ fun permStatus(granted: Boolean, asked: Boolean, canAskAgain: Boolean): PermStat
     else -> PermStatus.BLOCKED
 }
 
-/** Button text for an item, or null when it is allowed (a check mark shows instead). */
+/**
+ * Button text for an item, or null when it is allowed (a check mark shows instead). Notification access is
+ * always "Allow": Android's own settings page asks, so there is no prompt to ask again.
+ */
 fun permAction(id: PermId, status: PermStatus): String? = when {
     status == PermStatus.ALLOWED -> null
     status == PermStatus.BLOCKED -> "Settings"
-    id == PermId.NOTIFICATION_ACCESS -> "Open"
-    status == PermStatus.DENIED -> "Retry"
+    id == PermId.NOTIFICATION_ACCESS -> "Allow"
+    status == PermStatus.DENIED -> "Ask again"
     else -> "Allow"
 }
 
 /** Stamp under each item (onboarding.js `ST`). */
 fun permLabel(status: PermStatus): String = when (status) {
-    PermStatus.NOT_ASKED -> "not asked"
+    PermStatus.NOT_ASKED -> "not yet"
     PermStatus.ALLOWED -> "allowed"
-    PermStatus.DENIED -> "denied"
-    PermStatus.BLOCKED -> "denied · in settings"
+    PermStatus.DENIED -> "not allowed"
+    PermStatus.BLOCKED -> "turn on in Settings"
 }

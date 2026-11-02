@@ -7,6 +7,7 @@ import app.safar.core.AppContainer
 import app.safar.core.RideTracker
 import app.safar.data.SettingsStore
 import app.safar.protocol.sanitizeName
+import app.safar.ui.copy.Phrases
 import app.safar.ui.shell.ShellDeps
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,7 @@ const val ONBOARDING_PAGES = 3
 fun clusterName(raw: String): String = sanitizeName(raw.uppercase(Locale.ROOT))
 
 /** Text input is off above 10 km/h (docs 12.5 rule 3); this is the reason shown under the field. */
-const val MOVING_LOCK_REASON = "Typing is off while the phone moves above 10 km/h."
+const val MOVING_LOCK_REASON = "Typing is off while you’re riding."
 
 data class OnboardingUi(
     val step: Int,
@@ -33,7 +34,7 @@ data class OnboardingUi(
     val locked: Boolean,
 ) {
     val cleaned: String get() = clusterName(name)
-    val nextLabel: String get() = listOf("Begin", "Continue", "Find my bike")[step.coerceIn(0, ONBOARDING_PAGES - 1)]
+    val nextLabel: String get() = listOf("Begin", "Continue", Phrases.LOOK_FOR_BIKE)[step.coerceIn(0, ONBOARDING_PAGES - 1)]
 }
 
 /**

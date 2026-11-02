@@ -1,5 +1,7 @@
 package app.safar.ui.shell
 
+import app.safar.ui.components.paperShadow
+import app.safar.ui.components.PaperShadow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
@@ -30,17 +32,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import app.safar.core.AlertSource
 import app.safar.ui.art.AtlasIcons
@@ -80,7 +79,7 @@ private fun TelegramBody(b: CallBanner, onOpen: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .heightIn(min = 60.dp)
-            .dropShadow(AtlasShapes.small, Shadow(radius = 30.dp, spread = (-12).dp, offset = DpOffset(0.dp, 14.dp), color = c.rust.copy(alpha = 0.45f)))
+            .paperShadow(AtlasShapes.small, PaperShadow(blur = 30.dp, color = c.rust.copy(alpha = 0.45f), spread = (-12).dp, offsetY = 14.dp))
             .background(c.rust, AtlasShapes.small)
             .clickable(onClickLabel = "Open alerts", role = Role.Button, onClick = onOpen)
             .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }

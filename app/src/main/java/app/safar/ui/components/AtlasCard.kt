@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
@@ -20,12 +19,10 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import app.safar.ui.theme.Atlas
@@ -59,10 +56,12 @@ fun AtlasCard(
     Column(surface.clip(shape).then(clickable).fillMaxWidth().padding(contentPadding), content = content)
 }
 
-/** The two-layer paper shadow from base.css `--shadow`. */
-fun Modifier.atlasShadow(shape: Shape, colors: AtlasColors): Modifier = this
-    .dropShadow(shape, Shadow(radius = 26.dp, spread = (-16).dp, offset = DpOffset(0.dp, 12.dp), color = colors.shadow))
-    .dropShadow(shape, Shadow(radius = 0.dp, offset = DpOffset(0.dp, 1.dp), color = colors.shadowEdge))
+/**
+ * The two-layer paper shadow from base.css `--shadow` (0 1px 0 edge, 0 12px 26px -16px soft), drawn from a
+ * shared nine-patch ([paperShadow]) instead of a full-size blur per card.
+ */
+fun Modifier.atlasShadow(shape: Shape, colors: AtlasColors): Modifier =
+    paperShadow(shape, PaperShadow(blur = 26.dp, color = colors.shadow, spread = (-16).dp, offsetY = 12.dp, edgeColor = colors.shadowEdge))
 
 /** Rounded rectangle with a semicircle notch cut from both sides (`.ticket`, the stub tabs). */
 class TicketShape(

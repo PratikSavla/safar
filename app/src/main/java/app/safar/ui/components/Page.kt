@@ -77,15 +77,22 @@ fun AtlasPage(
     }
 }
 
-/** Paper fading out under the status bar, so content scrolls away beneath it. */
+/**
+ * Solid paper behind the whole status bar, then a short fade, so scrolled content never shows under the clock
+ * and the battery icon but still slips away softly beneath them.
+ */
 @Composable
 internal fun StatusScrim(statusTop: Dp) {
     val c = Atlas.colors
+    val height = statusTop + STATUS_FADE
+    val solid = if (height.value > 0f) statusTop / height else 0f
     Spacer(
-        Modifier.fillMaxWidth().height(statusTop + 4.dp)
-            .background(Brush.verticalGradient(0.55f to c.paper, 1f to c.paper.copy(alpha = 0f))),
+        Modifier.fillMaxWidth().height(height)
+            .background(Brush.verticalGradient(0f to c.paper, solid to c.paper, 1f to c.paper.copy(alpha = 0f))),
     )
 }
+
+private val STATUS_FADE = 10.dp
 
 /**
  * Space after the last item: clears the tabs (if any) and the gesture bar. The keyboard is

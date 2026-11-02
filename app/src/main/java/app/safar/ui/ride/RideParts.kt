@@ -77,7 +77,8 @@ internal fun RideTop(ui: RideUi) {
     val c = Atlas.colors
     val stale = rememberStale(ui.bikeOrigin)
     val bikeInk = if (stale) c.ink2 else c.ink
-    val spokenGear = if (ui.gear == NO_GEAR) "Gear, no reading yet" else "Gear ${ui.gear}, probably"
+    // No stamp here, so TalkBack says just the gear, as the screen does.
+    val spokenGear = if (ui.gear == NO_GEAR) "Gear, no reading yet" else "Gear ${ui.gear}"
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         RideClock(Modifier.weight(1f))
         Box(

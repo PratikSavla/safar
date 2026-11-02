@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -163,15 +164,23 @@ private fun RangeCell(l: LedgerUi) {
     }
 }
 
-/** The gear is a best guess from the bike: the stamp says so, and TalkBack says "probably". */
+/**
+ * The gear is a best guess from the bike: the "guess" stamp says so, and TalkBack says the same. The stamp
+ * drops below the letter when the cell is short of width (large font scale).
+ */
 @Composable
 private fun GearCell(l: LedgerUi, bikeInk: Color) {
-    val spoken = if (l.gear == NO_GEAR) "Gear, no reading yet" else "Gear ${l.gear}, probably"
+    val spoken = if (l.gear == NO_GEAR) "Gear, no reading yet" else "Gear ${l.gear}, best guess"
     Column(Modifier.clearAndSetSemantics { contentDescription = spoken }) {
         Kicker("Gear")
-        Row(Modifier.padding(top = 4.dp, bottom = 2.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        FlowRow(
+            Modifier.padding(top = 4.dp, bottom = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            itemVerticalAlignment = Alignment.Bottom,
+        ) {
             BasicText(l.gear, style = Atlas.type.numberSmall.copy(color = bikeInk), maxLines = 1)
-            Stamp("probable", tone = StampTone.INK)
+            if (l.gear != NO_GEAR) Stamp("guess", tone = StampTone.INK)
         }
     }
 }

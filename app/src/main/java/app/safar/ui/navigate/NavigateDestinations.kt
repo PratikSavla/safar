@@ -1,6 +1,5 @@
 package app.safar.ui.navigate
 
-import app.safar.ui.components.liveAge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,6 +28,7 @@ import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.CardStyle
 import app.safar.ui.components.TicketShape
+import app.safar.ui.components.liveAge
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 import java.util.Locale

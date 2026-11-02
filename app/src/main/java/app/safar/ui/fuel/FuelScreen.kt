@@ -1,12 +1,10 @@
 package app.safar.ui.fuel
 
-import app.safar.data.FuelStats
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.lazy.items
-import app.safar.ui.components.AtlasLazyPage
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -16,8 +14,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.safar.core.AppContainer
+import app.safar.data.FuelStats
 import app.safar.data.ThemeMode
 import app.safar.ui.art.AtlasIcons
+import app.safar.ui.components.AtlasLazyPage
 import app.safar.ui.components.AtlasToastHost
 import app.safar.ui.components.AtlasToastState
 import app.safar.ui.components.BackTopBar

@@ -1,9 +1,5 @@
 package app.safar.ui.ride
 
-import app.safar.ui.format.Formatters
-import app.safar.ui.components.rememberNow
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,10 +14,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -45,6 +43,8 @@ import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.FuelBars
 import app.safar.ui.components.Hairline
 import app.safar.ui.components.SourceLine
+import app.safar.ui.components.rememberNow
+import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 import app.safar.ui.theme.FrauncesGlance

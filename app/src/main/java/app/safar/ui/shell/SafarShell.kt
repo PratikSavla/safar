@@ -1,13 +1,5 @@
 package app.safar.ui.shell
 
-import androidx.compose.ui.layout.Measurable
-import androidx.compose.ui.layout.MeasureResult
-import androidx.compose.ui.layout.MeasureScope
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.constrainHeight
-import androidx.compose.ui.unit.constrainWidth
-import androidx.compose.ui.unit.offset
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -34,18 +26,26 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import app.safar.ui.components.AtlasToastHost
+import app.safar.ui.components.ProvideNow
 import app.safar.ui.components.TicketStubTabs
 import app.safar.ui.components.rememberToastState
 import app.safar.ui.components.safarTabs
 import app.safar.ui.nav.Route
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.SafarTheme
-import app.safar.ui.components.ProvideNow
 
 private val PageEase = CubicBezierEasing(0.22f, 0.8f, 0.24f, 1f)
 

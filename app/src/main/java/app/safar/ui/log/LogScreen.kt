@@ -1,13 +1,12 @@
 package app.safar.ui.log
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.lazy.items
-import app.safar.ui.components.AtlasLazyPage
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,6 +22,7 @@ import app.safar.BuildConfig
 import app.safar.core.AppContainer
 import app.safar.core.LogRecord
 import app.safar.ui.components.AtlasBottomSheet
+import app.safar.ui.components.AtlasLazyPage
 import app.safar.ui.components.AtlasToastHost
 import app.safar.ui.components.AtlasToastState
 import app.safar.ui.components.BackTopBar

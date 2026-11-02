@@ -1,6 +1,5 @@
 package app.safar.ui.parked
 
-import app.safar.ui.components.liveAge
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +23,7 @@ import app.safar.ui.components.Note
 import app.safar.ui.components.SourceLine
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.dashedOutline
+import app.safar.ui.components.liveAge
 import app.safar.ui.theme.Atlas
 import kotlin.math.min
 import kotlin.math.roundToInt

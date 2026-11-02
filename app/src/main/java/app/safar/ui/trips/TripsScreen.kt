@@ -1,10 +1,9 @@
 package app.safar.ui.trips
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.lazy.itemsIndexed
-import app.safar.ui.components.AtlasLazyPage
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -18,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.safar.core.AppContainer
 import app.safar.data.ThemeMode
+import app.safar.ui.components.AtlasLazyPage
 import app.safar.ui.components.EmptyState
 import app.safar.ui.components.Gap
 import app.safar.ui.components.Kicker

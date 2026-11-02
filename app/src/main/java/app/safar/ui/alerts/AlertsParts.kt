@@ -1,6 +1,5 @@
 package app.safar.ui.alerts
 
-import app.safar.ui.components.liveAge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -24,8 +23,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -43,6 +42,7 @@ import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.Kicker
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.dashedOutline
+import app.safar.ui.components.liveAge
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 

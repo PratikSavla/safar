@@ -53,6 +53,10 @@ class SettingsTest {
         assertEquals(TankInput.Invalid("Tank size must be between 1 and 40 L"), parseTank("41", null))
         assertEquals("12", litresText(12.0))
         assertEquals("Model spec 5.2 L (Avenis) · using yours: 6 L", tankSubtitle(BikeCatalog.forBleName("SBS21A1B2C3D"), 6.0))
+        val avenis = BikeCatalog.forBleName("SBS21A1B2C3D")
+        assertEquals("you · override", tankSource(avenis, 6.0))
+        assertEquals("model spec", tankSource(avenis, null))
+        assertEquals("not set · type your tank size", tankSource(null, null))
     }
 
     @Test

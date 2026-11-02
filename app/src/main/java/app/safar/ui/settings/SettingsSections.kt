@@ -90,7 +90,7 @@ internal fun TankBlock(state: SettingsState, onTank: (String) -> Unit, onReset: 
         if (own != null) SecondaryButton("Reset", onReset, enabled = state.lockReason == null, small = true)
     }
     state.tankError?.let { LockLine(it) }
-    SourceLine(if (own != null) "you · override" else "model spec", age = null)
+    SourceLine(tankSource(state.model, own), age = null)
     Note("Used with your fuel-ups to work out litres left and range.", Modifier.padding(top = 6.dp), color = Atlas.colors.ink3)
 }
 

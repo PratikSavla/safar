@@ -63,6 +63,13 @@ fun familyWord(model: BikeModel?): String = when (model?.family) {
     null -> "motorcycle"
 }
 
+/** Where the tank size comes from; never claims a model spec when no bike is paired. */
+fun tankSource(model: BikeModel?, own: Double?): String = when {
+    own != null -> "you · override"
+    model != null -> "model spec"
+    else -> "not set · type your tank size"
+}
+
 /** Tank row subtitle: the model spec and, when set, the rider's own value. */
 fun tankSubtitle(model: BikeModel?, own: Double?): String {
     val spec = if (model != null) "Model spec ${litresText(model.tankLitres)} L (${model.name})" else "No bike paired · no model spec"

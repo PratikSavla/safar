@@ -52,7 +52,7 @@ object BleModule {
         AppContainer.bike = manager
         AppContainer.outbox = manager
         manager.start()
-        ServiceController.start(app, manager.state, log, scope)
+        ServiceController.start(app, manager.serviceWanted, log, scope)
         log.event("App started", mapOf("version" to BuildConfig.VERSION_NAME))
     }
 

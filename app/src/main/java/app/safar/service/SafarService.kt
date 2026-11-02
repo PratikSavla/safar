@@ -36,6 +36,7 @@ class SafarService : LifecycleService() {
             stopSelf()
             return START_NOT_STICKY
         }
+        inForeground = true
         if (intent?.action == ACTION_DISCONNECT) {
             AppContainer.log.event("Disconnect from notification")
             AppContainer.bike.disconnect()
@@ -45,6 +46,11 @@ class SafarService : LifecycleService() {
             lifecycleScope.launch { observe() }
         }
         return START_STICKY
+    }
+
+    override fun onDestroy() {
+        inForeground = false
+        super.onDestroy()
     }
 
     private suspend fun observe() {
@@ -92,5 +98,10 @@ class SafarService : LifecycleService() {
 
     companion object {
         const val ACTION_DISCONNECT = "app.safar.service.DISCONNECT"
+
+        /** True while this process runs the service in the foreground (also after a START_STICKY restart). */
+        @Volatile
+        var inForeground = false
+            private set
     }
 }

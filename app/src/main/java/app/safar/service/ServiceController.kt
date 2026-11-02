@@ -1,33 +1,45 @@
 package app.safar.service
 
 import android.Manifest
+import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
 import android.util.Log
 import androidx.core.content.ContextCompat
 import app.safar.ble.BlePermissions
-import app.safar.core.BikeState
 import app.safar.core.DebugLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
 /**
- * Starts [SafarService] while [shouldRunService] holds (a saved bike to keep, or a connect in progress) and
- * stops it after a user disconnect or forget.
+ * Starts [SafarService] while the BLE layer wants it ([shouldRunService]) and stops it after a user disconnect
+ * or forget. [start]'s `wanted` is null until the saved bike is loaded, so a START_STICKY restart is not stopped
+ * by the empty start-up state. A start refused in the background (API 31+) is retried when an activity starts.
  */
 object ServiceController {
-    fun start(context: Context, bike: StateFlow<BikeState>, log: DebugLog, scope: CoroutineScope) {
+    @Volatile private var shouldRun = false
+
+    fun start(context: Context, wanted: StateFlow<Boolean?>, log: DebugLog, scope: CoroutineScope) {
         val app = context.applicationContext
         scope.launch {
-            bike.map(::shouldRunService).distinctUntilChanged().collect { run ->
-                if (run) startService(app, log) else stopService(app, log)
+            wanted.filterNotNull().distinctUntilChanged().collect { run ->
+                shouldRun = run
+                if (run) ensureStarted(app, log) else stopService(app, log)
             }
         }
+        val retry = OnActivityStarted { if (shouldRun) ensureStarted(app, log) }
+        (app as? Application)?.registerActivityLifecycleCallbacks(retry)
+    }
+
+    private fun ensureStarted(context: Context, log: DebugLog) {
+        if (!SafarService.inForeground) startService(context, log)
     }
 
     private fun startService(context: Context, log: DebugLog) {
@@ -53,6 +65,17 @@ object ServiceController {
     private fun stopService(context: Context, log: DebugLog) {
         if (context.stopService(Intent(context, SafarService::class.java))) log.event("Foreground service stopped")
     }
+}
+
+/** Runs [action] when any activity starts: the app is in the foreground and may start a foreground service. */
+private class OnActivityStarted(private val action: () -> Unit) : Application.ActivityLifecycleCallbacks {
+    override fun onActivityStarted(activity: Activity) = action()
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+    override fun onActivityResumed(activity: Activity) = Unit
+    override fun onActivityPaused(activity: Activity) = Unit
+    override fun onActivityStopped(activity: Activity) = Unit
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+    override fun onActivityDestroyed(activity: Activity) = Unit
 }
 
 /** Foreground service types allowed right now, from the granted permissions; null when none is. */

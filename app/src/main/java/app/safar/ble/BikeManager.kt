@@ -17,6 +17,7 @@ import app.safar.data.ServiceRepository
 import app.safar.data.seedDefaultsIfEmpty
 import app.safar.protocol.MAX_ICON_CODE
 import app.safar.protocol.MIN_ICON_CODE
+import app.safar.service.shouldRunService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,6 +27,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
@@ -56,6 +58,15 @@ class BikeManager(
     private val _state = MutableStateFlow(BikeState())
     override val state: StateFlow<BikeState> = _state.asStateFlow()
 
+    private val _serviceWanted = MutableStateFlow<Boolean?>(null)
+
+    /**
+     * Whether the foreground service should run ([shouldRunService]). Null until the saved bike is loaded and
+     * acted on (or the rider connects), so the empty start-up state never stops a restarted service.
+     */
+    val serviceWanted: StateFlow<Boolean?> = _serviceWanted.asStateFlow()
+    private var restored = false
+
     private var linkJob: Job? = null
     private var timerJob: Job? = null
     private var generation = 0
@@ -70,6 +81,7 @@ class BikeManager(
         bluetooth.register { on -> scope.launch { onBluetooth(on) } }
         scope.launch {
             if (!bluetooth.isOn) onBluetooth(false)
+            savedStore.loaded.first { it }
             savedStore.saved.collect(::onSaved)
         }
         scope.launch { scanner.results.collect { list -> _state.update { it.copy(scan = list) } } }
@@ -89,6 +101,8 @@ class BikeManager(
             log.event("Connecting to saved bike", mapOf("bike" to record.name, "address" to record.address))
             apply(policy.connect(record.address))
         }
+        restored = true
+        publishLink()
     }
 
     private fun onBluetooth(on: Boolean) {
@@ -110,6 +124,7 @@ class BikeManager(
     override fun connect(address: String) {
         scope.launch {
             autoConnectDone = true
+            restored = true
             scanner.stop()
             apply(policy.connect(address))
         }
@@ -266,5 +281,6 @@ class BikeManager(
         val name = policy.address?.let { nameFor(it) ?: it } ?: ""
         val link = linkStateFor(policy.state, _state.value.scanning, name, nextAttemptAt)
         _state.update { it.copy(link = link) }
+        if (restored) _serviceWanted.value = shouldRunService(policy.state)
     }
 }

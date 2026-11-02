@@ -1,6 +1,7 @@
 package app.safar.service
 
 import android.content.pm.ServiceInfo
+import app.safar.ble.ReconnectPolicy
 import app.safar.core.BikeCatalog
 import app.safar.core.BikeState
 import app.safar.core.ClusterReading
@@ -22,14 +23,24 @@ class ServiceRulesTest {
     private val location = ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
 
     @Test
-    fun runsWhileWorkingOnALink() {
-        assertTrue(shouldRunService(BikeState(link = LinkState.Connecting("SBM01A1B2C3D"))))
-        assertTrue(shouldRunService(BikeState(link = LinkState.Connected, saved = saved)))
-        assertTrue(shouldRunService(BikeState(link = LinkState.Reconnecting(2, 0L), saved = saved)))
-        assertTrue(shouldRunService(BikeState(link = LinkState.BluetoothOff, saved = saved)))
-        assertFalse(shouldRunService(BikeState(link = LinkState.BluetoothOff, saved = null)))
-        assertFalse(shouldRunService(BikeState(link = LinkState.Idle, saved = saved)), "user disconnect stops it")
-        assertFalse(shouldRunService(BikeState(link = LinkState.Searching)))
+    fun runsWhileThePolicyWorksOnAnAddress() {
+        val address = saved.address
+        assertTrue(shouldRunService(ReconnectPolicy.State.Connecting(address, 0)))
+        assertTrue(shouldRunService(ReconnectPolicy.State.Connected(address)))
+        assertTrue(shouldRunService(ReconnectPolicy.State.Waiting(address, 2, 5_000L)))
+        assertTrue(shouldRunService(ReconnectPolicy.State.BluetoothOff(resumeAddress = address)))
+        assertFalse(shouldRunService(ReconnectPolicy.State.Idle), "user disconnect stops it")
+    }
+
+    @Test
+    fun userDisconnectWhileBluetoothIsOffStopsIt() {
+        val policy = ReconnectPolicy { 1_000L }
+        policy.connect(saved.address)
+        policy.onBluetoothOff()
+        assertTrue(shouldRunService(policy.state), "waits for Bluetooth to resume the bike")
+        policy.disconnect()
+        assertEquals(ReconnectPolicy.State.BluetoothOff(resumeAddress = null), policy.state)
+        assertFalse(shouldRunService(policy.state))
     }
 
     @Test

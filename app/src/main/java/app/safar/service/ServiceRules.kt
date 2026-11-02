@@ -3,20 +3,22 @@ package app.safar.service
 import android.annotation.SuppressLint
 import android.content.pm.ServiceInfo
 import android.os.Build
+import app.safar.ble.ReconnectPolicy
 import app.safar.core.BikeState
 import app.safar.core.LinkState
 import app.safar.core.NavState
 import app.safar.ui.format.Formatters
 
 /**
- * The service keeps the process alive while the app is working on a link: connecting, connected, backing off
- * between reconnects, or waiting for Bluetooth to come back for a saved bike. A user disconnect or forget
- * leaves the link Idle, which stops it (docs 2.5).
+ * The service keeps the process alive while the reconnect policy works on an address: connecting, connected,
+ * backing off between reconnects, or waiting for Bluetooth to come back with an address to resume. A user
+ * disconnect or forget clears the address (Idle, or Bluetooth off with nothing to resume), which stops it
+ * (docs 2.5).
  */
-fun shouldRunService(state: BikeState): Boolean = when (state.link) {
-    is LinkState.Connecting, LinkState.Connected, is LinkState.Reconnecting -> true
-    LinkState.BluetoothOff -> state.saved != null
-    LinkState.Idle, LinkState.Searching -> false
+fun shouldRunService(policy: ReconnectPolicy.State): Boolean = when (policy) {
+    is ReconnectPolicy.State.Connecting, is ReconnectPolicy.State.Connected, is ReconnectPolicy.State.Waiting -> true
+    is ReconnectPolicy.State.BluetoothOff -> policy.resumeAddress != null
+    ReconnectPolicy.State.Idle -> false
 }
 
 /**

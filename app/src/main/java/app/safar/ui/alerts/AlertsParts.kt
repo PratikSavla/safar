@@ -42,6 +42,7 @@ import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.Kicker
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.dashedOutline
+import app.safar.ui.components.developerMode
 import app.safar.ui.components.liveAge
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
@@ -76,7 +77,7 @@ internal fun CallCard(call: ActiveCall, settings: Settings) {
             BasicText(call.name, Modifier.padding(top = 8.dp, bottom = 6.dp), style = Atlas.type.displayLarge.copy(color = fg), maxLines = 2, overflow = TextOverflow.Ellipsis)
             BasicText(line, style = Atlas.type.note.copy(color = fg.copy(alpha = 0.9f)))
             BasicText(
-                "Answer or decline on the phone or the handlebar. Safar only relays the name.",
+                "Answer or decline on your phone or the handlebar. Safar only passes on the name.",
                 Modifier.padding(top = 10.dp),
                 style = Atlas.type.src.copy(color = fg.copy(alpha = 0.75f)),
             )
@@ -130,20 +131,21 @@ internal fun PrivacyNote() {
             buildAnnotatedString {
                 append("Only ")
                 withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = c.ink)) { append("names and counts") }
-                append(" go to the bike, never message text. Names are cleaned to plain letters and cut to 19 characters.")
+                append(" go to your bike, never the message. Names show in plain letters, up to 19 of them.")
             },
             style = Atlas.type.note.copy(color = c.ink2),
         )
     }
 }
 
-/** "14:05 · 3 min ago": its own scope, so a clock tick recomposes this line only. */
+/** "14:05"; in Developer mode "14:05:09 · 3 s ago", in its own scope so a clock tick recomposes this line only. */
 @Composable
 private fun FeedTime(r: FeedRow) {
-    BasicText("${r.time} · ${liveAge(r.atMillis)}", style = Atlas.type.src.copy(color = Atlas.colors.ink3))
+    val text = if (developerMode()) "${r.exactTime} · ${liveAge(r.atMillis)}" else r.time
+    BasicText(text, style = Atlas.type.src.copy(color = Atlas.colors.ink3))
 }
 
-/** Timeline of what went to the cluster (`.feed`): dashed spine, a round mark per line. */
+/** Timeline of what went to the bike (`.feed`): dashed spine, a round mark per line. */
 @Composable
 internal fun Feed(rows: List<FeedRow>) {
     val c = Atlas.colors

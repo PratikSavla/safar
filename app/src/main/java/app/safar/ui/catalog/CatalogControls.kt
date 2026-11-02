@@ -111,7 +111,7 @@ internal fun RowSection() {
     SectionHeader("Rows")
     SwitchRow("Phone calls", calls, { calls = it }, subtitle = "Caller name and missed calls")
     SwitchRow("WhatsApp messages", wa, { wa = it }, subtitle = "Sender name and count, never text")
-    SwitchRow("SMS", false, {}, subtitle = "Not in version 1", enabled = false)
+    SwitchRow("SMS", false, {}, subtitle = "Coming soon", enabled = false)
     LinkRow("Debug log", AtlasIcons.log, {}, subtitle = "TX, RX and decoded frames")
     ListRow("Notification access", subtitle = "Granted · Maps turns can be read", icon = AtlasIcons.bell, divider = false) {
         Stamp("Linked", tone = StampTone.MOSS)

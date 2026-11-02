@@ -55,7 +55,7 @@ fun MarchingRule(modifier: Modifier = Modifier, color: Color = Atlas.colors.rust
 @Preview
 @Composable
 private fun NoticesPreview() = PreviewSurface {
-    WarnLine("Bike not connected. Turns will reach the cluster once it reconnects.")
+    WarnLine("Bike not connected. Turns show on your bike once it reconnects.")
     Gap(12.dp)
     MarchingRule()
 }

@@ -113,8 +113,8 @@ fun Masthead(kicker: String, title: String, modifier: Modifier = Modifier, kicke
 @Preview
 @Composable
 private fun TextPreview() = PreviewSurface {
-    Masthead("Route · via Google Maps", "Where to", kickerAside = "idle", titleEm = "?")
-    SectionHeader("Destinations") { Kicker("3 saved") }
+    Masthead("Route · with Google Maps", "Where to", titleEm = "?")
+    SectionHeader("Your places") { Kicker("3 saved") }
     Freshness(ValueSource.BIKE, atMillis = null)
-    Lede("Safar sends turns, callers and the clock to your cluster.")
+    Lede("Safar sends turns, callers and the time to your bike’s display.")
 }

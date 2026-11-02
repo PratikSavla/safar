@@ -187,6 +187,6 @@ private fun Modifier.baseline(color: Color, dashed: Boolean) = drawBehind {
 @Preview
 @Composable
 private fun TextFieldPreview() = PreviewSurface {
-    AtlasTextField("Alex", {}, label = "Rider name · shown on the cluster", maxLength = 19)
-    AtlasTextField("Alex", {}, label = "Rider name", lockedReason = "Locked while moving (42 km/h). Stop to edit.")
+    AtlasTextField("Alex", {}, label = "Your name · shown on your bike", maxLength = 19)
+    AtlasTextField("Alex", {}, label = "Your name · shown on your bike", lockedReason = "Locked while moving (42 km/h). Stop to edit.")
 }

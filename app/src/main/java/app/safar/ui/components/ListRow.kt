@@ -24,6 +24,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.safar.ui.art.AtlasIcons
+import app.safar.ui.copy.Phrases
+import app.safar.ui.copy.SwitchCopy
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 
@@ -109,8 +111,8 @@ private fun RowTexts(title: String, subtitle: String?, enabled: Boolean, modifie
 @Preview
 @Composable
 private fun RowsPreview() = PreviewSurface {
-    SwitchRow("Phone calls", true, {}, subtitle = "Caller name and missed calls")
-    SwitchRow("SMS", false, {}, subtitle = "Not in version 1", enabled = false)
-    LinkRow("Debug log", AtlasIcons.log, {}, subtitle = "TX, RX and decoded frames")
-    ListRow("Firmware", subtitle = "Read from the cluster") { Stamp("Linked", tone = StampTone.MOSS) }
+    SwitchRow("Phone calls", true, {}, subtitle = SwitchCopy.PHONE_CALLS)
+    SwitchRow("SMS", false, {}, subtitle = Phrases.COMING_SOON, enabled = false)
+    LinkRow("Bike information", AtlasIcons.bike, {}, subtitle = "Model, serial number and software version")
+    ListRow("Software version", subtitle = "Read from your bike") { Stamp("connected", tone = StampTone.MOSS) }
 }

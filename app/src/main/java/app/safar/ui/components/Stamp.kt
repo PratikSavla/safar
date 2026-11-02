@@ -69,8 +69,8 @@ private fun Modifier.doubleRule(color: Color) = drawBehind {
 @Composable
 private fun StampPreview() = PreviewSurface {
     Row {
-        Stamp("Linked", tone = StampTone.MOSS)
-        Stamp("Probable", tone = StampTone.SLATE)
+        Stamp("connected", tone = StampTone.MOSS)
+        Stamp("guess", tone = StampTone.SLATE)
         Stamp("No account")
         Stamp("Low", tone = StampTone.AMBER)
     }

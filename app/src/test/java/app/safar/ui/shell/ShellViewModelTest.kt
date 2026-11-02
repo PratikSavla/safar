@@ -113,6 +113,37 @@ class ShellViewModelTest {
     }
 
     @Test
+    fun systemBackFromAnAutoRideStopsAutoCloseOfALaterManualRide() = runTest(dispatcher) {
+        settings.settings.value = Settings(onboarded = true, autoRideMode = true)
+        val vm = shell()
+        runCurrent()
+        ride.state.value = RideState(speedKmh = 30f, moving = true)
+        runCurrent()
+        vm.back()
+        assertFalse(vm.autoRide.value)
+        ride.state.value = RideState(speedKmh = 0f, moving = false)
+        runCurrent()
+        vm.go(Route.Ride)
+        ride.state.value = RideState(speedKmh = 30f, moving = true)
+        runCurrent()
+        ride.state.value = RideState(speedKmh = 0f, moving = false)
+        runCurrent()
+        assertEquals(listOf(Route.Home, Route.Ride), vm.routes())
+        assertFalse(vm.autoRide.value)
+    }
+
+    @Test
+    fun aPagePushedOverAnAutoRideClearsTheAutoFlag() = runTest(dispatcher) {
+        settings.settings.value = Settings(onboarded = true, autoRideMode = true)
+        val vm = shell()
+        runCurrent()
+        ride.state.value = RideState(speedKmh = 30f, moving = true)
+        runCurrent()
+        vm.openShared("Main Rd")
+        assertFalse(vm.autoRide.value)
+    }
+
+    @Test
     fun poppedEntriesLoseTheirViewModelStore() = runTest(dispatcher) {
         settings.settings.value = Settings(onboarded = true)
         val vm = shell()

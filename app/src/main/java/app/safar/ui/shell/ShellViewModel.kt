@@ -50,7 +50,10 @@ class ShellViewModel(
     val events: Flow<ShellEvent> = _events.receiveAsFlow()
 
     private val _autoRide = MutableStateFlow(saved.get<Boolean>(KEY_AUTO_RIDE) ?: false)
-    /** True while Ride was opened by auto ride mode (it closes itself when the ride ends). */
+    /**
+     * True while Ride was opened by auto ride mode (it closes itself when the ride ends). Cleared as soon as
+     * that Ride page leaves the top of the stack, however it leaves (system back, a page pushed over it).
+     */
     val autoRide: StateFlow<Boolean> = _autoRide.asStateFlow()
 
     val settingsState: StateFlow<Settings> = settings.settings
@@ -104,6 +107,7 @@ class ShellViewModel(
         _stack.value = next
         saved[KEY_STACK] = next.encode()
         prev.removedIn(next).forEach { id -> stores.remove(id)?.clear() }
+        if (_autoRide.value && prev.top?.route == Route.Ride && next.top?.route != Route.Ride) setAutoRide(false)
     }
 
     private suspend fun watchRide() {

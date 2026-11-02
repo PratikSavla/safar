@@ -123,7 +123,7 @@ internal fun NavigateContent(
             RoutePhase.WAITING_FIRST_UPDATE -> WaitingFirstUpdate(actions.onEnd)
             RoutePhase.AWAITING_MAPS -> {
                 ChecksCard(access, actions.onGrant)
-                SectionHeader("Destinations")
+                SectionHeader("Your places")
                 AwaitingMaps(actions.onCancelSearch)
             }
             RoutePhase.PICK -> PickBody(state, access, actions)
@@ -139,8 +139,8 @@ internal fun NavigateContent(
 @Composable
 private fun ColumnScope.PickBody(state: NavigateState, access: AccessStatus, actions: NavigateActions) {
     ChecksCard(access, actions.onGrant)
-    SectionHeader("Destinations") {
-        TextAction(if (state.editing) "Done" else "Edit list", actions.onToggleEdit)
+    SectionHeader("Your places") {
+        TextAction(if (state.editing) "Done" else "Edit places", actions.onToggleEdit)
     }
     DestinationList(state, actions)
     val selected = state.selected
@@ -156,7 +156,7 @@ private fun ColumnScope.PickBody(state: NavigateState, access: AccessStatus, act
         val hint = when {
             selected == null -> "Save a place, or search in Google Maps."
             !access.notificationAccess -> "First allow Safar to read Google Maps alerts, so it can see the turns."
-            else -> byMode("Google Maps opens with a two-wheeler route.", readableNavUri(selected.query))
+            else -> byMode("Google Maps opens with a two-wheeler route. Safar joins when you start.", readableNavUri(selected.query))
         }
         BasicText(
             hint,

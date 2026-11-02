@@ -117,7 +117,7 @@ class PlaceViewModel(
                     events.send(PlaceEvent.Done("Place updated"))
                 } else {
                     places.add(draft.toPlace(0, 0))
-                    events.send(PlaceEvent.Done("${draft.label.trim()} saved to Route"))
+                    events.send(PlaceEvent.Done("${draft.label.trim()} saved to your places"))
                 }
             } catch (e: CancellationException) {
                 throw e

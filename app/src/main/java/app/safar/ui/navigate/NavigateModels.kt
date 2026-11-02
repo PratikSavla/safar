@@ -48,7 +48,7 @@ fun PlaceKind.toDestKind(): DestKind = when (this) {
     PlaceKind.STAR -> DestKind.STAR
 }
 
-/** Short source word shown at the right of a row ("via Maps", "GPS", ...). */
+/** Short source word shown at the right of a row in Developer mode ("via Maps", "GPS", ...). */
 fun PlaceSource.viaWord(): String = when (this) {
     PlaceSource.MAPS -> "via Maps"
     PlaceSource.HERE -> "GPS"
@@ -65,7 +65,7 @@ fun destinations(places: List<Place>, parked: ParkedSpot?): List<Destination> {
     if (parked == null) return saved
     val query = latLngQuery(parked.lat, parked.lng)
     val spot = Destination(
-        key = PARKED_KEY, placeId = null, label = "Where I parked", detail = parked.label ?: "Saved spot", query = query,
+        key = PARKED_KEY, placeId = null, label = "Where you parked", detail = parked.label ?: "Saved spot", query = query,
         kind = DestKind.PARKED, via = "parked", startLabel = "your parked bike", atMillis = parked.atMillis,
     )
     return saved + spot

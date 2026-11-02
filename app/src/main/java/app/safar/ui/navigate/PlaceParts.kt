@@ -44,7 +44,7 @@ internal fun SourceChooser(lockReason: String?, actions: PlaceActions) {
         SourceOption(AtlasIcons.maps, "Share from Google Maps", "in Maps: open a place → Share → Safar", actions.onMaps) {
             Stamp("best", tone = StampTone.MOSS)
         }
-        SourceOption(AtlasIcons.pin, "Where I am now", "your phone’s last known location", actions.onHere)
+        SourceOption(AtlasIcons.pin, "Where you are now", "your phone’s last known location", actions.onHere)
         SourceOption(
             AtlasIcons.edit,
             "Type an address",
@@ -86,7 +86,7 @@ internal fun PlaceForm(draft: PlaceDraft, state: PlaceState, actions: PlaceActio
     } else {
         SourceCard(draft, canChange = !state.editing, onChange = actions.onChangeSource)
     }
-    AtlasTextField(draft.label, actions.onLabel, "Name in your list", lockedReason = lock, placeholder = "e.g. Home", maxLength = PLACE_LABEL_MAX)
+    AtlasTextField(draft.label, actions.onLabel, "Name", lockedReason = lock, placeholder = "e.g. Home", maxLength = PLACE_LABEL_MAX)
     Kicker("Mark", Modifier.padding(top = 18.dp, bottom = 8.dp))
     SegmentedChoice(PlaceKindLabels, draft.kind, actions.onKind)
     DevOnly {
@@ -95,7 +95,7 @@ internal fun PlaceForm(draft: PlaceDraft, state: PlaceState, actions: PlaceActio
     }
     Gap(14.dp)
     PrimaryButton(
-        if (state.editing) "Save changes" else "Save to destinations",
+        if (state.editing) "Save changes" else "Save to your places",
         actions.onSave,
         Modifier.fillMaxWidth().heightIn(min = 58.dp),
         icon = AtlasIcons.check,

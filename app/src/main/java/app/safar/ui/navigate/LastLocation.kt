@@ -9,7 +9,7 @@ import android.location.LocationManager
 import android.util.Log
 import androidx.core.content.ContextCompat
 
-/** The phone's last known position for "Where I am now". No new fix is requested: no battery, no wait. */
+/** The phone's last known position for "Where you are now". No new fix is requested: no battery, no wait. */
 object LastLocation {
     private const val TAG = "SafarPlace"
 

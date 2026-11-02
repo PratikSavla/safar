@@ -13,8 +13,12 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -25,10 +29,12 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.safar.ui.art.AtlasIcons
@@ -57,6 +63,7 @@ fun AtlasTextField(
     val locked = lockedReason != null
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
+    val buffer = rememberFieldBuffer(value)
     val line = when {
         locked -> c.ink3
         focused -> c.rust
@@ -69,25 +76,78 @@ fun AtlasTextField(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            BasicTextField(
-                value = value,
-                onValueChange = { v -> onValueChange(if (maxLength != null) v.take(maxLength) else v) },
-                modifier = Modifier.weight(1f).padding(vertical = 10.dp).semantics {
-                    contentDescription = label
-                    if (locked) stateDescription = "Locked. $lockedReason"
-                },
-                enabled = !locked,
-                singleLine = true,
-                textStyle = textStyle.copy(color = if (locked) c.ink3 else c.ink),
-                cursorBrush = SolidColor(c.rust),
-                interactionSource = source,
-                keyboardOptions = KeyboardOptions(KeyboardCapitalization.Words, keyboardType = keyboardType, imeAction = imeAction, autoCorrectEnabled = false),
-                decorationBox = { inner -> Placeholder(if (value.isEmpty()) placeholder else null, textStyle, inner) },
+            FieldInput(
+                buffer, { v -> onValueChange(buffer.edit(v, maxLength)) }, label, lockedReason, placeholder, textStyle,
+                KeyboardOptions(KeyboardCapitalization.Words, keyboardType = keyboardType, imeAction = imeAction, autoCorrectEnabled = false),
+                source, Modifier.weight(1f),
             )
-            FieldTrailing(locked, trailing, maxLength?.let { "${value.length}/$it" })
+            FieldTrailing(locked, trailing, maxLength?.let { "${buffer.field.text.length}/$it" })
         }
         if (lockedReason != null) LockLine(lockedReason)
     }
+}
+
+/**
+ * The edit buffer lives here, in Compose state, and is updated in the same frame as the keyboard's edit. The
+ * caller's [value] usually comes back through an asynchronous flow; feeding that straight into the field makes
+ * the IME and the field disagree and drops or repeats characters. Late copies of our own edits are ignored;
+ * any other [value] (a stored value loading, a reset) replaces the buffer.
+ */
+@Stable
+internal class FieldBuffer(initial: String) {
+    var field by mutableStateOf(TextFieldValue(initial, TextRange(initial.length)))
+        private set
+    private val echoes = EditEchoes()
+
+    /** Applies a keyboard edit (cut to [maxLength]) and returns the text to forward. */
+    fun edit(v: TextFieldValue, maxLength: Int?): String {
+        val next = if (maxLength != null && v.text.length > maxLength) v.copy(text = v.text.take(maxLength)) else v
+        field = next
+        echoes.sent(next.text)
+        return next.text
+    }
+
+    fun sync(external: String) {
+        if (echoes.isEcho(external) || external == field.text) return
+        field = TextFieldValue(external, TextRange(external.length))
+    }
+}
+
+@Composable
+private fun rememberFieldBuffer(value: String): FieldBuffer {
+    val buffer = remember { FieldBuffer(value) }
+    LaunchedEffect(value) { buffer.sync(value) }
+    return buffer
+}
+
+@Composable
+private fun FieldInput(
+    buffer: FieldBuffer,
+    onEdit: (TextFieldValue) -> Unit,
+    label: String,
+    lockedReason: String?,
+    placeholder: String?,
+    textStyle: TextStyle,
+    keyboard: KeyboardOptions,
+    source: MutableInteractionSource,
+    modifier: Modifier,
+) {
+    val locked = lockedReason != null
+    BasicTextField(
+        value = buffer.field,
+        onValueChange = onEdit,
+        modifier = modifier.padding(vertical = 10.dp).semantics {
+            contentDescription = label
+            if (locked) stateDescription = "Locked. $lockedReason"
+        },
+        enabled = !locked,
+        singleLine = true,
+        textStyle = textStyle.copy(color = if (locked) Atlas.colors.ink3 else Atlas.colors.ink),
+        cursorBrush = SolidColor(Atlas.colors.rust),
+        interactionSource = source,
+        keyboardOptions = keyboard,
+        decorationBox = { inner -> Placeholder(if (buffer.field.text.isEmpty()) placeholder else null, textStyle, inner) },
+    )
 }
 
 @Composable

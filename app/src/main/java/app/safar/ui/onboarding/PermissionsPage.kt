@@ -65,19 +65,27 @@ private val PERMS by lazy {
 internal fun PermissionsList() {
     val context = LocalContext.current
     var asked by rememberSaveable { mutableStateOf(emptySet<String>()) }
+    // The item whose request is on screen. It counts as asked only once Android answers: before the first
+    // request shouldShowRequestPermissionRationale is false, which would read as "denied in settings".
+    var pending by rememberSaveable { mutableStateOf<String?>(null) }
     var tick by remember { mutableIntStateOf(0) }
     LifecycleResumeEffect(Unit) {
         tick += 1
         onPauseOrDispose { }
     }
-    val request = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { tick += 1 }
-    val system = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { tick += 1 }
+    val answered = {
+        pending?.let { asked = asked + it }
+        pending = null
+        tick += 1
+    }
+    val request = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { answered() }
+    val system = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { answered() }
     val statuses = remember(tick, asked) { PERMS.associate { it.id to statusOf(context, it.id, it.id.name in asked) } }
     Column(Modifier.fillMaxWidth().padding(bottom = 14.dp)) {
         PERMS.forEach { p ->
             val status = statuses.getValue(p.id)
             PermRow(p, status) {
-                asked = asked + p.id.name
+                pending = p.id.name
                 when {
                     status == PermStatus.BLOCKED -> openSystem(context, system::launch, appDetails(context))
                     p.id == PermId.NOTIFICATION_ACCESS -> openSystem(context, system::launch, Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))

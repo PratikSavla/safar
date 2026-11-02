@@ -32,7 +32,7 @@ class FuelViewModel(
     val notices = Notices()
 
     fun setLowFuelAlert(on: Boolean) {
-        launchLogged(TAG, "low-fuel alert switch", { notices.post("Could not save the setting") }) {
+        launchLogged(TAG, "low-fuel alert switch", { notices.post("Couldn’t save the setting. Try again.") }) {
             settings.update { it.copy(lowFuelAlert = on) }
         }
     }

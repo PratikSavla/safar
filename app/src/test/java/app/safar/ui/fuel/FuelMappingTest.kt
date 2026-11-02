@@ -8,6 +8,8 @@ import app.safar.data.FuelMethod
 import app.safar.data.MileageSegment
 import app.safar.data.OdoSource
 import app.safar.data.Settings
+import app.safar.ui.components.ValueOrigin
+import app.safar.ui.format.ValueSource
 import java.time.ZoneOffset
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -28,8 +30,9 @@ class FuelMappingTest {
         assertEquals("€", s.currency)
         assertFalse(s.lowFuelAlert)
         assertEquals(BarsReading(2, 6, FuelFixtures.NOW, live = true), s.reading)
-        assertTrue(methodLine(stats).startsWith("from your fuel-ups · avg ${jsNumber(requireNotNull(stats.avgKmpl))} km/L, last 3 fills"))
+        assertEquals("Worked out from your last 3 full tanks: ${jsNumber(requireNotNull(stats.avgKmpl))} km/L.", methodLine(stats))
         assertEquals("calculated · fuel-ups", rangeSource(stats.method))
+        assertEquals("About ${jsNumber(requireNotNull(stats.remainingL))} of 12 litres left.", tankDescription(stats))
     }
 
     @Test
@@ -37,7 +40,10 @@ class FuelMappingTest {
         val last = FuelFixtures.cluster(12_250, 3, at = 1_000)
         val r = barsReading(BikeState(link = LinkState.Idle, saved = saved, lastCluster = last))
         assertEquals(BarsReading(3, 6, 1_000, live = false), r)
+        assertEquals(ValueOrigin(ValueSource.BIKE, 1_000, connected = false), r.origin)
         assertEquals(BarsReading(null, 6, null, live = false), barsReading(BikeState()))
+        val waiting = barsReading(BikeState(link = LinkState.Connected, saved = saved))
+        assertEquals(ValueOrigin(ValueSource.BIKE, null, connected = true), waiting.origin)
     }
 
     @Test
@@ -51,18 +57,24 @@ class FuelMappingTest {
         assertEquals(712.0 / 6.7, rows[0].perLitre, 1e-9)
         assertEquals("31 Oct", rows[0].date)
         assertEquals("typed", odoBadge(OdoSource.MANUAL).label)
+        assertEquals("from bike", odoBadge(OdoSource.BIKE).label)
+        assertEquals(
+            "31 Oct: 6.7 litres for ₹712, ₹106.27 a litre. 12,164 km, read from your bike. Full tank.",
+            fuelUpSpoken(rows[0], "₹"),
+        )
     }
 
     @Test
     fun `method lines match the prototype`() {
         val none = requireNotNull(fuelUiState(emptyList(), Settings(), BikeState(), FuelFixtures.NOW, zone).stats)
-        assertEquals("no estimate yet · log a full tank to start", methodLine(none))
+        assertEquals("No estimate yet. Log a full tank to start.", methodLine(none))
+        assertEquals("12 litre tank. Fuel left not known yet.", tankDescription(none))
         assertEquals(0f, tankFraction(none))
         val bars = requireNotNull(
             fuelUiState(emptyList(), Settings(), BikeState(saved = saved, cluster = FuelFixtures.cluster(100, 3)), FuelFixtures.NOW, zone).stats,
         )
         assertEquals(FuelMethod.BARS, bars.method)
-        assertEquals("rough · from fuel bars only, log a full tank to improve", methodLine(bars))
+        assertEquals("A rough guess from the fuel bars. Log a full tank for a better one.", methodLine(bars))
         assertEquals(0.5f, tankFraction(bars))
     }
 
@@ -76,6 +88,17 @@ class FuelMappingTest {
         assertEquals(22f + 74f * 0.25f, chart.ys[1], 1e-3f)
         assertEquals(59f, requireNotNull(chart.avgY), 1e-3f)
         assertNull(trendChart(listOf(seg(40.0)), null, 368f, 118f, 14f, 22f, 22f))
+    }
+
+    @Test
+    fun `counts read with their nouns`() {
+        assertEquals("last full tank", averageOver(1))
+        assertEquals("last 2 full tanks", averageOver(2))
+        assertEquals("last 3 full tanks", averageOver(7))
+        assertEquals("1 fuel-up", fuelUpsText(1))
+        assertEquals("4 fuel-ups", fuelUpsText(4))
+        assertEquals("1 tank", tanksText(1))
+        assertEquals("5 tanks", tanksText(5))
     }
 
     @Test

@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -17,6 +20,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.safar.data.FuelField
 import app.safar.data.FuelUp
+import app.safar.data.OdoSuggestionSource
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasBottomSheet
 import app.safar.ui.components.AtlasTextField
@@ -27,7 +31,11 @@ import app.safar.ui.components.NumberWithUnit
 import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.TextAction
-import app.safar.ui.components.liveAge
+import app.safar.ui.components.DevOnly
+import app.safar.ui.components.Freshness
+import app.safar.ui.components.rememberNow
+import app.safar.ui.copy.Phrases
+import app.safar.ui.format.ValueSource
 import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
 import java.time.ZoneId
@@ -82,7 +90,7 @@ internal fun OdometerBlock(state: FuelUpUiState, actions: FuelUpActions) {
         OdoSourceLine(state)
         state.bikeSaid?.let { BasicText(it, Modifier.padding(top = 4.dp), style = Atlas.type.src.copy(color = c.amber)) }
         FieldLine(state.messages[FuelField.ODO])
-        BasicText("Whole km only, as on the cluster.", Modifier.padding(top = 4.dp), style = Atlas.type.uiSmall.copy(color = c.ink3))
+        BasicText("Whole km only, as on ${Phrases.YOUR_BIKES_DISPLAY}.", Modifier.padding(top = 4.dp), style = Atlas.type.uiSmall.copy(color = c.ink3))
     }
 }
 
@@ -90,8 +98,10 @@ internal fun OdometerBlock(state: FuelUpUiState, actions: FuelUpActions) {
 private fun OdoSourceLine(state: FuelUpUiState) {
     val c = Atlas.colors
     val sugg = state.sugg ?: return
-    val age = sugg.atMillis?.let { liveAge(it) }
-    val label = odoLabel(state.entry, sugg, age)
+    val zone = remember { ZoneId.systemDefault() }
+    val now = rememberNow()
+    // The clock ticks every second; the label recomposes only when its words change (a new day, a new source).
+    val label by remember(state.entry, sugg, now) { derivedStateOf { odoLabel(state.entry, sugg, now.value, zone) } }
     val color = when (label.tone) {
         OdoTone.MOSS -> c.moss
         OdoTone.AMBER -> c.amber
@@ -100,6 +110,9 @@ private fun OdoSourceLine(state: FuelUpUiState) {
     }
     val style = if (label.tone == OdoTone.RUST) Atlas.type.uiSmall else Atlas.type.src
     BasicText(label.text, Modifier.padding(top = 4.dp), style = style.copy(color = color))
+    if (state.entry == null && sugg.source != OdoSuggestionSource.NONE) {
+        DevOnly { Freshness(ValueSource.BIKE, sugg.atMillis, connected = sugg.source == OdoSuggestionSource.BIKE) }
+    }
 }
 
 /** Inline validation under a field: rust for an error (blocks Save), amber for a warning. */
@@ -125,7 +138,7 @@ internal fun LockedForm(speedKmh: Float?, onClose: () -> Unit) {
     DisplayTitle("Stop to log fuel.", null, Atlas.type.displaySmall)
     val speed = speedKmh?.let { " at ${it.roundToInt()} km/h" }.orEmpty()
     Note(
-        "The phone is moving$speed. Typing is off while you ride; the form comes back when you stop.",
+        "You’re moving$speed. The form comes back when you stop.",
         Modifier.padding(top = 10.dp),
     )
     SecondaryButton("Close", onClose, Modifier.fillMaxWidth().padding(top = 18.dp))

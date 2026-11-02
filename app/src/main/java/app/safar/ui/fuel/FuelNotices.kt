@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Hands the fuel-up form's confirmation ("Saved · range updated") to the fuel page it returns to, so the toast
+ * Hands the fuel-up form's confirmation ("Fuel-up saved. Range updated.") to the fuel page it returns to, so the toast
  * shows after the form closes. A message older than [MAX_AGE_MS] is dropped: the rider went somewhere else.
  * Only the fuel page shows it, so a form opened from elsewhere (Home's "Log fuel") goes to the fuel page after a
  * new save, as the prototype does (fuel-form.js).

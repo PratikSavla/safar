@@ -75,7 +75,7 @@ class FuelUpViewModelTest {
 
         fuel.gate.complete(Unit)
         advanceUntilIdle()
-        assertEquals("Saved · range updated", vm.done.value)
+        assertEquals("Fuel-up saved. Range updated.", vm.done.value)
         assertEquals(12000, fuel.added.single().odometerKm)
         job.cancel()
     }

@@ -35,7 +35,7 @@ fun parseMapsShare(text: String?): SharedPlace? {
 /** The intent URI that starts Google Maps navigation to [query] in two-wheeler mode. */
 fun navUri(query: String): String = "google.navigation:q=${encodeUriComponent(query)}&mode=l"
 
-/** Parses "12.97,77.59" (spaces allowed). Null when malformed or out of range. */
+/** Parses "10.5,70.25" (spaces allowed). Null when malformed or out of range. */
 fun parseLatLng(text: String?): LatLng? {
     val m = LAT_LNG.matchEntire(text ?: return null) ?: return null
     val lat = m.groupValues[1].toDoubleOrNull() ?: return null

@@ -21,13 +21,13 @@ class MappersTest {
         assertEquals(fuel, fuel.toEntity().toModel())
         val trip = Trip(4, "Morning ride", 1_000, 2_000, 42.5, 98f, 41f, 12164, 12207, 5, 4)
         assertEquals(trip, trip.toEntity().toModel())
-        val point = TrackPoint(4, 1_500, 12.97, 77.59, 40f)
+        val point = TrackPoint(4, 1_500, 10.5, 70.25, 40f)
         assertEquals(point, point.toEntity().toModel())
         val item = ServiceItem(5, "Engine oil", 3000, 9800, null, ServiceIcon.OIL)
         assertEquals(item, item.toEntity().toModel())
-        val place = Place(6, "Home", "Main Rd", "Main Rd, NH 48", PlaceKind.HOME, PlaceSource.TYPED, 2, 12.97, 77.59)
+        val place = Place(6, "Home", "Main Rd", "Main Rd, NH 48", PlaceKind.HOME, PlaceSource.TYPED, 2, 10.5, 70.25)
         assertEquals(place, place.toEntity().toModel())
-        val spot = ParkedSpot(12.97, 77.59, 8f, 3_000, "Main Rd")
+        val spot = ParkedSpot(10.5, 70.25, 8f, 3_000, "Main Rd")
         assertEquals(spot, spot.toEntity().toModel())
     }
 

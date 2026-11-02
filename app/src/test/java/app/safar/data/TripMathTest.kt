@@ -14,9 +14,9 @@ class TripMathTest {
     fun haversineKnownDistances() {
         assertEquals(111_195.0, haversineM(0.0, 0.0, 1.0, 0.0), 1.0)
         assertEquals(111_195.0, haversineM(0.0, 0.0, 0.0, 1.0), 1.0)
-        assertEquals(0.0, haversineM(12.97, 77.59, 12.97, 77.59))
-        // Bengaluru-ish to Mysuru-ish synthetic points: about 127 km.
-        assertEquals(127.0, haversineM(12.97, 77.59, 12.30, 76.64) / 1000, 1.5)
+        assertEquals(0.0, haversineM(10.5, 70.25, 10.5, 70.25))
+        // Synthetic points one degree apart in latitude and longitude: about 155.94 km.
+        assertEquals(155.94, haversineM(10.0, 70.0, 11.0, 71.0) / 1000, 0.01)
     }
 
     @Test
@@ -88,8 +88,8 @@ class TripMathTest {
 
     @Test
     fun trackPointConvertsWithoutAccuracy() {
-        val p = TrackPoint(tripId = 1, atMillis = 5_000, lat = 12.97, lng = 77.59, speedKmh = 30f)
-        assertEquals(GpsFix(12.97, 77.59, 5_000, null), p.toFix())
+        val p = TrackPoint(tripId = 1, atMillis = 5_000, lat = 10.5, lng = 70.25, speedKmh = 30f)
+        assertEquals(GpsFix(10.5, 70.25, 5_000, null), p.toFix())
     }
 
     @Test

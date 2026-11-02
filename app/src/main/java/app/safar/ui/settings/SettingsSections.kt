@@ -40,7 +40,7 @@ internal fun RiderBlock(state: SettingsState, onName: (String) -> Unit) {
         state.nameText,
         onName,
         "Rider name · shown on the cluster",
-        lockedReason = state.lockReason?.let { "$it No typing on a ride." },
+        lockedReason = state.lockReason,
         placeholder = "e.g. Alex",
         trailing = { BasicText(nameCounter(state.nameText), style = Atlas.type.src.copy(color = c.ink3)) },
     )

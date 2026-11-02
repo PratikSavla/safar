@@ -36,6 +36,8 @@ android {
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
+        // Test classes are spread over several JVMs; each test class owns its state, so they run in parallel.
+        unitTests.all { it.maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1) }
     }
 }
 

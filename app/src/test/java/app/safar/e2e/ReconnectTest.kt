@@ -37,7 +37,7 @@ class ReconnectTest {
         assertEquals(mapOf("reason" to "MTU 23 is below 33"), failed.detail)
         val failedAt = failed.atMillis - CLOCK_BASE
         assertEquals(LinkState.Reconnecting(1, CLOCK_BASE + failedAt + 2_000), rig.link)
-        assertEquals(emptyList(), rig.bike.writes, "no frames written")
+        assertEquals(emptyList(), rig.recording.tx(), "no write attempted")
         assertEquals(emptyList(), rig.bike.notifyEnabledAt, "notify never enabled")
         assertTrue(rig.radio.links.single().closed, "GATT closed")
         assertEquals(true, rig.manager.serviceWanted.value)
@@ -46,7 +46,7 @@ class ReconnectTest {
         assertEquals(listOf(0L, failedAt + 2_000), rig.bike.connectRequests)
         rig.advance(1_000)
         assertEquals(LinkState.Reconnecting(2, CLOCK_BASE + 2 * failedAt + 2_000 + 5_000), rig.link)
-        assertEquals(emptyList(), rig.bike.writes)
+        assertEquals(emptyList(), rig.recording.tx())
     }
 
     @Test
@@ -60,7 +60,6 @@ class ReconnectTest {
         val disconnected = rig.recording.named("Disconnected").single()
         assertEquals(mapOf("status" to "8", "reason" to "supervision timeout"), disconnected.detail)
         assertEquals(mapOf("reason" to "supervision timeout"), rig.recording.named("Link ended").single().detail)
-        val writesAtDrop = rig.bike.writes.size
 
         // Each attempt to the switched-off bike ends with the 20 s connect timeout, then the next back-off.
         val timeout = ConnectTiming.CONNECT_TIMEOUT_MS
@@ -81,7 +80,7 @@ class ReconnectTest {
         assertEquals(listOf(0L) + expectedRequests, rig.bike.connectRequests)
         assertTrue(rig.radio.opened.all { it == BIKE_ADDRESS }, "direct connect to the saved address")
         assertEquals(0, rig.radio.scanner.starts, "no scan while reconnecting")
-        assertEquals(writesAtDrop, rig.bike.writes.size, "nothing written while the link is down")
+        assertEquals(emptyList(), rig.txAfter(dropAt), "no write attempted while the link is down")
     }
 
     @Test
@@ -121,13 +120,13 @@ class ReconnectTest {
     @Test
     fun userDisconnectWhileConnectedClosesTheLink() = runTest {
         val rig = connectedRig()
+        val disconnectAt = rig.time
         rig.manager.disconnect()
         rig.advance(0)
         assertEquals(LinkState.Idle, rig.link)
         assertTrue(rig.radio.links.single().closed)
-        val writes = rig.bike.writes.size
         rig.advance(60_000)
-        assertEquals(writes, rig.bike.writes.size)
+        assertEquals(emptyList(), rig.txAfter(disconnectAt), "no write attempted after the disconnect")
         assertEquals(1, rig.bike.connectRequests.size)
     }
 

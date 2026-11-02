@@ -160,17 +160,17 @@ class CallsTest {
         rig.alerts.callMissed("Alex", AlertSource.PHONE)
         rig.alerts.messageReceived("Rider")
         rig.advance(20_000)
-        assertEquals(emptyList(), rig.bike.writes)
+        assertEquals(emptyList(), rig.recording.tx(), "no write attempted")
         assertEquals(1, rig.alerts.state.value.missed.count, "the alert screen still counts it")
 
         rig.pairFromScan()
+        val disconnectAt = rig.time
         rig.manager.disconnect()
         rig.advance(10)
-        val writes = rig.bike.writes.size
         rig.alerts.callRinging("Alex", AlertSource.PHONE)
         rig.alerts.messageReceived("Rider")
         rig.advance(10_000)
-        assertEquals(writes, rig.bike.writes.size, "nothing after a user disconnect")
+        assertEquals(emptyList(), rig.txAfter(disconnectAt), "no write attempted after a user disconnect")
     }
 
     @Test

@@ -111,4 +111,10 @@ class BikeRig(
 
     /** Frames of [type] written at or after [from] (virtual ms). */
     fun writes(type: Char, from: Long): List<WrittenFrame> = writes(type).filter { it.atMillis >= from }
+
+    /**
+     * TX log entries after [after] (virtual ms): every write the app attempted, whatever its outcome. The bike
+     * records only writes that reach it on a live link, so "nothing written while down" must be checked here.
+     */
+    fun txAfter(after: Long): List<RecordingLog.Frame> = recording.tx().filter { it.atMillis > CLOCK_BASE + after }
 }

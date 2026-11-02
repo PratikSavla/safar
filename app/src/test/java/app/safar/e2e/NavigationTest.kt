@@ -143,7 +143,7 @@ class NavigationTest {
         val dropAt = rig.time
         rig.bike.powerOff()
         rig.advance(10_000)
-        assertTrue(rig.bike.writes.none { it.atMillis > dropAt }, "nothing is written after the drop")
+        assertEquals(emptyList(), rig.txAfter(dropAt), "no write attempted after the drop")
 
         rig.bike.powerOn()
         val back = rig.awaitConnected(limitMs = 60_000)

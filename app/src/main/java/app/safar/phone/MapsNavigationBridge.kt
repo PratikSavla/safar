@@ -5,8 +5,8 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import app.safar.core.NavState
 import app.safar.core.NavigationBridge
 import app.safar.core.PhoneSnapshot
@@ -92,7 +92,7 @@ class MapsNavigationBridge(
     }
 
     override fun openInMaps(label: String, query: String) {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(navUri(query)))
+        val intent = Intent(Intent.ACTION_VIEW, navUri(query).toUri())
             .setPackage(GOOGLE_MAPS_PACKAGE)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try {

@@ -4,11 +4,11 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.net.toUri
 import app.safar.protocol.GOOGLE_MAPS_PACKAGE
 
 /** Setup checks for the onboarding and settings screens (docs 11.3, 12.4 R12). */
@@ -29,8 +29,8 @@ object PhoneAccess {
 
     /** Opens Google Maps in the Play Store app, or on the web when there is no store app. */
     fun openMapsInPlayStore(context: Context) {
-        val store = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$GOOGLE_MAPS_PACKAGE"))
-        val web = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$GOOGLE_MAPS_PACKAGE"))
+        val store = Intent(Intent.ACTION_VIEW, "market://details?id=$GOOGLE_MAPS_PACKAGE".toUri())
+        val web = Intent(Intent.ACTION_VIEW, "https://play.google.com/store/apps/details?id=$GOOGLE_MAPS_PACKAGE".toUri())
         for (intent in listOf(store, web)) {
             try {
                 context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

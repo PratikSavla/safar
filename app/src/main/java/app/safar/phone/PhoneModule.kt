@@ -1,5 +1,6 @@
 package app.safar.phone
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.content.Context
@@ -15,7 +16,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  * settings, trips, parked) are read lazily when an event needs them.
  *
  * Runtime permissions can be granted after install: each activity resume re-checks them ([refresh]).
+ * The objects held here keep the application context only, which lives as long as the process.
  */
+@SuppressLint("StaticFieldLeak")
 object PhoneModule {
     private val installed = AtomicBoolean(false)
 

@@ -54,8 +54,10 @@ internal class LocationSource(context: Context, private val onSample: (GpsSample
             lm.removeUpdates(listener)
             when (target) {
                 LocationMode.OFF -> Unit
-                LocationMode.PASSIVE -> request(lm, LocationManager.PASSIVE_PROVIDER)
-                LocationMode.GPS -> request(lm, LocationManager.GPS_PROVIDER)
+                LocationMode.PASSIVE ->
+                    lm.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, INTERVAL_MS, 0f, listener, Looper.getMainLooper())
+                LocationMode.GPS ->
+                    lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, INTERVAL_MS, 0f, listener, Looper.getMainLooper())
             }
             mode = target
         } catch (e: SecurityException) {
@@ -78,9 +80,6 @@ internal class LocationSource(context: Context, private val onSample: (GpsSample
             null
         }
     }
-
-    private fun request(lm: LocationManager, provider: String) =
-        lm.requestLocationUpdates(provider, INTERVAL_MS, 0f, listener, Looper.getMainLooper())
 
     private fun Location.toSample(): GpsSample = GpsSample(
         fix = GpsFix(latitude, longitude, time, if (hasAccuracy()) accuracy else null),

@@ -91,6 +91,17 @@ BikeSim advertises as a Suzuki display, accepts Safar's frames and sends cluster
 on a second phone, or run both apps on two emulators linked by virtual Bluetooth. The unit tests also run the
 Bluetooth session against a fake GATT that sends synthetic bike frames.
 
+## License
+
+Copyright (C) 2026 Pratik Savla
+
+Safar is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation, version 3 of the License. It is distributed in the hope that it will be
+useful, but without any warranty; see [LICENSE](LICENSE) for details.
+
+The bundled fonts (Fraunces, IBM Plex Mono and Instrument Sans) are under the SIL Open Font License 1.1; their
+licenses are in `app/src/main/assets/licenses/`.
+
 ## Trademarks
 
 Safar is an independent project. It is not affiliated with, endorsed by or sponsored by Suzuki Motor Corporation

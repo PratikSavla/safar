@@ -125,7 +125,7 @@ internal fun AboutCard(onVersionTap: () -> Unit = {}) {
             Modifier.clickable(onClickLabel = "Count a tap towards Developer mode", role = Role.Button, onClick = onVersionTap),
         )
         Note(
-            "Open source. No account, no server, no analytics. Safar never sends your data anywhere.",
+            "Open source under GPL-3.0. No account, no server, no analytics. Safar never sends your data anywhere.",
             Modifier.padding(top = 6.dp),
         )
         FlowRow(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

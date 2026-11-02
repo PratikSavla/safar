@@ -47,7 +47,6 @@ import app.safar.ui.components.rememberNow
 import app.safar.ui.format.Formatters
 import app.safar.ui.nav.Navigator
 import app.safar.ui.ride.preview.RidePreviewData
-import app.safar.ui.shell.KeepScreenOn
 import app.safar.ui.shell.LocalShellUi
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.SafarTheme
@@ -60,7 +59,6 @@ internal const val HOLD_MS = 900L
 fun RideScreen(navigator: Navigator, vm: RideViewModel = viewModel { RideViewModel.fromContainer() }) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     val shell = LocalShellUi.current
-    KeepScreenOn()
     RideContent(ui, shell.autoRide) {
         shell.leaveRide(stillMoving = ui?.moving == true)
         navigator.back()

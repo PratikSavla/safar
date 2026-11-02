@@ -61,14 +61,16 @@ class ShellRulesTest {
     }
 
     @Test
-    fun chromeCountsAlertsAndKeepsScreenOnOnlyWhileConnected() {
+    fun chromeCountsAlertsAndKeepsScreenOnOnlyInRideMode() {
         val alerts = AlertsState(missed = AlertCounter(2, "Rider"), messages = AlertCounter(3, "Alex", AlertSource.WHATSAPP))
-        val on = shellChrome(Route.Home, LinkState.Connected, alerts, NavState(active = true), Settings(keepScreenOn = true))
+        val on = shellChrome(Route.Ride, LinkState.Connected, alerts, NavState(active = true), Settings(keepScreenOn = true))
         assertEquals(5, on.alertBadge)
         assertTrue(on.navigating)
         assertTrue(on.keepScreenOn)
-        assertFalse(shellChrome(Route.Home, LinkState.Idle, alerts, NavState(), Settings(keepScreenOn = true)).keepScreenOn)
-        assertFalse(shellChrome(Route.Home, LinkState.Connected, alerts, NavState(), Settings(keepScreenOn = false)).keepScreenOn)
+        // Only while Ride mode is open, with or without the bike, and never with the switch off.
+        assertTrue(shellChrome(Route.Ride, LinkState.Idle, alerts, NavState(), Settings(keepScreenOn = true)).keepScreenOn)
+        assertFalse(shellChrome(Route.Home, LinkState.Connected, alerts, NavState(), Settings(keepScreenOn = true)).keepScreenOn)
+        assertFalse(shellChrome(Route.Ride, LinkState.Connected, alerts, NavState(), Settings(keepScreenOn = false)).keepScreenOn)
     }
 
     @Test

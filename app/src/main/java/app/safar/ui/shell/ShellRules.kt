@@ -68,7 +68,8 @@ internal fun shellChrome(route: Route?, link: LinkState, alerts: AlertsState, na
         alertBadge = alerts.missed.count + alerts.messages.count,
         navigating = nav.active,
         call = call?.let { callBanner(it, link, settings) },
-        keepScreenOn = settings.keepScreenOn && link == LinkState.Connected,
+        // Settings: "Keep screen on · While Ride mode is open". The shell owns it; Ride asks for nothing itself.
+        keepScreenOn = settings.keepScreenOn && route == Route.Ride,
     )
 }
 

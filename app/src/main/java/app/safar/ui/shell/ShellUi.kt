@@ -39,7 +39,7 @@ val TabBarSpace: @Composable () -> Unit = {}
 
 /**
  * Keeps the display on while this is in composition and [on] is true (FLAG_KEEP_SCREEN_ON via the view).
- * Requests are counted per view, so the shell's "while connected" and Ride's own request do not undo each other.
+ * Requests are counted per view, so two requests on the same view do not undo each other.
  */
 @Composable
 fun KeepScreenOn(on: Boolean = true) {

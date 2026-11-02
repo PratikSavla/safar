@@ -7,6 +7,8 @@ import app.safar.data.Settings
 /** Records each outbox call as "type:name:count-or-status:source". */
 class RecordingOutbox : ClusterOutbox {
     val frames = mutableListOf<String>()
+    /** Sources whose ringing repeats were stopped; no frame is sent for these. */
+    val stops = mutableListOf<AlertSource>()
 
     override fun sendCall(name: String, source: AlertSource, answered: Boolean) {
         frames += "2:$name:${if (answered) "answered" else "ringing"}:${source.code}"
@@ -18,6 +20,10 @@ class RecordingOutbox : ClusterOutbox {
 
     override fun sendMessages(name: String, count: Int, source: AlertSource) {
         frames += "5:$name:$count:${source.code}"
+    }
+
+    override fun stopRinging(source: AlertSource) {
+        stops += source
     }
 }
 

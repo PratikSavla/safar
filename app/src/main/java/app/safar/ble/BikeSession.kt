@@ -64,6 +64,8 @@ class BikeSession(
     private var firstCluster = true
     private val jobsLock = Any()
     private var callJob: Job? = null
+    /** Source of the call whose ringing frame [callJob] repeats; null while it sends answered frames or nothing. */
+    private var ringingSource: AlertSource? = null
     private var missedJob: Job? = null
     private var messageJob: Job? = null
 
@@ -137,7 +139,10 @@ class BikeSession(
         emit(encodeNavigation(data, mode))
     }
 
-    /** Ringing repeats every 1 s up to 15 times; answered 3 times, 200 ms apart (docs 5.2, Timing). */
+    /**
+     * Ringing repeats every 1 s while the phone rings (docs 1.6): until answered, missed or [stopRinging], capped at
+     * [CALL_RING_REPEAT]. Answered: 3 times, 200 ms apart (docs 5.2, Timing).
+     */
     override fun sendCall(name: String, source: AlertSource, answered: Boolean) {
         val status = if (answered) CallStatus.ANSWERED else CallStatus.RINGING
         val frame = encodeCall(name, status, source.toProtocol(), mode)
@@ -145,7 +150,17 @@ class BikeSession(
         val gap = if (answered) Timing.EVENT_GAP_MS else Timing.CALL_REPEAT_PERIOD_MS
         synchronized(jobsLock) {
             callJob?.cancel()
+            ringingSource = source.takeIf { !answered }
             callJob = scope.launch { repeatWithGap(times, gap) { emit(frame) } }
+        }
+    }
+
+    /** The call stopped ringing (declined, or answered on another device): no frame, the repeats just stop (docs 5.4). */
+    override fun stopRinging(source: AlertSource) {
+        synchronized(jobsLock) {
+            if (ringingSource != source) return
+            callJob?.cancel()
+            ringingSource = null
         }
     }
 
@@ -154,6 +169,7 @@ class BikeSession(
         val frame = encodeMissedCall(name, count.coerceIn(0, MAX_COUNT), source.toProtocol(), mode)
         synchronized(jobsLock) {
             callJob?.cancel()
+            ringingSource = null
             missedJob?.cancel()
             missedJob = scope.launch {
                 repeatWithGap(Timing.MISSED_CALL_REPEAT, Timing.MISSED_CALL_GAP_MS) { emit(frame) }
@@ -175,7 +191,11 @@ class BikeSession(
         const val RIDER_GAP_MS = 1_000L
         /** First status frame about 2 s after the rider frame, as in the v7.6 capture (docs 2.2 step 8). */
         const val STATUS_START_DELAY_MS = 2_000L
-        const val CALL_RING_REPEAT = 15
+        /**
+         * Safety cap on ringing frames (60 s, longer than a normal ring before voicemail). 15 was only the count
+         * seen in one v7.6 capture; the ring normally stops earlier, on answer, missed call or [stopRinging].
+         */
+        const val CALL_RING_REPEAT = 60
         private const val ICON_TEST_TURN_M = 100
         private const val ICON_TEST_LEFT_M = 1_200
         private const val ICON_TEST_ETA_MS = 10 * 60_000L

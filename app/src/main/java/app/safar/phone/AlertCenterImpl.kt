@@ -67,9 +67,15 @@ class AlertCenterImpl(
         send("answered") { it.sendCall(callName, source, answered = true) }
     }
 
-    /** The call of [source] ended. No frame: the original app sends no "call end" (docs 5.4). */
-    fun callEnded(source: AlertSource) = synchronized(lock) {
-        if (mutable.value.call?.source == source) mutable.value = mutable.value.copy(call = null)
+    /**
+     * The call of [source] ended. No frame: the original app sends no "call end" (docs 5.4); but a ringing frame
+     * still repeating stops, so the cluster does not show a call that is gone.
+     */
+    fun callEnded(source: AlertSource) {
+        synchronized(lock) {
+            if (mutable.value.call?.source == source) mutable.value = mutable.value.copy(call = null)
+        }
+        send("call ended") { it.stopRinging(source) }
     }
 
     /** [added] new missed calls from [name]. */

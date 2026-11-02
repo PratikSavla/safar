@@ -1,5 +1,6 @@
 package app.safar.phone
 
+import app.safar.core.AlertSource
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -162,6 +163,7 @@ class WhatsAppTest {
         rig.clock.now += WA_HANDOFF_MS + 5_000
         alerts.posted(wa(key = "out", title = "Rider", category = CATEGORY_CALL, text = "Ongoing voice call"))
         assertEquals(listOf("2:Alex:ringing:W"), rig.outbox.frames)
+        assertEquals(listOf(AlertSource.WHATSAPP), rig.outbox.stops, "the ringing repeats stop when the call is declined")
     }
 
     @Test

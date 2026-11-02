@@ -178,6 +178,10 @@ class BikeManager(
         session?.sendMessages(name, count, source)
     }
 
+    override fun stopRinging(source: AlertSource) {
+        session?.stopRinging(source)
+    }
+
     private fun apply(actions: List<Action>) {
         for (action in actions) {
             when (action) {

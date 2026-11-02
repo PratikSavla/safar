@@ -25,6 +25,8 @@ interface ClusterOutbox {
     fun sendCall(name: String, source: AlertSource, answered: Boolean)
     fun sendMissedCalls(name: String, count: Int, source: AlertSource)
     fun sendMessages(name: String, count: Int, source: AlertSource)
+    /** The [source] call stopped ringing without an answer or a missed call: stop repeating its ringing frame. */
+    fun stopRinging(source: AlertSource) {}
 }
 
 /** Google Maps notification bridge (docs 11). Implemented in `phone`. */

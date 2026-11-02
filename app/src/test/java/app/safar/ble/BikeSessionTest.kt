@@ -143,13 +143,31 @@ class BikeSessionTest {
     }
 
     @Test
-    fun ringingCallRepeatsEverySecondUpToFifteenTimes() = runTest {
+    fun ringingCallRepeatsEverySecondWhileRingingUpToTheCap() = runTest {
         val (s, _) = session()
         s.sendCall("Alex", AlertSource.PHONE, answered = false)
-        advanceTimeBy(20_000)
+        advanceTimeBy(90_000)
         val calls = sent.filter { messageType(it.second) == '2' }
-        assertEquals(15, calls.size)
-        assertEquals(14_000L, calls.last().first)
+        assertEquals(BikeSession.CALL_RING_REPEAT, calls.size)
+        assertEquals(59_000L, calls.last().first)
+    }
+
+    @Test
+    fun stopRingingEndsTheRepeatsOfThatSourceOnly() = runTest {
+        val (s, _) = session()
+        s.sendCall("Rider", AlertSource.WHATSAPP, answered = false)
+        advanceTimeBy(2_500) // 3 ringing frames
+        s.stopRinging(AlertSource.PHONE) // another source: ignored
+        advanceTimeBy(1_000)
+        s.stopRinging(AlertSource.WHATSAPP) // declined
+        advanceTimeBy(20_000)
+        assertEquals(4, sent.count { messageType(it.second) == '2' })
+
+        sent.clear()
+        s.sendCall("Rider", AlertSource.WHATSAPP, answered = true)
+        s.stopRinging(AlertSource.WHATSAPP) // answered frames are not ringing: they all go out
+        advanceTimeBy(1_000)
+        assertEquals(3, sent.count { messageType(it.second) == '2' })
     }
 
     @Test

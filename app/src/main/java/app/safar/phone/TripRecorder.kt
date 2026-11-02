@@ -8,14 +8,21 @@ import app.safar.data.Trip
 import app.safar.data.TripRepository
 import app.safar.data.autoTripTitle
 import app.safar.data.avgMovingSpeedKmh
+import app.safar.data.toFix
+import app.safar.data.trackDistanceKm
+import kotlinx.coroutines.flow.first
 import java.time.ZoneId
 
 /** Track points written per repository call. */
 const val TRACK_BATCH = 20
 
+/** Open trips found by [TripRecorder.closeOpenTrips]: [kept] were finished, [deleted] were too short. */
+data class OpenTrips(val kept: Int, val deleted: Int)
+
 /**
  * Records one trip at a time (docs 12.4 E5): the Trip row at start, filtered track points in batches, and
- * distance, speeds, odometer and fuel bars at the end. Trips under [MIN_TRIP_KM] are deleted. Pure Kotlin;
+ * distance, speeds, odometer and fuel bars at the end. Trips under [MIN_TRIP_KM] are deleted. A trip left open
+ * by a process that died is finished from its saved points on the next start ([closeOpenTrips]). Pure Kotlin;
  * not thread-safe (the ride tracker calls it from one coroutine). [trips] is read lazily.
  */
 class TripRecorder(
@@ -95,6 +102,37 @@ class TripRecorder(
         )
         trips().update(done)
         return done
+    }
+
+    /**
+     * Finishes trips left open (no end time) by a process that died mid-trip, other than the one recording:
+     * distance and speeds from their saved track points, end time from the last point. The last unsaved batch
+     * is lost. Trips under [MIN_TRIP_KM] are deleted.
+     */
+    suspend fun closeOpenTrips(): OpenTrips {
+        val repo = trips()
+        val open = repo.trips.first().filter { it.endMillis == null && it.id != trip?.id }
+        var kept = 0
+        for (t in open) {
+            val points = repo.track(t.id).first().sortedBy { it.atMillis }
+            val fixes = points.map { it.toFix() }
+            val distance = trackDistanceKm(fixes)
+            if (!keepTrip(distance)) {
+                repo.delete(t.id)
+                continue
+            }
+            val top = points.maxOfOrNull { p -> p.speedKmh.takeIf { it <= MAX_GPS_KMH } ?: 0f } ?: 0f
+            repo.update(
+                t.copy(
+                    endMillis = points.lastOrNull()?.atMillis ?: t.startMillis,
+                    distanceKm = distance,
+                    topSpeedKmh = top,
+                    avgSpeedKmh = avgMovingSpeedKmh(fixes).toFloat(),
+                ),
+            )
+            kept++
+        }
+        return OpenTrips(kept, open.size - kept)
     }
 
     private suspend fun flush() {

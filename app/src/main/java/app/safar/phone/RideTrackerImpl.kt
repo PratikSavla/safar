@@ -67,7 +67,10 @@ class RideTrackerImpl(context: Context, private val scope: CoroutineScope, priva
     private var topSpeed = 0f
 
     fun start() {
-        scope.launch { for (event in events) handleLogged(event) }
+        scope.launch {
+            closeOpenTrips()
+            for (event in events) handleLogged(event)
+        }
         scope.launch {
             while (isActive) {
                 delay(1_000)
@@ -89,6 +92,21 @@ class RideTrackerImpl(context: Context, private val scope: CoroutineScope, priva
             bike.state.map { bikeLinkOf(it.link) }.distinctUntilChanged().collect { events.send(Event.Link(it)) }
         }
         bike.state.map { it.cluster }.filterNotNull().distinctUntilChanged().collect { events.send(Event.Reading(it)) }
+    }
+
+    /** Before any event: finish trips a dead process left open, so they do not stay as open 0 km rows. */
+    private suspend fun closeOpenTrips() {
+        try {
+            val open = recorder.closeOpenTrips()
+            if (open.kept + open.deleted > 0) {
+                log.info("trip.recovered", mapOf("kept" to open.kept.toString(), "deleted" to open.deleted.toString()))
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Closing open trips failed", e)
+            log.error("trip.recover_failed", mapOf("error" to e.javaClass.simpleName))
+        }
     }
 
     private suspend fun handleLogged(event: Event) {

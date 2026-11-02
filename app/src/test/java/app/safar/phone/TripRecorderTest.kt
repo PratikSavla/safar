@@ -7,6 +7,7 @@ import app.safar.data.Trip
 import app.safar.data.TripRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import java.time.ZoneOffset
@@ -20,9 +21,9 @@ class TripRecorderTest {
         val saved = mutableMapOf<Long, Trip>()
         val batches = mutableListOf<List<TrackPoint>>()
         val deleted = mutableListOf<Long>()
-        override val trips: Flow<List<Trip>> = emptyFlow()
+        override val trips: Flow<List<Trip>> get() = flowOf(saved.values.sortedByDescending { it.startMillis })
         override fun trip(id: Long): Flow<Trip?> = emptyFlow()
-        override fun track(tripId: Long): Flow<List<TrackPoint>> = emptyFlow()
+        override fun track(tripId: Long): Flow<List<TrackPoint>> = flowOf(batches.flatten().filter { it.tripId == tripId })
         override suspend fun start(trip: Trip): Long = (saved.size + 1L).also { saved[it] = trip.copy(id = it) }
         override suspend fun update(trip: Trip) { saved[trip.id] = trip }
         override suspend fun addPoints(points: List<TrackPoint>) { batches += points }
@@ -78,6 +79,26 @@ class TripRecorderTest {
         assertEquals(500, done.odoStartKm)
         assertEquals(5, done.fuelBarsStart)
         assertEquals(3.0, done.distanceKm, 0.0001, "odometer distance when GPS saw nothing")
+    }
+
+    @Test
+    fun openTripsFromADeadProcessAreFinishedOrDeleted() = runTest {
+        val repo = FakeTrips()
+        val dead = TripRecorder({ repo }, ZoneOffset.UTC)
+        val long = dead.start(0, reading(700, 4))
+        repeat(25) { dead.onFix(fix(it), 40f) } // 20 points saved, 5 lost with the process
+        val short = dead.start(1_000_000, null)
+        val recorder = TripRecorder({ repo }, ZoneOffset.UTC)
+        val running = recorder.start(2_000_000, null)
+        assertEquals(OpenTrips(kept = 1, deleted = 1), recorder.closeOpenTrips())
+        val done = repo.saved.getValue(long)
+        assertEquals(190_000L, done.endMillis, "time of the last saved point")
+        assertEquals(2.11, done.distanceKm, 0.01)
+        assertEquals(40f, done.topSpeedKmh)
+        assertEquals(700, done.odoStartKm)
+        assertEquals(listOf(short), repo.deleted)
+        assertNull(repo.saved.getValue(running).endMillis, "the trip recording now stays open")
+        assertEquals(OpenTrips(0, 0), recorder.closeOpenTrips())
     }
 
     @Test

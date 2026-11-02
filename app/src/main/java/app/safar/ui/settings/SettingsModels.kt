@@ -1,7 +1,6 @@
 package app.safar.ui.settings
 
 import app.safar.core.BikeModel
-import app.safar.core.VehicleFamily
 import app.safar.protocol.MAX_NAME_LENGTH
 import app.safar.protocol.sanitizeName
 import java.math.BigDecimal
@@ -56,12 +55,6 @@ fun litresText(litres: Double): String {
 }
 
 fun alertRangeOf(model: BikeModel?): IntRange = model?.alertRange ?: DEFAULT_ALERT_RANGE
-
-fun familyWord(model: BikeModel?): String = when (model?.family) {
-    VehicleFamily.SCOOTER -> "scooter"
-    VehicleFamily.MOTORCYCLE -> "motorcycle"
-    null -> "motorcycle"
-}
 
 /**
  * Tank row subtitle: the model's tank and, when set, the rider's own value. Never claims a model's tank when no

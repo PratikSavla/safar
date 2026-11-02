@@ -63,7 +63,6 @@ class SettingsTest {
     fun rangeFollowsTheSavedBike() = runTest {
         backgroundScope.launch(main.dispatcher) { vm.state.collect {} }
         assertEquals(5..120, vm.state.value.alertRange)
-        assertEquals("scooter", familyWord(vm.state.value.model))
         assertEquals("5.2", vm.state.value.tankText)
         assertEquals(DEFAULT_ALERT_RANGE, alertRangeOf(null))
     }

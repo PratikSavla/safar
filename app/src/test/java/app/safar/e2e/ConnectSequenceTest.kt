@@ -57,10 +57,14 @@ class ConnectSequenceTest {
         val t0 = rig.awaitConnected()
 
         assertEquals(0, rig.radio.scanner.starts)
-        rig.advance(100)
-        val rider = rig.frames.rider(rig.writes('6').single().bytes)
-        assertEquals(TxFrames.Rider("RIDER", 'R'), rider)
-        assertEquals(t0, rig.writes('6').single().atMillis)
+        rig.advance((BikeSession.RIDER_REPEAT - 1) * BikeSession.RIDER_GAP_MS + rig.bike.ackDelayMs)
+        val riders = rig.writes('6')
+        assertEquals(List(BikeSession.RIDER_REPEAT) { t0 + it * BikeSession.RIDER_GAP_MS }, riders.map { it.atMillis })
+        val expected = encodeRider("RIDER", firstConnection = false, mode = ChecksumMode.SUM)
+        riders.forEach { assertContentEquals(expected, it.bytes) }
+        assertEquals(TxFrames.Rider("RIDER", 'R'), rig.frames.rider(riders[0].bytes))
+        rig.advance(BikeSession.RIDER_GAP_MS * 5)
+        assertEquals(BikeSession.RIDER_REPEAT, rig.writes('6').size, "no rider frame after the repeats")
         assertEquals(emptyList(), rig.savedStore.saves, "the saved bike is not saved again")
     }
 

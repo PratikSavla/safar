@@ -18,9 +18,16 @@ class LinkSetupException(message: String) : Exception(message)
 
 private fun fail(reason: String): Nothing = throw LinkSetupException(reason)
 
+/** Fails [step], naming the disconnect reason when the link dropped during it. */
+private fun GattClient.failStep(step: String): Nothing {
+    val lost = link.value as? GattLink.Disconnected
+    fail(if (lost != null) "$step: link lost (${lost.reason})" else step)
+}
+
 /**
  * The connection sequence of docs 2.2 steps 4-7, then Device Information (docs 12.4 E1). Throws
- * [LinkSetupException] with the reason when a step fails; the caller logs it and closes the client.
+ * [LinkSetupException] with the reason when a step fails or the link drops; the caller logs it and closes
+ * the client.
  */
 suspend fun setUpLink(client: GattClient, log: DebugLog): LinkReady {
     if (!client.connect(ConnectTiming.CONNECT_TIMEOUT_MS)) {
@@ -29,17 +36,19 @@ suspend fun setUpLink(client: GattClient, log: DebugLog): LinkReady {
     }
     log.event("GATT connected")
     delay(ConnectTiming.DISCOVER_DELAY_MS)
-    if (!client.discoverServices()) fail("service discovery failed")
-    val mtu = client.requestMtu(ConnectTiming.REQUEST_MTU) ?: fail("MTU request failed")
+    if (!client.discoverServices()) client.failStep("service discovery failed")
+    val mtu = client.requestMtu(ConnectTiming.REQUEST_MTU) ?: client.failStep("MTU request failed")
     log.event("MTU changed", mapOf("mtu" to mtu.toString(), "requested" to ConnectTiming.REQUEST_MTU.toString()))
     if (mtu < MIN_MTU_FOR_FRAME) fail("MTU $mtu is below $MIN_MTU_FOR_FRAME")
     val service = client.service(GattUuids.SERVICE) ?: fail("service FFF0 not found")
     val tx = service.getCharacteristic(GattUuids.TX_CHARACTERISTIC) ?: fail("TX characteristic FFF1 not found")
     val rx = service.getCharacteristic(GattUuids.RX_CHARACTERISTIC) ?: fail("RX characteristic FFF2 not found")
     log.event("Characteristics found by UUID", mapOf("service" to "FFF0", "tx" to "FFF1", "rx" to "FFF2"))
-    if (!client.enableNotify(rx)) fail("enabling notify on FFF2 failed")
+    if (!client.enableNotify(rx)) client.failStep("enabling notify on FFF2 failed")
     log.event("Notify on", mapOf("cccd" to "01 00"))
-    return LinkReady(mtu, tx, readDeviceInfo(client, log))
+    val info = readDeviceInfo(client, log)
+    if (client.link.value != GattLink.Connected) client.failStep("device information read")
+    return LinkReady(mtu, tx, info)
 }
 
 /** Reads every Device Information characteristic the bike has. Missing ones stay null; no step is fatal. */

@@ -162,11 +162,14 @@ class GattClient(
         if (p.kind == kind && (p.uuid == null || uuid == null || p.uuid == uuid)) p.result.complete(result)
     }
 
-    /** Marks the link lost (also used for a stalled write queue); fails the waiting operation. */
+    /**
+     * Marks the link lost (also used for a stalled write queue); fails the waiting operation. The operation gets
+     * [STATUS_LOCAL], not [status]: a disconnect can report GATT_SUCCESS (0), which would read as success.
+     */
     fun markLost(status: Int, reason: String) {
         if (linkState.value is GattLink.Disconnected) return
         linkState.value = GattLink.Disconnected(status, reason)
-        pending?.result?.complete(OpResult(status))
+        pending?.result?.complete(OpResult(STATUS_LOCAL))
     }
 
     /** disconnect() + close() (docs 2.5). Safe to call more than once. */

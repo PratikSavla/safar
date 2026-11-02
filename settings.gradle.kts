@@ -14,4 +14,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "safar"
-include(":protocol", ":app")
+include(":protocol", ":app", ":baselineprofile")

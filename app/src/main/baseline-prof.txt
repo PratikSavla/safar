@@ -1,0 +1,15 @@
+# Hand-written Baseline Profile rules for Safar's own code, used until a generated profile exists
+# (./gradlew :app:generateBaselineProfile on a device writes src/main/generated/baselineProfiles).
+# Compose and AndroidX ship their own rules in their AARs; AGP merges everything into the release APK and
+# profileinstaller writes it on first launch, so sideloaded installs start AOT-compiled too.
+#
+# Screens, components and their state mapping: everything that runs while a page scrolls.
+HSPLapp/safar/ui/**;->**(**)**
+Lapp/safar/ui/**;
+# Models and contracts the screens read on every frame of state.
+HSPLapp/safar/core/**;->**(**)**
+Lapp/safar/core/**;
+HSPLapp/safar/data/**;->**(**)**
+Lapp/safar/data/**;
+HSPLapp/safar/MainActivity;->**(**)**
+HSPLapp/safar/SafarApp;->**(**)**

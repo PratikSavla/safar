@@ -44,6 +44,19 @@ class CallAlertsTest {
     }
 
     @Test
+    fun callWaitingDuringAnOutgoingCallIsNeverAnAnswer() {
+        val rig = AlertRig()
+        // Outgoing call, a second call waits and is rejected, the first call goes on, then ends.
+        drive(rig, CallPhase.OFFHOOK, CallPhase.RINGING, CallPhase.OFFHOOK, CallPhase.IDLE)
+        assertEquals(emptyList(), rig.outbox.frames)
+        assertNull(rig.center.state.value.call)
+        val tracker = CallTracker()
+        assertEquals(listOf(null, null, CallTransition.ENDED), listOf(CallPhase.OFFHOOK, CallPhase.RINGING, CallPhase.IDLE).map(tracker::next))
+        // The next call from idle rings and is answered as usual.
+        assertEquals(listOf(CallTransition.RINGING, CallTransition.ANSWERED), listOf(CallPhase.RINGING, CallPhase.OFFHOOK).map(tracker::next))
+    }
+
+    @Test
     fun endOfAnsweredCallClearsActiveCall() {
         val rig = AlertRig()
         drive(rig, CallPhase.RINGING, CallPhase.OFFHOOK, CallPhase.IDLE)

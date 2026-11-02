@@ -23,12 +23,25 @@ fun callTransition(from: CallPhase, to: CallPhase): CallTransition? = when {
     else -> null
 }
 
-/** Remembers the last phase so repeated broadcasts of the same state do nothing. Not thread-safe. */
+/**
+ * Remembers the last phase so repeated broadcasts of the same state do nothing. Not thread-safe.
+ * Android reports a call waiting during another call as RINGING too (OFFHOOK -> RINGING). That ring was never
+ * sent to the cluster, so its end is not an answer: back to OFFHOOK sends nothing (the first call goes on),
+ * and IDLE only ends the call.
+ */
 class CallTracker {
     var phase: CallPhase = CallPhase.IDLE
         private set
+    private var waiting = false
 
-    fun next(to: CallPhase): CallTransition? = callTransition(phase, to).also { phase = to }
+    fun next(to: CallPhase): CallTransition? {
+        val from = phase
+        phase = to
+        if (to == CallPhase.RINGING && from != CallPhase.RINGING) waiting = from == CallPhase.OFFHOOK
+        if (from != CallPhase.RINGING || to == CallPhase.RINGING || !waiting) return callTransition(from, to)
+        waiting = false
+        return if (to == CallPhase.IDLE) CallTransition.ENDED else null
+    }
 }
 
 /** `TelephonyManager.CALL_STATE_*` (0 idle, 1 ringing, 2 off-hook) to a phase. Unknown values are idle. */

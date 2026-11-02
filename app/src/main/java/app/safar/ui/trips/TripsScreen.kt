@@ -16,7 +16,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.safar.core.AppContainer
 import app.safar.data.ThemeMode
-import app.safar.data.TrackPoint
 import app.safar.ui.components.AtlasPage
 import app.safar.ui.components.EmptyState
 import app.safar.ui.components.Gap
@@ -42,16 +41,16 @@ fun TripsScreen(navigator: Navigator) {
     TripsContent(
         state = state,
         onOpen = { navigator.go(Route.Trip(it)) },
-        trackFor = { id ->
-            val flow = remember(id) { vm.track(id) }
-            flow.collectAsStateWithLifecycle(emptyList()).value
+        thumbFor = { id ->
+            val flow = remember(id) { vm.thumb(id) }
+            flow.collectAsStateWithLifecycle(TrackThumb.Empty).value
         },
     )
 }
 
-/** Stateless journal page; [trackFor] loads one postcard's GPS track. */
+/** Stateless journal page; [thumbFor] loads one postcard's thinned GPS track. */
 @Composable
-fun TripsContent(state: TripsUiState, onOpen: (Long) -> Unit, trackFor: @Composable (Long) -> List<TrackPoint>) {
+fun TripsContent(state: TripsUiState, onOpen: (Long) -> Unit, thumbFor: @Composable (Long) -> TrackThumb) {
     var shown by rememberSaveable { mutableIntStateOf(PAGE) }
     AtlasPage(topo = TopoTransform.Journal) {
         Masthead(
@@ -68,7 +67,7 @@ fun TripsContent(state: TripsUiState, onOpen: (Long) -> Unit, trackFor: @Composa
         }
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             state.rows.take(shown).forEachIndexed { i, row ->
-                Postcard(row, tilt = if (i % 2 == 1) 0.5f else -0.6f, track = trackFor(row.id), onClick = { onOpen(row.id) })
+                Postcard(row, tilt = if (i % 2 == 1) 0.5f else -0.6f, thumb = thumbFor(row.id), onClick = { onOpen(row.id) })
             }
         }
         if (state.rows.size > shown) {
@@ -82,17 +81,17 @@ fun TripsContent(state: TripsUiState, onOpen: (Long) -> Unit, trackFor: @Composa
 @Preview
 @Composable
 private fun TripsPreview() = SafarTheme(ThemeMode.LIGHT) {
-    TripsContent(TripsPreviewData.list, {}, { TripsPreviewData.track })
+    TripsContent(TripsPreviewData.list, {}, { trackThumb(TripsPreviewData.track) })
 }
 
 @Preview
 @Composable
 private fun TripsDarkPreview() = SafarTheme(ThemeMode.DARK) {
-    TripsContent(TripsPreviewData.list.copy(live = null), {}, { TripsPreviewData.track })
+    TripsContent(TripsPreviewData.list.copy(live = null), {}, { trackThumb(TripsPreviewData.track) })
 }
 
 @Preview
 @Composable
 private fun TripsEmptyPreview() = SafarTheme(ThemeMode.LIGHT) {
-    TripsContent(TripsUiState(loading = false), {}, { emptyList() })
+    TripsContent(TripsUiState(loading = false), {}, { TrackThumb.Empty })
 }

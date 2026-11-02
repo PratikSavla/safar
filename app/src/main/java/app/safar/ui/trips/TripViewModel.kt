@@ -8,11 +8,13 @@ import app.safar.data.Trip
 import app.safar.data.TripRepository
 import app.safar.ui.vm.Notices
 import app.safar.ui.vm.launchLogged
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import java.time.ZoneId
 
@@ -31,6 +33,8 @@ class TripViewModel(
     private val now: () -> Long = System::currentTimeMillis,
     private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
+    /** Written by the state flow on [Dispatchers.Default], read by [rename] on the main thread. */
+    @Volatile
     private var current: Trip? = null
 
     val state: StateFlow<TripDetailState> = combine(trips.trip(tripId), trips.trips, trips.track(tripId), ride, bike) { trip, list, track, r, b ->
@@ -41,7 +45,8 @@ class TripViewModel(
             val bars = b.saved?.model?.fuelBars ?: DEFAULT_BARS
             TripDetailState.Ready(tripDetail(trip, list, track, bars, r.recordingTripId, now(), zone))
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TripDetailState.Loading)
+    }.flowOn(Dispatchers.Default) // tripDetail filters the whole track
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TripDetailState.Loading)
 
     /** Input lock (UX rule 3) for the rename field. */
     val ride: StateFlow<RideState> = ride

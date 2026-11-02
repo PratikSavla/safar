@@ -1,7 +1,10 @@
 package app.safar.ui.trips
 
 import app.safar.core.RideState
+import app.safar.data.TrackPoint
 import app.safar.data.Trip
+import app.safar.data.filterTrack
+import app.safar.data.toFix
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -11,6 +14,9 @@ import java.util.Locale
 
 private const val MINUTE_MS = 60_000L
 private const val DAY_MS = 86_400_000L
+
+/** Points drawn on a postcard thumbnail. */
+const val THUMB_POINTS = 120
 private val dayFormat = DateTimeFormatter.ofPattern("EEE dd MMM", Locale.UK)
 
 /** Week or 30-day sums: distance, riding time, ride count and the top speed of any ride. */
@@ -83,3 +89,16 @@ fun tripsUiState(trips: List<Trip>, ride: RideState, bikeName: String?, nowMilli
         rows = tripRows(trips, nowMillis, zone),
         live = liveRide(ride),
     )
+
+/** A postcard's ink track, filtered and thinned, as parallel latitude and longitude lists. */
+data class TrackThumb(val lat: List<Double>, val lng: List<Double>) {
+    companion object {
+        val Empty = TrackThumb(emptyList(), emptyList())
+    }
+}
+
+/** GPS jumps filtered out, then at most [max] points kept. Runs over the whole track: call it off the main thread. */
+fun trackThumb(track: List<TrackPoint>, max: Int = THUMB_POINTS): TrackThumb {
+    val kept = thin(filterTrack(track.map { it.toFix() }), max)
+    return TrackThumb(kept.map { it.lat }, kept.map { it.lng })
+}

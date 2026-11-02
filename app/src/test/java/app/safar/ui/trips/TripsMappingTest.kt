@@ -103,4 +103,16 @@ class TripsMappingTest {
         assertEquals("Evening ride", cleanTitle("   ", "Evening ride"))
         assertEquals(40, cleanTitle("x".repeat(60), "Old").length)
     }
+
+    @Test
+    fun `a postcard thumbnail keeps at most 120 points of the filtered track, ending at the last fix`() {
+        // 500 fixes one second apart, about 11 m north each (40 km/h): nothing for the filter to drop.
+        val track = List(500) { i -> TrackPoint(1, 1_000L * i, 18.5 + i * 0.0001, 73.8, 40f) }
+        val thumb = trackThumb(track)
+        assertEquals(THUMB_POINTS, thumb.lat.size)
+        assertEquals(THUMB_POINTS, thumb.lng.size)
+        assertEquals(18.5 + 499 * 0.0001, thumb.lat.last(), 1e-9)
+        assertTrue(thumb.lat.zipWithNext().all { (a, b) -> b > a })
+        assertEquals(TrackThumb.Empty, trackThumb(emptyList()))
+    }
 }

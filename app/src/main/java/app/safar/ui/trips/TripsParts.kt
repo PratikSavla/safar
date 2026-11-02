@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,9 +24,6 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.safar.data.TrackPoint
-import app.safar.data.filterTrack
-import app.safar.data.toFix
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.CardStyle
 import app.safar.ui.components.NumberWithUnit
@@ -40,8 +36,6 @@ import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 import kotlin.math.roundToInt
-
-private const val THUMB_POINTS = 120
 
 /** "This week" and "Last 30 days" side by side (`.totals`). */
 @Composable
@@ -76,9 +70,8 @@ internal fun LiveEntry(live: LiveRideUi, modifier: Modifier = Modifier) {
 
 /** One journal entry as a tilted postcard: ink track on squared paper, day, title and numbers. */
 @Composable
-internal fun Postcard(row: TripRowUi, tilt: Float, track: List<TrackPoint>, onClick: () -> Unit) {
+internal fun Postcard(row: TripRowUi, tilt: Float, thumb: TrackThumb, onClick: () -> Unit) {
     val c = Atlas.colors
-    val thumb = remember(track) { thin(filterTrack(track.map { it.toFix() }), THUMB_POINTS) }
     val spoken = "Entry ${row.number}, ${row.title}, ${row.day}, ${Formatters.km1(row.km)} kilometres, " +
         "${durationText(row.minutes)}, top ${row.topKmh.roundToInt()} km/h"
     Box(
@@ -98,7 +91,7 @@ internal fun Postcard(row: TripRowUi, tilt: Float, track: List<TrackPoint>, onCl
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             TrackMap(
-                thumb.map { it.lat }, thumb.map { it.lng },
+                thumb.lat, thumb.lng,
                 Modifier.size(120.dp, 96.dp).background(c.card2, AtlasShapes.tiny).border(1.dp, c.rule, AtlasShapes.tiny),
             )
             PostcardText(row, Modifier.weight(1f))

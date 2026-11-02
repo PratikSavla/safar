@@ -102,5 +102,17 @@
             </intent-filter>
         </service>
         <!-- end phone -->
+        <!-- widget: Safar home-screen widget (ui/widget) -->
+        <receiver
+            android:name=".ui.widget.SafarWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/safar_widget_info" />
+        </receiver>
     </application>
 </manifest>

@@ -1,0 +1,134 @@
+package app.safar.ui.service
+
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import app.safar.data.ServiceIcon
+import app.safar.data.ServiceState
+import app.safar.ui.art.AtlasIcons
+import app.safar.ui.components.AtlasButton
+import app.safar.ui.components.ButtonTone
+import app.safar.ui.components.Hairline
+import app.safar.ui.components.IconBox
+import app.safar.ui.components.Stamp
+import app.safar.ui.components.StampTone
+import app.safar.ui.components.AtlasIcon
+import app.safar.ui.format.Formatters
+import app.safar.ui.theme.Atlas
+import kotlin.math.roundToInt
+
+fun ServiceIcon.vector() = when (this) {
+    ServiceIcon.OIL -> AtlasIcons.drop
+    ServiceIcon.CHAIN -> AtlasIcons.chain
+    ServiceIcon.AIR -> AtlasIcons.wind
+    ServiceIcon.BRAKE -> AtlasIcons.disc
+    ServiceIcon.TYRE -> AtlasIcons.gauge
+    ServiceIcon.GENERIC -> AtlasIcons.wrench
+}
+
+@Composable
+private fun stateColor(state: ServiceState): Color = when (state) {
+    ServiceState.OVERDUE -> Atlas.colors.rust
+    ServiceState.DUE_SOON -> Atlas.colors.amber
+    ServiceState.OK -> Atlas.colors.ink
+}
+
+private fun ServiceState.tone() = when (this) {
+    ServiceState.OVERDUE -> StampTone.RUST
+    ServiceState.DUE_SOON -> StampTone.AMBER
+    ServiceState.OK -> StampTone.MOSS
+}
+
+/** One logbook item (`.svc`): head, the road from last service to the flag, the due line and actions. */
+@Composable
+internal fun ServiceItemCard(row: ServiceRowUi, onDone: () -> Unit, onInterval: () -> Unit) {
+    val c = Atlas.colors
+    val item = row.status.item
+    val state = row.status.state
+    val accent = stateColor(state)
+    Column(Modifier.fillMaxWidth().padding(top = 18.dp)) {
+        Row(Modifier.semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            IconBox(item.icon.vector(), tint = if (state == ServiceState.OK) c.ink else accent, outline = if (state == ServiceState.OK) c.rule2 else accent)
+            Column(Modifier.weight(1f)) {
+                BasicText(item.label, style = Atlas.type.serifTitle.copy(color = c.ink))
+                BasicText("every ${Formatters.odometer(item.everyKm)} km", style = Atlas.type.src.copy(color = c.ink3))
+            }
+            Stamp(row.word, tone = state.tone())
+        }
+        ServiceRoad(row, accent)
+        Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 22.dp, top = 2.dp)) {
+            val mono = Atlas.type.src.copy(color = c.ink3, fontSize = Atlas.type.src.fontSize * 0.9f)
+            BasicText(Formatters.odometer(row.fromKm), Modifier.weight(1f), style = mono)
+            BasicText(Formatters.odometer(row.toKm), style = mono)
+        }
+        BasicText(
+            row.line,
+            Modifier.padding(top = 10.dp, bottom = 12.dp),
+            style = Atlas.type.ui.copy(color = if (state == ServiceState.OVERDUE) c.rust else c.ink2, fontSize = Atlas.type.note.fontSize * 1.08f),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            AtlasButton(
+                "Mark done", onDone, Modifier.semantics { contentDescription = "Mark ${item.label} done" },
+                tone = if (state == ServiceState.OK) ButtonTone.GHOST else ButtonTone.INK, icon = AtlasIcons.check, small = true,
+            )
+            AtlasButton(
+                "Interval", onInterval, Modifier.semantics { contentDescription = "Change the ${item.label} interval" },
+                tone = ButtonTone.GHOST, icon = AtlasIcons.edit, small = true,
+            )
+        }
+        Hairline(Modifier.padding(top = 18.dp), color = c.rule2)
+    }
+}
+
+/** Dashed road with the travelled part inked, a rider dot (blinking when overdue) and a flag at the due point. */
+@Composable
+private fun ServiceRoad(row: ServiceRowUi, accent: Color) {
+    val c = Atlas.colors
+    val overdue = row.status.state == ServiceState.OVERDUE
+    val blink = if (overdue) {
+        val t = rememberInfiniteTransition(label = "svcBlink")
+        val v by t.animateFloat(0f, 2f, infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart), label = "svcBlinkPhase")
+        v < 1f
+    } else {
+        true
+    }
+    val spoken = "${(row.drawn * 100).roundToInt()} percent of the way to the next service"
+    Box(Modifier.fillMaxWidth().height(26.dp).padding(start = 4.dp).clearAndSetSemantics { contentDescription = spoken }) {
+        Canvas(Modifier.fillMaxWidth().height(26.dp).padding(end = 22.dp)) {
+            val y = 12.dp.toPx() + 1.25.dp.toPx()
+            val w = 2.5.dp.toPx()
+            val dash = PathEffect.dashPathEffect(floatArrayOf(7.dp.toPx(), 5.dp.toPx()))
+            drawLine(c.rule2, Offset(0f, y), Offset(size.width, y), w, pathEffect = dash)
+            val x = size.width * row.drawn
+            drawLine(accent, Offset(0f, y), Offset(x, y), w)
+            val r = 7.dp.toPx()
+            drawCircle(c.paper, r, Offset(x, y))
+            if (blink) drawCircle(accent, r - 1.5.dp.toPx(), Offset(x, y), style = Stroke(3.dp.toPx()))
+        }
+        AtlasIcon(AtlasIcons.flag, Modifier.align(Alignment.TopEnd), tint = c.ink2, size = 22.dp)
+    }
+}

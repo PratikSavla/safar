@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import android.telecom.TelecomManager
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
@@ -15,6 +16,14 @@ import app.safar.protocol.GOOGLE_MAPS_PACKAGE
 object PhoneAccess {
     /** True when Google Maps is installed (needs the `<queries>` entry in the manifest). */
     fun isMapsInstalled(context: Context): Boolean = isInstalled(context, GOOGLE_MAPS_PACKAGE)
+
+    /** The default phone app's package (its missed-call notification resets the count), or null when unknown. */
+    fun defaultDialer(context: Context): String? = try {
+        context.getSystemService(TelecomManager::class.java)?.defaultDialerPackage
+    } catch (e: SecurityException) {
+        Log.w(TAG, "Default phone app not readable", e)
+        null
+    }
 
     /** True when WhatsApp or WhatsApp Business is installed. */
     fun isWhatsAppInstalled(context: Context): Boolean = WHATSAPP_PACKAGES.any { isInstalled(context, it) }

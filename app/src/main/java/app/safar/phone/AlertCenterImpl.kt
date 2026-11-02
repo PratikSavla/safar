@@ -110,6 +110,22 @@ class AlertCenterImpl(
         if (zero) send("missed cleared") { it.sendMissedCalls("", 0, AlertSource.WHATSAPP) }
     }
 
+    /**
+     * The phone app's missed-call notification was read or dismissed: its calls no longer count (docs 5.5, 5.7).
+     * When nothing is left the cluster gets count 0. Never raises.
+     */
+    fun phoneMissedRead() {
+        val zero = synchronized(lock) {
+            if (phoneMissed == 0) return
+            phoneMissed = 0
+            val total = whatsAppMissed.coerceAtMost(MAX_COUNT)
+            mutable.value = mutable.value.copy(missed = mutable.value.missed.copy(count = total))
+            if (total == 0) feed(FeedKind.CLEARED, "", AlertSource.PHONE, 0)
+            total == 0
+        }
+        if (zero) send("missed cleared") { it.sendMissedCalls("", 0, AlertSource.PHONE) }
+    }
+
     /** [added] new WhatsApp messages; [sender] is the chat title, never the text. */
     fun messageReceived(sender: String, added: Int = 1) {
         if (added <= 0 || !enabled(AlertSource.WHATSAPP, isMessage = true, what = "message")) return

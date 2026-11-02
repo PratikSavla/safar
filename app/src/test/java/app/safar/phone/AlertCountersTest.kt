@@ -56,6 +56,27 @@ class AlertCountersTest {
     }
 
     @Test
+    fun phoneMissedReadOnThePhoneSendsCountZero() {
+        val rig = AlertRig()
+        rig.center.callMissed("Alex", AlertSource.PHONE, 2)
+        rig.center.phoneMissedRead()
+        assertEquals(0, rig.center.state.value.missed.count)
+        assertEquals("4::0:N", rig.outbox.frames.last())
+        rig.center.phoneMissedRead()
+        assertEquals(2, rig.outbox.frames.size, "nothing left to clear")
+    }
+
+    @Test
+    fun phoneMissedReadKeepsWhatsAppMissedCalls() {
+        val rig = AlertRig()
+        rig.center.callMissed("Alex", AlertSource.PHONE)
+        rig.center.callMissed("Rider", AlertSource.WHATSAPP)
+        rig.center.phoneMissedRead()
+        assertEquals(1, rig.center.state.value.missed.count)
+        assertEquals(2, rig.outbox.frames.size, "WhatsApp's call still counts: no frame")
+    }
+
+    @Test
     fun whatsAppMissedPartialDropUpdatesScreenOnly() {
         val rig = AlertRig()
         rig.center.callMissed("Rider", AlertSource.WHATSAPP, 3)

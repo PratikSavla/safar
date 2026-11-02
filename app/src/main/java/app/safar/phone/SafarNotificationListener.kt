@@ -54,10 +54,24 @@ class SafarNotificationListener : NotificationListenerService() {
     }
 }
 
-/** Sends each notification to the Maps bridge or the WhatsApp alerts. */
-internal class NotificationRouter(private val maps: MapsNavigationBridge, private val whatsApp: WhatsAppAlerts) {
+/**
+ * Sends each notification to the Maps bridge, the WhatsApp alerts, or (the phone app's missed-call notification
+ * being read or dismissed) [phoneMissedRead]. [dialer] is the default phone app's package.
+ */
+internal class NotificationRouter(
+    private val maps: MapsNavigationBridge,
+    private val whatsApp: WhatsAppAlerts,
+    private val dialer: () -> String? = { null },
+    private val phoneMissedRead: () -> Unit = {},
+) {
+    /** Keys of the phone app's missed-call notifications still posted. Callbacks arrive on the main thread. */
+    private val phoneMissedKeys = mutableSetOf<String>()
+
     /** Attach to a Maps route already running, and record the WhatsApp notifications already posted. */
     fun connected(active: Array<out StatusBarNotification>) {
+        val phone = dialer()
+        phoneMissedKeys.clear()
+        active.filter { isPhoneMissedCall(it, phone) }.mapTo(phoneMissedKeys) { it.key }
         val route = active.filter(::isMapsNavigation).maxByOrNull { it.postTime }
         // No Maps route now: one that ended while we were unbound must not stay active.
         if (route != null) maps.onPosted(route.notification) else maps.onLost()
@@ -71,6 +85,7 @@ internal class NotificationRouter(private val maps: MapsNavigationBridge, privat
         when {
             isMapsNavigation(sbn) -> maps.onPosted(sbn.notification)
             isWhatsApp(sbn) -> whatsApp.posted(waNotification(sbn))
+            isPhoneMissedCall(sbn, dialer()) -> phoneMissedKeys += sbn.key
         }
     }
 
@@ -78,6 +93,10 @@ internal class NotificationRouter(private val maps: MapsNavigationBridge, privat
         when {
             isMapsNavigation(sbn) -> maps.onRemoved()
             isWhatsApp(sbn) -> whatsApp.removed(sbn.key)
+            isPhoneMissedCall(sbn, dialer()) -> {
+                phoneMissedKeys -= sbn.key
+                if (phoneMissedKeys.isEmpty()) phoneMissedRead()
+            }
         }
     }
 }

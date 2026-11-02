@@ -47,7 +47,7 @@ object PhoneModule {
         val icons = IconLibrary(app, log)
         scope.launch(Dispatchers.IO) { icons.load() }
         val bridge = MapsNavigationBridge(app, phone.state, scope, icons, log)
-        router = NotificationRouter(bridge, WhatsAppAlerts(alerts))
+        router = NotificationRouter(bridge, WhatsAppAlerts(alerts), { PhoneAccess.defaultDialer(app) }, alerts::phoneMissedRead)
         calls = CallMonitor(app, alerts, scope, log).also { it.start() }
         val tracker = RideTrackerImpl(app, scope, log).also { it.start() }
         status = phone

@@ -29,6 +29,13 @@ internal fun isMapsNavigation(sbn: StatusBarNotification): Boolean =
 
 internal fun isWhatsApp(sbn: StatusBarNotification): Boolean = sbn.packageName in WHATSAPP_PACKAGES
 
+/** `Notification.CATEGORY_MISSED_CALL` (API 30), by value so older SDK levels compile and match too. */
+private const val CATEGORY_MISSED_CALL_VALUE = "missed_call"
+
+/** The default phone app's missed-call notification ([dialer] is its package; null when unknown). */
+internal fun isPhoneMissedCall(sbn: StatusBarNotification, dialer: String?): Boolean =
+    dialer != null && sbn.packageName == dialer && sbn.notification?.category == CATEGORY_MISSED_CALL_VALUE
+
 private fun Bundle.text(key: String): String? = getCharSequence(key)?.toString()
 private fun Bundle.intOrNull(key: String): Int? = if (containsKey(key)) getInt(key) else null
 

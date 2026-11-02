@@ -53,6 +53,12 @@ class GattClient(
 
     @Volatile internal var pending: PendingOp? = null
 
+    /**
+     * An operation the stack started whose callback had not come when its caller gave up (a write past the
+     * queue's hard limit, say). The stack still holds it, so the next operation waits for that callback first.
+     */
+    @Volatile private var orphan: PendingOp? = null
+
     @Volatile private var gatt: BluetoothGatt? = null
 
     internal val linkState = MutableStateFlow<GattLink>(GattLink.Connecting)
@@ -119,12 +125,19 @@ class GattClient(
         return if (result.status == BluetoothGatt.GATT_SUCCESS) result.value else null
     }
 
-    /** One write with response (WRITE_TYPE_DEFAULT, docs 2.3); suspends until onCharacteristicWrite(). */
+    /**
+     * One write with response (WRITE_TYPE_DEFAULT, docs 2.3); suspends until onCharacteristicWrite(). A write
+     * the stack refuses to start (busy: API 33+ ERROR_GATT_WRITE_REQUEST_BUSY, older false) is [WriteOutcome.Busy].
+     */
     suspend fun write(characteristic: BluetoothGattCharacteristic, frame: ByteArray): WriteOutcome {
         val type = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+        var refused = "refused"
         val result = op(OpKind.WRITE, characteristic.uuid) { g ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                g.writeCharacteristic(characteristic, frame, type) == BluetoothStatusCodes.SUCCESS
+                val code = g.writeCharacteristic(characteristic, frame, type)
+                val busy = code == BluetoothStatusCodes.ERROR_GATT_WRITE_REQUEST_BUSY
+                refused = if (busy) "request busy" else "not started, code $code"
+                code == BluetoothStatusCodes.SUCCESS
             } else {
                 characteristic.writeType = type
                 @Suppress("DEPRECATION")
@@ -132,29 +145,50 @@ class GattClient(
                 @Suppress("DEPRECATION")
                 g.writeCharacteristic(characteristic)
             }
-        } ?: return WriteOutcome.Failed("write not started")
-        return if (result.status == BluetoothGatt.GATT_SUCCESS) {
-            WriteOutcome.Ok
-        } else {
-            WriteOutcome.Failed("status ${result.status}")
+        } ?: return WriteOutcome.Failed("not connected")
+        return when (result.status) {
+            BluetoothGatt.GATT_SUCCESS -> WriteOutcome.Ok
+            STATUS_NOT_STARTED -> WriteOutcome.Busy(refused)
+            STATUS_NO_CALLBACK -> WriteOutcome.TimedOut
+            else -> WriteOutcome.Failed("GATT error status ${result.status}")
         }
     }
 
+    /**
+     * Runs one operation and waits for its callback. Null when the link is down; [STATUS_NOT_STARTED] when the
+     * stack refused it; [STATUS_NO_CALLBACK] when no callback came (also for the previous [orphan]).
+     */
     private suspend fun op(kind: OpKind, uuid: UUID?, start: (BluetoothGatt) -> Boolean): OpResult? =
         opLock.withLock {
             val g = gatt
             if (g == null || link.value != GattLink.Connected || !BlePermissions.canConnect(context)) return null
+            if (!awaitOrphan()) return OpResult(STATUS_NO_CALLBACK)
             val deferred = CompletableDeferred<OpResult>()
-            pending = PendingOp(kind, uuid, deferred)
+            val op = PendingOp(kind, uuid, deferred)
+            pending = op
+            var started = false
             try {
-                if (guarded(kind.name) { start(g) } != true) return null
-                withTimeoutOrNull(OP_TIMEOUT_MS) { deferred.await() }.also {
-                    if (it == null) Log.w(TAG, "GATT ${kind.name} had no callback in $OP_TIMEOUT_MS ms")
+                if (guarded(kind.name) { start(g) } != true) return OpResult(STATUS_NOT_STARTED)
+                started = true
+                withTimeoutOrNull(OP_TIMEOUT_MS) { deferred.await() } ?: run {
+                    Log.w(TAG, "GATT ${kind.name} had no callback in $OP_TIMEOUT_MS ms")
+                    OpResult(STATUS_NO_CALLBACK)
                 }
             } finally {
-                pending = null
+                // Started but given up on (timeout or cancelled): keep it pending for its late callback.
+                if (started && !deferred.isCompleted) orphan = op else pending = null
             }
         }
+
+    /** Waits up to [OP_TIMEOUT_MS] for the [orphan]'s late callback; false when it still has not come. */
+    private suspend fun awaitOrphan(): Boolean {
+        val o = orphan ?: return true
+        val result = withTimeoutOrNull(OP_TIMEOUT_MS) { o.result.await() } ?: return false
+        Log.i(TAG, "Late GATT ${o.kind.name} callback, status ${result.status}")
+        orphan = null
+        pending = null
+        return true
+    }
 
     /** Completes the waiting operation when [kind] (and [uuid], if given) match. Called from GATT callbacks. */
     internal fun complete(kind: OpKind, uuid: UUID?, result: OpResult) {
@@ -197,6 +231,12 @@ class GattClient(
     companion object {
         /** Local reasons (not from the controller) use this status. */
         const val STATUS_LOCAL = -1
+
+        /** The stack refused to start the operation (busy). */
+        private const val STATUS_NOT_STARTED = -2
+
+        /** The operation's callback did not come in time. */
+        private const val STATUS_NO_CALLBACK = -3
         private const val OP_TIMEOUT_MS = 10_000L
         private const val NOTIFY_BUFFER = 64
     }

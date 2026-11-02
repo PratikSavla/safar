@@ -4,10 +4,8 @@ import android.util.Log
 import app.safar.core.BikeCatalog
 import app.safar.core.ClusterReading
 import app.safar.core.DebugLog
-import app.safar.core.LogKind
 import app.safar.protocol.GattUuids
 import app.safar.protocol.checksumModeFor
-import app.safar.protocol.messageType
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -73,7 +71,7 @@ internal class LinkRunner(
         listener: Listener,
     ): BikeSession {
         val write = FrameWriter { client.write(GattUuids.SERVICE, GattUuids.TX_CHARACTERISTIC, it) }
-        val queue = WriteQueue(write, TxLogger(log, client))
+        val queue = WriteQueue(write, TxLogger(log, client, now), clock = now)
         scope.launch { queue.run() }
         scope.coroutineContext.job.invokeOnCompletion { queue.close() }
         val config = SessionConfig(checksumModeFor(name), BikeCatalog.forBleName(name), target.firstConnection)
@@ -82,32 +80,5 @@ internal class LinkRunner(
         session.start()
         log.event("Session started", mapOf("bike" to name, "riderFrame" to if (target.firstConnection) "F" else "R"))
         return session
-    }
-}
-
-/** Logs every TX frame with its write result; [STALL_LIMIT] failed writes in a row mark the link lost. */
-private class TxLogger(private val log: DebugLog, private val client: GattPort) : WriteListener {
-    private var failuresInRow = 0
-
-    override fun onWritten(frame: ByteArray, outcome: WriteOutcome) {
-        val note = when (outcome) {
-            WriteOutcome.Ok -> null
-            WriteOutcome.TimedOut -> "write timeout"
-            is WriteOutcome.Failed -> "write failed: ${outcome.reason}"
-        }
-        log.frame(LogKind.TX, frame, ok = outcome == WriteOutcome.Ok, note = note)
-        failuresInRow = if (outcome == WriteOutcome.Ok) 0 else failuresInRow + 1
-        if (failuresInRow == STALL_LIMIT) {
-            log.event("Write queue stalled", mapOf("failures" to "$STALL_LIMIT"), error = true)
-            client.markLost(GattClient.STATUS_LOCAL, "$STALL_LIMIT writes failed in a row")
-        }
-    }
-
-    override fun onDropped(frame: ByteArray, reason: String) {
-        log.event("Frame dropped", mapOf("type" to messageType(frame).toString(), "reason" to reason))
-    }
-
-    companion object {
-        const val STALL_LIMIT = 5
     }
 }

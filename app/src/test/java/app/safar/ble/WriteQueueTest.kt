@@ -40,9 +40,11 @@ class WriteQueueTest {
 
     private class Recorder : WriteListener {
         val written = mutableListOf<Pair<ByteArray, WriteOutcome>>()
+        val infos = mutableListOf<WriteInfo>()
         val dropped = mutableListOf<Pair<ByteArray, String>>()
-        override fun onWritten(frame: ByteArray, outcome: WriteOutcome) {
+        override fun onWritten(frame: ByteArray, outcome: WriteOutcome, info: WriteInfo) {
             written += frame to outcome
+            infos += info
         }
         override fun onDropped(frame: ByteArray, reason: String) {
             dropped += frame to reason
@@ -121,16 +123,16 @@ class WriteQueueTest {
     }
 
     @Test
-    fun writeTimeoutIsReportedAndTheQueueMovesOn() = runTest {
+    fun writeTimeoutAtTheHardLimitIsReportedAndTheQueueMovesOn() = runTest {
         val stuck = CompletableDeferred<WriteOutcome>()
         var calls = 0
         val writer = FrameWriter { if (calls++ == 0) stuck.await() else WriteOutcome.Ok }
         val rec = Recorder()
-        val queue = WriteQueue(writer, rec, timeoutMs = 1_500)
+        val queue = WriteQueue(writer, rec)
         val job = launch { queue.run() }
         queue.offer(call("Alex"))
         queue.offer(status(1))
-        advanceTimeBy(1_499)
+        advanceTimeBy(WriteQueue.WRITE_HARD_LIMIT_MS - 1)
         assertTrue(rec.written.isEmpty())
         advanceTimeBy(2)
         runCurrent()

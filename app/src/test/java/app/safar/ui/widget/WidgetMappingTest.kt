@@ -23,46 +23,62 @@ class WidgetMappingTest {
     )
 
     @Test
-    fun `connected bike fills odometer, trip, bars, range and a clock-time footer`() {
+    fun `connected bike fills odometer, trip, bars and range, with a calm footer`() {
         val bike = BikeState(link = LinkState.Connected, saved = saved, cluster = FuelFixtures.cluster(12_301, 2))
         val s = widgetSnapshot(bike, NavState(), FuelFixtures.FUEL_UPS, Settings(), FuelFixtures.NOW, zone)
         assertEquals("V-Strom SX", s.model)
-        assertEquals("linked" to WidgetTone.MOSS, s.link to s.tone)
+        assertEquals("connected" to WidgetTone.MOSS, s.link to s.tone)
         assertEquals("12,301", s.odometer)
         assertEquals("84.6", s.tripA)
         assertEquals(2, s.bars)
         assertEquals(6, s.barsMax)
-        assertEquals("fuel-ups", s.rangeSource)
-        assertEquals("bike · 12:00", s.footer)
+        assertNull(s.rangeNote)
+        assertEquals("Ready to ride", s.footer)
         assertNull(s.turn)
+        assertEquals("Safar, V-Strom SX: Connected. Odometer 12,301 km, Trip A 84.6 km. Range ${s.range.replace("≈", "about ")} km.", s.description)
+        val dev = widgetSnapshot(bike, NavState(), FuelFixtures.FUEL_UPS, Settings(developerMode = true), FuelFixtures.NOW, zone)
+        assertEquals("bike · 12:00", dev.footer)
     }
 
     @Test
     fun `no bike shows placeholders`() {
         val s = widgetSnapshot(BikeState(), NavState(), emptyList(), Settings(), FuelFixtures.NOW, zone)
         assertEquals(WidgetSnapshot.Empty, s)
+        assertEquals("new", s.link)
+        assertEquals("Open Safar to pair your bike", s.footer)
+        assertEquals("Safar, your bike: Not set up yet.", s.description)
     }
 
     @Test
-    fun `a disconnected bike reads as last seen`() {
+    fun `a disconnected bike reads as from the last ride`() {
         val bike = BikeState(link = LinkState.Reconnecting(2, 0), saved = saved, lastCluster = FuelFixtures.cluster(12_250, 3))
         val s = widgetSnapshot(bike, NavState(), emptyList(), Settings(), FuelFixtures.NOW, zone)
-        assertEquals("reconnecting" to WidgetTone.AMBER, s.link to s.tone)
-        assertEquals("last seen on bike · 12:00", s.footer)
-        assertEquals("rough · bars", s.rangeSource)
+        assertEquals("waiting" to WidgetTone.AMBER, s.link to s.tone)
+        assertEquals("From your last ride", s.footer)
+        assertEquals("rough guess", s.rangeNote)
+        val dev = widgetSnapshot(bike, NavState(), emptyList(), Settings(developerMode = true), FuelFixtures.NOW, zone)
+        assertEquals("last seen on bike · 12:00", dev.footer)
+        val connectedNoReading = BikeState(link = LinkState.Connected, saved = saved)
+        assertEquals("Waiting for the bike", widgetFooter(connectedNoReading, FuelFixtures.NOW, zone, developer = false))
     }
 
     @Test
     fun `next turn while navigating`() {
         assertEquals(WidgetTurn(1, "Turn left", "850 m"), widgetTurn(nav(1, 846)))
         assertEquals("Arrived", widgetTurn(nav(45, 0, NavStatusCode.ARRIVED))?.text)
-        assertEquals("Waiting for Google Maps…", widgetTurn(NavState(active = true, waiting = true))?.text)
+        assertEquals("Waiting for Google Maps", widgetTurn(NavState(active = true, waiting = true))?.text)
+        assertEquals(
+            "Safar, V-Strom SX: Connected. Odometer 12,301 km. Next: Turn left in 850 m.",
+            widgetDescription("V-Strom SX", "Connected", "12,301", "—", "—", widgetTurn(nav(1, 846))),
+        )
         assertNull(widgetTurn(NavState()))
     }
 
     @Test
     fun `link words and bar heights`() {
         assertEquals("bluetooth off" to WidgetTone.RUST, linkWord(LinkState.BluetoothOff))
+        assertEquals("looking" to WidgetTone.SLATE, linkWord(LinkState.Searching))
+        assertEquals("offline" to WidgetTone.RUST, linkWord(LinkState.Idle, hasSavedBike = true))
         assertEquals("connecting" to WidgetTone.SLATE, linkWord(LinkState.Connecting("SBM01A1B2C3D")))
         val h = widgetBarHeights(5, 30f)
         assertEquals(5, h.size)

@@ -69,7 +69,7 @@ private fun MapCaption(fixes: Int, bar: ScaleBar?) {
     val c = Atlas.colors
     val style = Atlas.type.src.copy(color = c.ink3, fontSize = Atlas.type.src.fontSize * 0.9f)
     Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        val caption = if (fixes == 0) NO_ROUTE else byMode(null, "phone GPS · $fixes fixes")
+        val caption = if (fixes == 0) NO_ROUTE else byMode(null, "phone GPS · $fixes points kept")
         BasicText(caption.orEmpty(), Modifier.weight(1f), style = style)
         if (bar != null) {
             val w = with(LocalDensity.current) { bar.px.toDp() }

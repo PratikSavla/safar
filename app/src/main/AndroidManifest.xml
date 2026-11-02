@@ -17,7 +17,13 @@
     <uses-permission
         android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30" />
+    <!-- API 31+ grants fine location only together with coarse. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- BLE / service / log part: end -->
 
     <application
@@ -39,6 +45,11 @@
         </activity>
 
         <!-- BLE / service / log part: begin -->
+        <!-- Keeps the bike link alive (app.safar.service). Types are chosen at start from granted permissions. -->
+        <service
+            android:name=".service.SafarService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice|location" />
         <!-- Debug log export (app.safar.log): shares cache/exports/*.jsonl with the share sheet. -->
         <provider
             android:name="androidx.core.content.FileProvider"

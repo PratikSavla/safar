@@ -11,6 +11,7 @@ import app.safar.core.PhoneSnapshot
 import app.safar.log.AppLog
 import app.safar.log.LogFileStore
 import app.safar.protocol.LogHeaderInfo
+import app.safar.service.ServiceController
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -22,9 +23,9 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Wires the debug log and the BLE layer into [AppContainer] (log, bike, outbox). Call once from
- * `SafarApp.onCreate`, after `DataModule.install`. Navigation, alerts and phone status are installed later by
- * the phone layer, so they are read when a session starts, not here.
+ * Wires the debug log and the BLE layer into [AppContainer] (log, bike, outbox) and starts the foreground
+ * service controller. Call once from `SafarApp.onCreate`, after `DataModule.install`. Navigation, alerts and
+ * phone status are installed later by the phone layer, so they are read when a session starts, not here.
  */
 object BleModule {
     private val installed = AtomicBoolean(false)
@@ -51,6 +52,7 @@ object BleModule {
         AppContainer.bike = manager
         AppContainer.outbox = manager
         manager.start()
+        ServiceController.start(app, manager.state, log, scope)
         log.event("App started", mapOf("version" to BuildConfig.VERSION_NAME))
     }
 

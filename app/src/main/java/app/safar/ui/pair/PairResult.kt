@@ -86,7 +86,11 @@ internal fun PairSuccess(ui: PairUi, onDone: () -> Unit) {
             },
             style = Atlas.type.lede.copy(color = c.ink2, textAlign = TextAlign.Center),
         )
-        Note("Next time, Safar connects by itself when you turn the key.")
+        // Centred like the lines above it, so the block reads as one when it wraps at a large font scale.
+        BasicText(
+            "Next time, Safar connects by itself when you turn the key.",
+            style = Atlas.type.note.copy(color = c.ink2, textAlign = TextAlign.Center),
+        )
         PrimaryButton("Go to Today", onDone, Modifier.fillMaxWidth().padding(top = 18.dp), icon = AtlasIcons.arrow)
     }
 }

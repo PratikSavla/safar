@@ -1,5 +1,6 @@
 package app.safar.baselineprofile
 
+import android.os.SystemClock
 import android.util.Log
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.platform.app.InstrumentationRegistry
@@ -16,6 +17,7 @@ import java.util.regex.Pattern
 private const val TAG = "SafarJourneys"
 private const val WAIT_MS = 5_000L
 private const val START_WAIT_MS = 10_000L
+private const val POLL_MS = 100L
 
 /** Package under test, passed by the Gradle build as `targetAppId`. */
 val targetPackage: String
@@ -28,7 +30,7 @@ private fun tab(label: String): BySelector = By.desc(Pattern.compile("^${Pattern
 fun MacrobenchmarkScope.startToHome() {
     pressHome()
     startActivityAndWait()
-    if (device.wait(Until.hasObject(By.text("Begin")), START_WAIT_MS)) {
+    if (awaitOnboardingOrToday()) {
         completeOnboarding()
         // Onboarding ends on the pairing page; with no bike nearby the next launch opens Today.
         killProcess()
@@ -36,6 +38,17 @@ fun MacrobenchmarkScope.startToHome() {
         startActivityAndWait()
     }
     check(device.wait(Until.hasObject(tab("Today")), START_WAIT_MS)) { "Today did not open" }
+}
+
+/** Waits for whichever first screen appears: true for onboarding ("Begin"), false for Today or on timeout. */
+private fun MacrobenchmarkScope.awaitOnboardingOrToday(): Boolean {
+    val deadline = SystemClock.uptimeMillis() + START_WAIT_MS
+    while (SystemClock.uptimeMillis() < deadline) {
+        if (device.hasObject(tab("Today"))) return false
+        if (device.hasObject(By.text("Begin"))) return true
+        SystemClock.sleep(POLL_MS)
+    }
+    return false
 }
 
 private fun MacrobenchmarkScope.completeOnboarding() {

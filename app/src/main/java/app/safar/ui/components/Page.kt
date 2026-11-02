@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
@@ -24,7 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -42,7 +42,8 @@ import app.safar.ui.theme.Atlas
 
 /**
  * Atlas page frame: paper, contour layer, edge-to-edge scrolling content padded clear of the
- * system bars and the keyboard, a paper scrim under the status bar, and an optional bottom bar
+ * system bars, a scroll viewport that ends above the keyboard (the window is edge-to-edge, so
+ * adjustResize no longer shrinks it), a paper scrim under the status bar, and an optional bottom bar
  * (the ticket-stub tabs). [overlay] draws above everything (sheets, toasts).
  */
 @Composable
@@ -63,6 +64,7 @@ fun AtlasPage(
             Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                .imePadding()
                 .verticalScroll(scrollState)
                 .padding(top = statusTop + 8.dp, start = pad, end = pad),
         ) {
@@ -78,11 +80,14 @@ fun AtlasPage(
     }
 }
 
-/** Space after the last item: clears the tabs (if any), the gesture bar and the keyboard. */
+/**
+ * Space after the last item: clears the tabs (if any) and the gesture bar. The keyboard is
+ * cleared by the page's imePadding, which consumes the nav-bar inset while the keyboard is open.
+ */
 @Composable
 private fun BottomClearance(tabs: Boolean) {
-    val insets = WindowInsets.navigationBars.union(WindowInsets.ime).asPaddingValues().calculateBottomPadding()
-    Spacer(Modifier.height(insets + if (tabs) 104.dp else 40.dp))
+    Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+    Spacer(Modifier.height(if (tabs) 104.dp else 40.dp))
 }
 
 /**

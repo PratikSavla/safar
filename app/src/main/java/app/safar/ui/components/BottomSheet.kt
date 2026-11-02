@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -94,6 +95,7 @@ private fun SheetBody(maxHeightDp: Float, title: String?, onDismiss: () -> Unit,
                 if (title != null) paneTitle = title
                 onClick("Close sheet") { onDismiss(); true }
             }
+            .imePadding() // paper runs behind the keyboard, the fields scroll above it
             .verticalScroll(rememberScrollState())
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(start = Atlas.dimens.pad, end = Atlas.dimens.pad, top = 30.dp, bottom = 28.dp),

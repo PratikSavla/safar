@@ -50,6 +50,32 @@ class ProtocolTest {
     }
 
     @Test
+    fun `call frames match bytes decoded from the original app`() {
+        assertEquals(
+            "a5 32 4a 4f 48 4e 20 44 4f 45 00 00 00 00 00 00 00 00 00 00 00 00 4e 31 ff ff ff ff d4 7f",
+            toHex(encodeCall("JOHN DOE", CallStatus.RINGING, MessageSource.PHONE, ChecksumMode.SUM)),
+        )
+        assertEquals(0x32, encodeCall("JOHN DOE", CallStatus.ANSWERED, MessageSource.PHONE, ChecksumMode.SUM).u8(23))
+        assertEquals(
+            "a5 34 ff 01 4a 4f 48 4e 20 44 4f 45 00 00 00 00 00 00 00 00 00 00 00 00 4e ff ff ff a6 7f",
+            toHex(encodeMissedCall("JOHN DOE", 1, MessageSource.PHONE, ChecksumMode.SUM)),
+        )
+        assertEquals(
+            "a5 35 ff 59 01 4a 4f 48 4e 20 44 4f 45 00 00 00 00 00 00 00 00 00 00 00 00 57 ff ff 0a 7f",
+            toHex(encodeMessage("JOHN DOE", 1, MessageSource.WHATSAPP, ChecksumMode.SUM)),
+        )
+    }
+
+    @Test
+    fun `names are cleaned and cut to 19 characters`() {
+        assertEquals("Ravi Work", sanitizeName("Ravi \uD83D\uDE00 (Work)"))
+        assertEquals("001234567890", sanitizeName("+00 12345 67890"))
+        assertEquals("ABCDEFGHIJKLMNOPQRS", sanitizeName("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+        val frame = encodeCall("ABCDEFGHIJKLMNOPQRSTUVWXYZ", CallStatus.RINGING, MessageSource.PHONE, ChecksumMode.SUM)
+        assertEquals(30, frame.size)
+    }
+
+    @Test
     fun `distance and ETA use the cluster text format`() {
         assertEquals(Distance("0250", DistanceUnit.METRES), formatDistance(248))
         assertEquals(Distance("01.2", DistanceUnit.KILOMETRES), formatDistance(1234))
@@ -90,6 +116,34 @@ class ProtocolTest {
         )
         assertEquals(46, frame.u8(2))
         assertEquals('4', frame.u8(23).toChar())
+    }
+
+    @Test
+    fun `phone status frame layout`() {
+        val frame = encodePhoneStatus(
+            PhoneStatus(
+                batteryPercent = 60,
+                charging = true,
+                speedAlertKmh = 0,
+                signalBars = 2,
+                time = LocalTime.of(23, 18, 37),
+                messagesCleared = false,
+                missedCallsCleared = true,
+            ),
+            ChecksumMode.SUM,
+        )
+        assertEquals("32Y", ascii(frame, 1, 4))
+        assertEquals(listOf(0xFF, 0xFF, 0xFF), listOf(frame.u8(4), frame.u8(5), frame.u8(6)))
+        assertEquals("2111837NY", ascii(frame, 7, 16))
+        assertEquals(true, validateFrame(frame, ChecksumMode.SUM).ok)
+    }
+
+    @Test
+    fun `rider frame layout`() {
+        val frame = encodeRider("Rider", true, ChecksumMode.SUM)
+        assertEquals("6Rider", ascii(frame, 1, 7))
+        assertEquals(0xFF, frame.u8(22))
+        assertEquals('F', frame.u8(27).toChar())
     }
 
     @Test

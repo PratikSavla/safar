@@ -1,5 +1,8 @@
 package app.safar.phone
 
+import app.safar.data.GpsFix
+import app.safar.data.haversineM
+
 // Phone GPS ride rules: moving hysteresis and trip start/end (docs 12.4 E5, E7; UX rule 3). Pure Kotlin.
 
 /** Above this the phone is moving and text input locks (UX rule 3). */
@@ -137,4 +140,19 @@ fun keepTrip(distanceKm: Double): Boolean = distanceKm >= MIN_TRIP_KM
 fun tripDistanceKm(gpsKm: Double, odoStartKm: Int?, odoEndKm: Int?): Double {
     if (gpsKm > 0.0 || odoStartKm == null || odoEndKm == null) return gpsKm
     return (odoEndKm - odoStartKm).coerceAtLeast(0).toDouble()
+}
+
+/** Highest GPS speed taken as real. */
+const val MAX_GPS_KMH = 250f
+
+/**
+ * Speed from two fixes when the provider gave none: distance over time, for fixes 0.5..10 s apart. Null when
+ * the gap is out of range or the result is not plausible.
+ */
+fun fallbackSpeedKmh(previous: GpsFix?, fix: GpsFix): Float? {
+    val prev = previous ?: return null
+    val dt = fix.atMillis - prev.atMillis
+    if (dt !in 500L..10_000L) return null
+    val kmh = (haversineM(prev, fix) / dt * 3600.0).toFloat()
+    return kmh.takeIf { it <= MAX_GPS_KMH }
 }

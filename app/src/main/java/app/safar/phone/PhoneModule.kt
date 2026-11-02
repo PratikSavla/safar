@@ -26,6 +26,7 @@ object PhoneModule {
 
     private var status: PhoneStatusMonitor? = null
     private var calls: CallMonitor? = null
+    private var ride: RideTrackerImpl? = null
 
     /** The Maps bridge with its debug extras (learnIcon, lastUnmatched); also `AppContainer.navigation`. */
     @Volatile
@@ -45,12 +46,15 @@ object PhoneModule {
         val bridge = MapsNavigationBridge(app, phone.state, scope, icons, log)
         router = NotificationRouter(bridge, WhatsAppAlerts(alerts))
         calls = CallMonitor(app, alerts, scope, log).also { it.start() }
+        val tracker = RideTrackerImpl(app, scope, log).also { it.start() }
         status = phone
         maps = bridge
+        ride = tracker
 
         AppContainer.navigation = bridge
         AppContainer.alerts = alerts
         AppContainer.phone = phone
+        AppContainer.ride = tracker
         (app as? Application)?.registerActivityLifecycleCallbacks(ResumeRefresher)
     }
 
@@ -58,6 +62,7 @@ object PhoneModule {
     fun refresh() {
         status?.refresh()
         calls?.refresh()
+        ride?.refresh()
     }
 
     private object ResumeRefresher : Application.ActivityLifecycleCallbacks {

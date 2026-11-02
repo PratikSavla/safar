@@ -79,8 +79,8 @@ internal fun ServiceItemCard(row: ServiceRowUi, onDone: () -> Unit, onInterval: 
         ServiceRoad(row, accent)
         Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 22.dp, top = 2.dp)) {
             val mono = Atlas.type.src.copy(color = c.ink3, fontSize = Atlas.type.src.fontSize * 0.9f)
-            BasicText(Formatters.odometer(row.fromKm), Modifier.weight(1f), style = mono)
-            BasicText(Formatters.odometer(row.toKm), style = mono)
+            BasicText("${Formatters.odometer(row.fromKm)} km", Modifier.weight(1f), style = mono)
+            BasicText("${Formatters.odometer(row.toKm)} km", style = mono)
         }
         BasicText(
             row.line,
@@ -108,7 +108,7 @@ private fun ServiceRoad(row: ServiceRowUi, accent: Color) {
     val overdue = row.status.state == ServiceState.OVERDUE
     val onScreen = rememberOnScreen()
     val blink = if (overdue) rememberLoopPhase(1200, "svcBlink", running = onScreen.visible) else null
-    val spoken = "${(row.drawn * 100).roundToInt()} percent of the way to the next service"
+    val spoken = "${(row.drawn * 100).roundToInt()} percent of the way from the last service to the next"
     Box(Modifier.fillMaxWidth().height(26.dp).padding(start = 4.dp).clearAndSetSemantics { contentDescription = spoken }) {
         Canvas(Modifier.fillMaxWidth().height(26.dp).padding(end = 22.dp).then(if (overdue) onScreen.modifier.graphicsLayer() else Modifier)) {
             val y = 12.dp.toPx() + 1.25.dp.toPx()

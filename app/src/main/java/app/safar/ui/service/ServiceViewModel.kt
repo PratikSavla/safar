@@ -41,15 +41,15 @@ class ServiceViewModel(
     fun markDone(id: Long) {
         val item = item(id) ?: return
         val odo = markDoneOdo(state.value.odo, item)
-        launchLogged(TAG, "mark done of service item $id", { notices.post("Could not log the service") }) {
+        launchLogged(TAG, "mark done of service item $id", { notices.post("Couldn’t save that. Try again.") }) {
             service.markDone(id, odo, now())
-            notices.post("${item.label} logged at ${Formatters.odometer(odo)} km")
+            notices.post("${item.label} done at ${Formatters.odometer(odo)} km")
         }
     }
 
     fun setInterval(id: Long, everyKm: Int) {
         val item = item(id) ?: return
-        launchLogged(TAG, "interval of service item $id", { notices.post("Could not save the interval") }) {
+        launchLogged(TAG, "interval of service item $id", { notices.post("Couldn’t save the interval. Try again.") }) {
             service.upsert(item.copy(everyKm = everyKm))
             notices.post("${item.label}: every ${Formatters.odometer(everyKm)} km")
         }
@@ -61,7 +61,7 @@ class ServiceViewModel(
         // Never count from a made-up 0 km: it reads as massively overdue once the real odometer is known.
         val odo = state.value.odo.km ?: return
         val item = ServiceItem(label = clean, everyKm = everyKm, lastDoneOdoKm = odo, lastDoneMillis = now(), icon = ServiceIcon.GENERIC)
-        launchLogged(TAG, "add of service item", { notices.post("Could not add the item") }) {
+        launchLogged(TAG, "add of service item", { notices.post("Couldn’t add the item. Try again.") }) {
             service.upsert(item)
             notices.post("$clean added, counted from ${Formatters.odometer(odo)} km")
         }
@@ -69,14 +69,14 @@ class ServiceViewModel(
 
     fun delete(id: Long) {
         val item = item(id) ?: return
-        launchLogged(TAG, "delete of service item $id", { notices.post("Could not remove the item") }) {
+        launchLogged(TAG, "delete of service item $id", { notices.post("Couldn’t remove the item. Try again.") }) {
             service.delete(id)
             notices.post("${item.label} removed")
         }
     }
 
     fun setReminders(on: Boolean) {
-        launchLogged(TAG, "service reminder switch", { notices.post("Could not save the setting") }) {
+        launchLogged(TAG, "service reminder switch", { notices.post("Couldn’t save the setting. Try again.") }) {
             settings.update { it.copy(serviceReminders = on) }
         }
     }

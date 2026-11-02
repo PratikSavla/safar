@@ -41,15 +41,15 @@ private const val NEW_ITEM_KM = 1000
 @Composable
 private fun IntervalStepper(km: Int, onChange: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        AtlasButton("", { onChange(stepInterval(km, -1)) }, Modifier.width(56.dp).semantics { contentDescription = "Less" }, ButtonTone.GHOST, AtlasIcons.minus)
+        AtlasButton("", { onChange(stepInterval(km, -1)) }, Modifier.width(56.dp).semantics { contentDescription = "Shorter interval" }, ButtonTone.GHOST, AtlasIcons.minus)
         NumberWithUnit(
             Formatters.odometer(km), "km",
             Atlas.type.numberLarge.copy(fontSize = Atlas.type.numberLarge.fontSize * 0.93f, textAlign = TextAlign.Center),
             Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
         )
-        AtlasButton("", { onChange(stepInterval(km, +1)) }, Modifier.width(56.dp).semantics { contentDescription = "More" }, ButtonTone.GHOST, AtlasIcons.plus)
+        AtlasButton("", { onChange(stepInterval(km, +1)) }, Modifier.width(56.dp).semantics { contentDescription = "Longer interval" }, ButtonTone.GHOST, AtlasIcons.plus)
     }
-    Note("Steps of ${Formatters.odometer(intervalStep(km))} km. Counted from the odometer at the last service.")
+    Note("Steps of ${Formatters.odometer(intervalStep(km))} km. Counted from your odometer at the last service.")
 }
 
 /** Change an item's interval, or remove the item (service.js `editSheet`). */

@@ -29,12 +29,16 @@ import app.safar.ui.components.EmptyState
 import app.safar.ui.components.Kicker
 import app.safar.ui.components.NumberWithUnit
 import app.safar.ui.components.SectionHeader
-import app.safar.ui.components.SourceLine
+import app.safar.ui.components.DeveloperLine
+import app.safar.ui.components.Freshness
+import app.safar.ui.components.Note
+import app.safar.ui.components.developerMode
 import app.safar.ui.components.SwitchRow
 import app.safar.ui.components.TextAction
 import app.safar.ui.components.TopoTransform
 import app.safar.ui.components.rememberToastState
 import app.safar.ui.format.Formatters
+import app.safar.ui.format.ValueSource
 import app.safar.ui.nav.Navigator
 import app.safar.ui.service.preview.ServicePreviewData
 import app.safar.ui.theme.Atlas
@@ -84,7 +88,7 @@ fun ServiceContent(state: ServiceUiState, toast: AtlasToastState, actions: Servi
         BackTopBar("Service · by odometer", "The logbook", actions.onBack, titleEm = titleTail(state.needYou))
         OdometerNow(state.odo)
         if (state.rows.isEmpty() && !state.loading) {
-            EmptyState("No service items yet.", Modifier.padding(top = 18.dp), message = "Pair the bike to start the default list, or add your own.")
+            EmptyState("No service items yet.", Modifier.padding(top = 18.dp), message = "Pair your bike to get the usual list, or add your own.")
         }
         Column {
             state.rows.forEach { row ->
@@ -92,13 +96,13 @@ fun ServiceContent(state: ServiceUiState, toast: AtlasToastState, actions: Servi
                 ServiceItemCard(row, onDone = { actions.onDone(id) }, onInterval = { editing = id })
             }
         }
-        TextAction("Add a custom item", { adding = true }, Modifier.padding(top = 14.dp), icon = AtlasIcons.plus)
+        TextAction("Add your own item", { adding = true }, Modifier.padding(top = 14.dp), icon = AtlasIcons.plus)
         SectionHeader("Reminders")
         SwitchRow("Service reminders", state.reminders, actions.onReminders, subtitle = "A notification when an item is due soon or overdue")
     }
 }
 
-/** "Odometer now 12,301 km" with its source (`.odo-now`). */
+/** "Odometer now 12,301 km" (`.odo-now`): nothing more while the bike reading is fresh, else where it came from. */
 @Composable
 private fun OdometerNow(odo: OdoNowUi) {
     val c = Atlas.colors
@@ -111,7 +115,20 @@ private fun OdometerNow(odo: OdoNowUi) {
             Kicker("Odometer now", Modifier.padding(bottom = 6.dp))
             NumberWithUnit(odo.km?.let(Formatters::odometer) ?: "—", "km", Atlas.type.numberSmall.copy(fontSize = Atlas.type.numberSmall.fontSize * 1.12f))
         }
-        if (odo.atMillis != null) SourceLine(odo.source, odo.atMillis) else SourceLine(odo.source)
+        OdometerNote(odo)
+    }
+}
+
+@Composable
+private fun OdometerNote(odo: OdoNowUi) {
+    if (odo.from == OdoFrom.BIKE || odo.from == OdoFrom.LAST_RIDE) {
+        Freshness(ValueSource.BIKE, odo.atMillis, connected = odo.live)
+        return
+    }
+    if (developerMode()) {
+        DeveloperLine("↳ ${odo.from.developer}")
+    } else {
+        odoNote(odo)?.let { Note(it) }
     }
 }
 

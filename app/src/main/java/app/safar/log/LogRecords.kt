@@ -9,6 +9,7 @@ import app.safar.protocol.logDetail
 import app.safar.protocol.messageType
 import app.safar.protocol.toHex
 import java.time.Instant
+import java.util.Locale
 
 /** Row title of a frame in the log screen, by message type (docs README "Message types"). */
 fun frameLabel(type: Char): String = when (type) {
@@ -19,7 +20,7 @@ fun frameLabel(type: Char): String = when (type) {
     '5' -> "Message"
     '6' -> "Rider"
     '7' -> "Cluster"
-    else -> "Frame 0x%02x".format(type.code)
+    else -> "Frame 0x%02x".format(Locale.ROOT, type.code)
 }
 
 /** Detail key that marks an error event in the JSON Lines file. */

@@ -6,8 +6,8 @@ import app.safar.data.haversineM
 import app.safar.data.latLngQuery
 import app.safar.ui.format.Formatters
 import app.safar.ui.format.FreshnessText
+import app.safar.ui.format.ValueSource
 import java.time.ZoneId
-import java.util.Locale
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.max
@@ -57,8 +57,12 @@ fun placeName(spot: ParkedSpot): String = spotLabel(spot) ?: "Your parked spot"
 
 private fun spotLabel(spot: ParkedSpot): String? = spot.label?.takeIf { it.isNotBlank() }
 
-/** Developer mode only: "18.50000, 73.80000". */
-fun coordinates(spot: ParkedSpot): String = String.format(Locale.US, "%.5f, %.5f", spot.lat, spot.lng)
+/**
+ * Under the distance, once the phone's own fix is stale: "Your location: last seen 2 min ago", so it never reads
+ * as the bike's age. Null while the fix is fresh.
+ */
+fun phoneFixNote(fixAtMillis: Long, nowMillis: Long, zone: ZoneId = ZoneId.systemDefault()): String? =
+    FreshnessText.note(ValueSource.PHONE_GPS, fixAtMillis, nowMillis, zone = zone)?.let { "Your location: ${it.replaceFirstChar(Char::lowercase)}" }
 
 /** "Parked 12 min ago", "Parked today, 14:05", "Parked yesterday, 18:40": never seconds. */
 fun parkedAgo(atMillis: Long, nowMillis: Long, zone: ZoneId = ZoneId.systemDefault()): String =

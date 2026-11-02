@@ -98,7 +98,7 @@ private fun share(context: Context, spot: ParkedSpot): Boolean {
 @Composable
 fun ParkedContent(state: ParkedUiState, toast: AtlasToastState, actions: ParkedActions) {
     AtlasPage(topo = TopoTransform.Quiet, overlay = { AtlasToastHost(toast, bottomPadding = 40.dp) }) {
-        BackTopBar("Parked · saved automatically", "Where you", actions.onBack, titleEm = " left it.")
+        BackTopBar("Parked", "Where you", actions.onBack, titleEm = " left it.")
         val spot = state.spot
         if (spot == null) {
             if (!state.loading) NoSpot(state, actions)

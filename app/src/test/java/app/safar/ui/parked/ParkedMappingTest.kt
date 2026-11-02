@@ -78,7 +78,6 @@ class ParkedMappingTest {
     fun `place falls back to plain words and share text carries a maps link`() {
         val unnamed = spot.copy(label = null)
         assertEquals("Your parked spot", placeName(unnamed))
-        assertEquals("18.50000, 73.80000", coordinates(unnamed))
         assertEquals(
             "My bike is parked here: Main Rd\nhttps://www.google.com/maps/search/?api=1&query=18.500000,73.800000",
             shareText(spot),
@@ -95,6 +94,8 @@ class ParkedMappingTest {
         assertEquals("Parked under a minute ago", parkedAgo(1_000, 31_000, ZoneOffset.UTC))
         assertEquals("Parked 12 min ago", parkedAgo(1_000, 1_000 + 12 * 60_000L, ZoneOffset.UTC))
         assertEquals("to the north-east", directionText(44))
+        assertNull(phoneFixNote(1_000, 5_000, ZoneOffset.UTC), "nothing while the phone's fix is fresh")
+        assertEquals("Your location: last seen 12 min ago", phoneFixNote(1_000, 1_000 + 12 * 60_000L, ZoneOffset.UTC))
         assertEquals("Compass. Waiting for your phone’s location.", compassDescription(parkedUiState(spot, null, null, true)))
         val near = parkedUiState(spot, GpsFix(18.5000, 73.8000, 2_000, 5f), null, true)
         assertEquals("You’re at your bike.", compassDescription(near))

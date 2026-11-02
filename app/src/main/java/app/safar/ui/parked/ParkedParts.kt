@@ -22,6 +22,7 @@ import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.CardStyle
 import app.safar.ui.components.DisplayTitle
 import app.safar.ui.components.Freshness
+import app.safar.ui.components.FreshnessNote
 import app.safar.ui.components.InkButton
 import app.safar.ui.components.Note
 import app.safar.ui.components.Stamp
@@ -39,14 +40,14 @@ import kotlin.math.roundToInt
 private const val ACCURACY_FULL_M = 25f
 
 /**
- * "Parked 2 h ago"; Developer mode: "↳ phone GPS · 2 h ago · ±8 m · 18.50000, 73.80000". Its own scope, so a clock
+ * "Parked 2 h ago"; Developer mode: "↳ phone GPS · 2 h ago · ±8 m". Its own scope, so a clock
  * tick recomposes this line only, and in normal mode only when the words change.
  */
 @Composable
 private fun ParkedAge(spot: ParkedSpot) {
     val style = Atlas.type.src.copy(color = Atlas.colors.ink3)
     if (developerMode()) {
-        BasicText("↳ phone GPS · ${liveAge(spot.atMillis)} · ±${spot.accuracyM.roundToInt()} m · ${coordinates(spot)}", style = style)
+        BasicText("↳ phone GPS · ${liveAge(spot.atMillis)} · ±${spot.accuracyM.roundToInt()} m", style = style)
         return
     }
     val zone = remember { ZoneId.systemDefault() }
@@ -89,8 +90,21 @@ internal fun CompassBlock(state: ParkedUiState, actions: ParkedActions) {
             }
         }
         val fixAt = state.phoneFix?.atMillis
-        if (fixAt != null) Freshness(ValueSource.PHONE_GPS, fixAt, Modifier.padding(top = 4.dp))
+        if (fixAt != null) PhoneFixAge(fixAt)
     }
+}
+
+/** How old the phone's own position is, said as such; the exact age in Developer mode. Nothing while fresh. */
+@Composable
+private fun PhoneFixAge(fixAt: Long) {
+    if (developerMode()) {
+        Freshness(ValueSource.PHONE_GPS, fixAt, Modifier.padding(top = 4.dp))
+        return
+    }
+    val zone = remember { ZoneId.systemDefault() }
+    val now = rememberNow()
+    val note by remember(fixAt, now) { derivedStateOf { phoneFixNote(fixAt, now.value, zone) } }
+    note?.let { FreshnessNote(it, Modifier.padding(top = 4.dp)) }
 }
 
 /** Accuracy ring and how to hold the phone (`.acc`). */

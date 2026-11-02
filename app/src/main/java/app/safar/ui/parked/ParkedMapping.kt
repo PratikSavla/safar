@@ -87,6 +87,18 @@ fun parkedUiState(spot: ParkedSpot?, fix: GpsFix?, heading: Float?, locationAllo
     )
 }
 
+/** The oldest phone fix "park here" accepts; the same limit the automatic save at disconnect uses. */
+const val PARK_HERE_MAX_AGE_MS = 10 * 60_000L
+
+/**
+ * The fix to save as the parked spot, or null when [fix] is missing or older than [PARK_HERE_MAX_AGE_MS] (a stale
+ * last-known location from somewhere else). The spot keeps the fix's own time, so its age reads true.
+ */
+fun parkHereSpot(fix: GpsFix?, nowMillis: Long): ParkedSpot? {
+    val f = fix?.takeIf { nowMillis - it.atMillis <= PARK_HERE_MAX_AGE_MS } ?: return null
+    return ParkedSpot(f.lat, f.lng, f.accuracyM ?: 0f, minOf(f.atMillis, nowMillis), label = null)
+}
+
 /** The rotation to animate to: [target] reached from [current] the short way round (no 350 -> 10 spin). */
 fun shortestRotation(current: Float, target: Float): Float {
     val delta = ((target - current) % 360 + 540) % 360 - 180

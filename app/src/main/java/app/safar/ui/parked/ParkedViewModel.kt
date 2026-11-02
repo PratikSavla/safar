@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import app.safar.core.NavigationBridge
 import app.safar.data.GpsFix
 import app.safar.data.ParkedRepository
-import app.safar.data.ParkedSpot
 import app.safar.data.latLngQuery
 import app.safar.ui.vm.Notices
 import app.safar.ui.vm.launchLogged
@@ -61,10 +60,14 @@ class ParkedViewModel(
         notices.post("Opening Google Maps…")
     }
 
-    /** "I moved the bike: park here" with the phone's current fix. */
+    /** "I moved the bike: park here" with the phone's current fix, if it is fresh enough. */
     fun parkHere() {
         val f = state.value.phoneFix ?: return
-        val spot = ParkedSpot(f.lat, f.lng, f.accuracyM ?: 0f, now(), label = null)
+        val spot = parkHereSpot(f, now())
+        if (spot == null) {
+            notices.post("Waiting for a fresh GPS fix… try again in a moment")
+            return
+        }
         launchLogged(TAG, "save of the parked spot", { notices.post("Could not save the spot") }) {
             parked.save(spot)
             notices.post("Parking spot saved")

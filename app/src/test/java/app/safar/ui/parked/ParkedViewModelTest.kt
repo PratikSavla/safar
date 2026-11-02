@@ -65,8 +65,24 @@ class ParkedViewModelTest {
 
         vm.parkHere()
         advanceUntilIdle()
-        assertEquals(ParkedSpot(18.499, 73.8, 4f, 9_000, null), repo.spot.value)
+        assertEquals(ParkedSpot(18.499, 73.8, 4f, 2_000, null), repo.spot.value)
         assertEquals("Parking spot saved", vm.notices.current.value?.second)
+        job.cancel()
+    }
+
+    @Test
+    fun `park here refuses a stale last-known fix`() = runTest(dispatcher) {
+        val saved = ParkedSpot(18.5, 73.8, 8f, 1_000, "Main Rd")
+        val repo = FakeParked(saved)
+        val stale = GpsFix(18.4, 73.7, 0, 5f)
+        val vm = ParkedViewModel(repo, { FakeNav() }, { flowOf(stale) }, { flowOf() }, now = { 15 * 60_000L })
+        val job = launch { vm.state.collect { } }
+        vm.setLocationAllowed(true)
+        advanceUntilIdle()
+        vm.parkHere()
+        advanceUntilIdle()
+        assertEquals(saved, repo.spot.value)
+        assertEquals("Waiting for a fresh GPS fix… try again in a moment", vm.notices.current.value?.second)
         job.cancel()
     }
 }

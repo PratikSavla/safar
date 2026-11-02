@@ -90,4 +90,13 @@ class ParkedMappingTest {
         assertEquals(-10f, shortestRotation(10f, 350f))
         assertEquals(90f, shortestRotation(0f, 90f))
     }
+
+    @Test
+    fun `park here keeps the fix's own time and refuses fixes over ten minutes old`() {
+        val fix = GpsFix(18.5, 73.8, 60_000, 5f)
+        assertEquals(ParkedSpot(18.5, 73.8, 5f, 60_000, null), parkHereSpot(fix, 60_000 + PARK_HERE_MAX_AGE_MS))
+        assertNull(parkHereSpot(fix, 60_001 + PARK_HERE_MAX_AGE_MS))
+        assertNull(parkHereSpot(null, 0))
+        assertEquals(0f, parkHereSpot(fix.copy(accuracyM = null), 60_000)?.accuracyM)
+    }
 }

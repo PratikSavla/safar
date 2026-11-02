@@ -29,10 +29,17 @@ fun haversineM(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
 
 fun haversineM(a: GpsFix, b: GpsFix): Double = haversineM(a.lat, a.lng, b.lat, b.lng)
 
+/** One counted step of a track: [metres] covered in [millis]. The first fix of a track is a zero leg. */
+data class TrackLeg(val metres: Double, val millis: Long)
+
+private fun kmh(metres: Double, millis: Long): Double = metres / 1000.0 / (millis / 3_600_000.0)
+
 /**
  * Drops GPS jitter, one fix at a time: fixes with accuracy worse than 30 m, fixes not newer than the last kept
- * one, and fixes whose jump from the last kept fix implies more than 250 km/h. [accept] returns the metres
- * added by a kept fix, or null when the fix was dropped. Not thread-safe.
+ * one, and fixes whose jump from the last kept fix implies more than 250 km/h. When two dropped fixes in a row
+ * agree with each other, the last kept fix was the outlier (a stale or cold-start first fix, say): the track
+ * re-anchors on them and counts only the leg between them, never the jump. [accept] returns the metres added
+ * by a kept fix, or null when the fix was dropped. Not thread-safe.
  */
 class TrackFilter {
     var last: GpsFix? = null
@@ -40,24 +47,39 @@ class TrackFilter {
     var distanceM: Double = 0.0
         private set
 
-    fun accept(fix: GpsFix): Double? {
+    /** The newest fix dropped for an impossible jump from [last]. */
+    private var suspect: GpsFix? = null
+
+    fun accept(fix: GpsFix): Double? = acceptLeg(fix)?.metres
+
+    /** Like [accept], but returns the counted leg with its duration, or null when the fix was dropped. */
+    fun acceptLeg(fix: GpsFix): TrackLeg? {
         if (fix.accuracyM != null && fix.accuracyM > MAX_ACCURACY_M) return null
-        val prev = last
-        if (prev == null) {
-            last = fix
-            return 0.0
-        }
-        val dtMillis = fix.atMillis - prev.atMillis
-        if (dtMillis <= 0) return null
-        val metres = haversineM(prev, fix)
-        if (metres / 1000.0 / (dtMillis / 3_600_000.0) > MAX_SPEED_KMH) return null
+        val prev = last ?: return keep(fix, TrackLeg(0.0, 0))
+        val leg = legOrNull(prev, fix) ?: return null
+        if (plausible(leg)) return keep(fix, leg)
+        val fromSuspect = suspect?.let { legOrNull(it, fix) }
+        if (fromSuspect != null && plausible(fromSuspect)) return keep(fix, fromSuspect)
+        suspect = fix
+        return null
+    }
+
+    private fun legOrNull(from: GpsFix, to: GpsFix): TrackLeg? {
+        val dtMillis = to.atMillis - from.atMillis
+        return if (dtMillis <= 0) null else TrackLeg(haversineM(from, to), dtMillis)
+    }
+
+    private fun plausible(leg: TrackLeg): Boolean = kmh(leg.metres, leg.millis) <= MAX_SPEED_KMH
+
+    private fun keep(fix: GpsFix, leg: TrackLeg): TrackLeg {
         last = fix
-        distanceM += metres
-        return metres
+        suspect = null
+        distanceM += leg.metres
+        return leg
     }
 }
 
-/** The fixes [TrackFilter] keeps, in order. */
+/** The fixes [TrackFilter] keeps, in order. A re-anchor leaves the abandoned fix in the list. */
 fun filterTrack(fixes: List<GpsFix>): List<GpsFix> {
     val filter = TrackFilter()
     return fixes.filter { filter.accept(it) != null }
@@ -74,22 +96,21 @@ fun trackDistanceKm(fixes: List<GpsFix>): Double {
 fun TrackPoint.toFix(): GpsFix = GpsFix(lat, lng, atMillis)
 
 /**
- * Average speed while moving, in km/h: distance over time, counting only legs between kept fixes whose speed is
+ * Average speed while moving, in km/h: distance over time, counting only legs [TrackFilter] keeps whose speed is
  * at least 3 km/h (stops at lights and fuel stops are left out). 0 when the track never moved.
  */
 fun avgMovingSpeedKmh(fixes: List<GpsFix>): Double {
-    val kept = filterTrack(fixes)
+    val filter = TrackFilter()
     var metres = 0.0
     var millis = 0L
-    for (i in 1 until kept.size) {
-        val d = haversineM(kept[i - 1], kept[i])
-        val dt = kept[i].atMillis - kept[i - 1].atMillis
-        if (d / 1000.0 / (dt / 3_600_000.0) >= MOVING_KMH) {
-            metres += d
-            millis += dt
+    for (fix in fixes) {
+        val leg = filter.acceptLeg(fix) ?: continue
+        if (leg.millis > 0 && kmh(leg.metres, leg.millis) >= MOVING_KMH) {
+            metres += leg.metres
+            millis += leg.millis
         }
     }
-    return if (millis == 0L) 0.0 else metres / 1000.0 / (millis / 3_600_000.0)
+    return if (millis == 0L) 0.0 else kmh(metres, millis)
 }
 
 /** Title by the local hour a ride starts: 5–11 morning, 12–16 afternoon, 17–20 evening, else night. */

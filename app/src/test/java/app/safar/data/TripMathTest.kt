@@ -43,6 +43,29 @@ class TripMathTest {
     }
 
     @Test
+    fun recoversFromBadFirstFix() {
+        // A first fix 0.05 degrees (about 5.6 km) off with good reported accuracy, then 1.112 km of real track.
+        val bad = GpsFix(12.05, 77.0, 0, 5f)
+        val track = (0..10).map { fix(it, 10 + it * 10L) }
+        assertEquals(1.112, trackDistanceKm(listOf(bad) + track), 0.002)
+        assertEquals(40.0, avgMovingSpeedKmh(listOf(bad) + track), 0.3)
+        val f = TrackFilter()
+        f.accept(bad)
+        assertNull(f.accept(track[0]))
+        assertEquals(111.2, f.accept(track[1])!!, 0.1) // !! safe: it agrees with the dropped fix, so it is kept
+        assertEquals(track[1], f.last)
+    }
+
+    @Test
+    fun twoAgreeingOutliersAddNoJumpDistance() {
+        // Two fixes about 5.6 km off agree with each other; neither jump is counted, only real legs.
+        val far = listOf(GpsFix(12.052, 77.0, 30_000, 5f), GpsFix(12.053, 77.0, 40_000, 5f))
+        val fixes = listOf(fix(0, 0), fix(1, 10), fix(2, 20)) + far + listOf(fix(3, 50), fix(4, 60))
+        // Legs 0-1, 1-2, the outlier pair and 3-4: 4 x 111.2 m.
+        assertEquals(0.4448, trackDistanceKm(fixes), 0.002)
+    }
+
+    @Test
     fun filterReportsAcceptedMetres() {
         val f = TrackFilter()
         assertEquals(0.0, f.accept(fix(0, 0)))

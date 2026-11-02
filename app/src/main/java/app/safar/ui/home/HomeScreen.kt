@@ -42,14 +42,21 @@ fun HomeScreen(navigator: Navigator, vm: HomeViewModel = viewModel { HomeViewMod
             enableBluetooth = fixes.enableBluetooth,
         )
     }
-    HomeContent(ui, { speed.value }, actions, navigator::go)
+    val missing by rememberMissingPermissions()
+    val permissions = ui?.let { permissionsCardUi(missing, it.dismissedPermissions) }
+    val dismiss = { vm.dismissPermissions(missing.mapTo(HashSet()) { it.name }) }
+    HomeContent(ui, { speed.value }, actions, navigator::go) {
+        permissions?.let { PermissionsCard(it, { navigator.go(Route.Permissions) }, dismiss) }
+    }
 }
 
+/** [notice] sits above the connection card: the permissions card, when something is off. */
 @Composable
-internal fun HomeContent(ui: HomeUi?, speed: () -> SpeedUi, actions: ConnActions, go: (Route) -> Unit) {
+internal fun HomeContent(ui: HomeUi?, speed: () -> SpeedUi, actions: ConnActions, go: (Route) -> Unit, notice: @Composable () -> Unit = {}) {
     AtlasPage(bottomBar = TabBarSpace) {
         TodayMasthead(ui?.riderName?.ifEmpty { null } ?: "rider", ui?.rideCount)
         if (ui == null) return@AtlasPage
+        notice()
         ConnectionCard(ui.conn, ui.autoRideOn, actions)
         NavStrip(ui.nav) { go(Route.Navigate) }
         CountsStrip(ui.counts) { go(Route.Alerts) }

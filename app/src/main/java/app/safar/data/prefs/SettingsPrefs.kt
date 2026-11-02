@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import app.safar.data.Settings
 import app.safar.data.ThemeMode
 
@@ -28,6 +29,7 @@ internal object SettingsKeys {
     val TANK_LITRES = doublePreferencesKey("tank_litres")
     val CURRENCY = stringPreferencesKey("currency_symbol")
     val DEVELOPER_MODE = booleanPreferencesKey("developer_mode")
+    val DISMISSED_PERMISSIONS = stringSetPreferencesKey("dismissed_permissions")
 }
 
 private val DEFAULTS = Settings()
@@ -52,6 +54,7 @@ internal fun readSettings(prefs: Preferences): Settings = with(SettingsKeys) {
         tankLitres = prefs[TANK_LITRES] ?: DEFAULTS.tankLitres,
         currencySymbol = prefs[CURRENCY] ?: DEFAULTS.currencySymbol,
         developerMode = prefs[DEVELOPER_MODE] ?: DEFAULTS.developerMode,
+        dismissedPermissions = prefs[DISMISSED_PERMISSIONS] ?: DEFAULTS.dismissedPermissions,
     )
 }
 
@@ -75,4 +78,5 @@ internal fun writeSettings(prefs: MutablePreferences, s: Settings) = with(Settin
     if (tank == null) prefs.remove(TANK_LITRES) else prefs[TANK_LITRES] = tank
     prefs[CURRENCY] = s.currencySymbol
     prefs[DEVELOPER_MODE] = s.developerMode
+    prefs[DISMISSED_PERMISSIONS] = s.dismissedPermissions
 }

@@ -28,6 +28,7 @@ class SettingsPrefsTest {
             alertWhatsAppCalls = false, alertWhatsAppMessages = false, debugLog = true, hideNames = false,
             theme = ThemeMode.DARK, keepScreenOn = false, autoRideMode = false, serviceReminders = false,
             lowFuelAlert = false, tankLitres = 11.5, currencySymbol = "$", developerMode = true,
+            dismissedPermissions = setOf("PHONE", "LOCATION"),
         )
         val prefs = mutablePreferencesOf()
         writeSettings(prefs, custom)

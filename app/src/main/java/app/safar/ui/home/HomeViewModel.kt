@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * Everything Today shows, except phone GPS speed ([HomeViewModel.speed]), which changes every second and is read
@@ -52,6 +53,8 @@ data class HomeUi(
     val nav: NavStripUi?,
     val garage: List<GarageTile>,
     val rideCount: Int,
+    /** Permission names the rider answered "Not now" on Today. */
+    val dismissedPermissions: Set<String> = emptySet(),
 )
 
 /** Live link and phone state. */
@@ -86,6 +89,7 @@ internal fun homeUi(live: HomeLive, stored: HomeStored, logCount: Int, nowMillis
         nav = nav,
         garage = garageTiles(garage),
         rideCount = finishedTrips(stored.trips).size,
+        dismissedPermissions = live.settings.dismissedPermissions,
     )
 }
 
@@ -94,7 +98,7 @@ class HomeViewModel(
     ride: RideTracker,
     navigation: NavigationBridge,
     alerts: AlertCenter,
-    settings: SettingsStore,
+    private val settings: SettingsStore,
     fuel: FuelRepository,
     service: ServiceRepository,
     parked: ParkedRepository,
@@ -127,6 +131,11 @@ class HomeViewModel(
     /** Direct connect to the saved cluster (docs 2.4). */
     fun connectSaved() {
         bike.state.value.saved?.let { bike.connect(it.address) }
+    }
+
+    /** "Not now" on the permissions card: hide it until something else is off. */
+    fun dismissPermissions(names: Set<String>) {
+        viewModelScope.launch { settings.update { it.copy(dismissedPermissions = names) } }
     }
 
     companion object {

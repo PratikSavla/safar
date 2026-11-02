@@ -24,6 +24,8 @@ data class Settings(
     val currencySymbol: String = "₹",
     /** Shows the technical tools and details (sources, exact ages, frames). Off by default; unlocked from Settings. */
     val developerMode: Boolean = false,
+    /** Permissions the rider waved away on Today ("Not now"), by name. The card returns when another one goes off. */
+    val dismissedPermissions: Set<String> = emptySet(),
 )
 
 /** Where a fuel-up odometer came from (ux/FUEL.md). */

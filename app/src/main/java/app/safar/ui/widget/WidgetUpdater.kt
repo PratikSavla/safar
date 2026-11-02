@@ -66,11 +66,16 @@ object WidgetUpdater {
         }
     }
 
-    /** Redraws every placed Safar widget; does nothing when none is on the home screen. */
+    /**
+     * Redraws every placed Safar widget; does nothing when none is on the home screen. The fresh snapshot goes to
+     * [WidgetData.updates] first, which a running session recomposes from; updateAll starts the closed ones.
+     */
     suspend fun refresh(context: Context) {
         try {
             val ids = GlanceAppWidgetManager(context).getGlanceIds(SafarWidget::class.java)
-            if (ids.isNotEmpty()) SafarWidget().updateAll(context)
+            if (ids.isEmpty()) return
+            WidgetData.publish()
+            SafarWidget().updateAll(context)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

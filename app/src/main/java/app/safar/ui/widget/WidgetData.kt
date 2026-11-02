@@ -6,6 +6,9 @@ import app.safar.core.BikeController
 import app.safar.core.NavigationBridge
 import app.safar.data.FuelRepository
 import app.safar.data.SettingsStore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import java.time.ZoneId
 
@@ -23,6 +26,19 @@ internal class WidgetSources(
 internal object WidgetData {
     @Volatile
     private var warned = false
+
+    private val latest = MutableStateFlow<WidgetSnapshot?>(null)
+
+    /**
+     * The newest published snapshot, null before the first [publish]. A running widget session reads it inside
+     * its composition, so a refresh redraws with fresh values: Glance does not call `provideGlance` again while
+     * the session is still open.
+     */
+    val updates: StateFlow<WidgetSnapshot?> = latest.asStateFlow()
+
+    /** Builds a fresh [snapshot] and hands it to [updates]. */
+    suspend fun publish(nowMillis: Long = System.currentTimeMillis()): WidgetSnapshot =
+        snapshot(nowMillis).also { latest.value = it }
 
     /**
      * The wired sources, or null while a layer has not assigned its part yet (the widget can update before the

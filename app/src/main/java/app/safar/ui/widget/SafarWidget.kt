@@ -2,6 +2,7 @@ package app.safar.ui.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -39,9 +40,11 @@ import androidx.glance.unit.ColorProvider
  */
 class SafarWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val snapshot = WidgetData.snapshot()
+        val first = WidgetData.publish()
         val open = context.packageManager.getLaunchIntentForPackage(context.packageName)
         provideContent {
+            // Read inside the composition: updateAll() on a live session recomposes it without a new provideGlance.
+            val snapshot = WidgetData.updates.collectAsState().value ?: first
             GlanceTheme(colors = WidgetColors.theme) {
                 var root = GlanceModifier.fillMaxSize().background(GlanceTheme.colors.widgetBackground).cornerRadius(22.dp)
                     .semantics { contentDescription = "Safar: ${snapshot.link}, odometer ${snapshot.odometer} km, range ${snapshot.range} km" }

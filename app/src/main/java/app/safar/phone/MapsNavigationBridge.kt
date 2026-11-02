@@ -91,6 +91,17 @@ class MapsNavigationBridge(
         core.update { it.copy(active = false, waiting = false, suppressed = false) }
     }
 
+    /**
+     * The listener lost track of Maps: it was unbound (no removal callback will come), or it rebound and Maps has
+     * no navigation notification. An active route ends, so the BLE session sends the "ended" frame instead of
+     * repeating a stale turn. A route Safar is still waiting for is left alone.
+     */
+    fun onLost() {
+        if (!core.value.active) return
+        log.info("maps.lost")
+        core.update { it.copy(active = false, suppressed = false) }
+    }
+
     override fun openInMaps(label: String, query: String) {
         val intent = Intent(Intent.ACTION_VIEW, navUri(query).toUri())
             .setPackage(GOOGLE_MAPS_PACKAGE)

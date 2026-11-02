@@ -24,6 +24,8 @@ class SafarNotificationListener : NotificationListenerService() {
 
     override fun onListenerDisconnected() {
         ContainerLog.info("notifications.disconnected")
+        val router = PhoneModule.router ?: return warnNotInstalled()
+        guarded("disconnect") { router.disconnected() }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -56,9 +58,14 @@ class SafarNotificationListener : NotificationListenerService() {
 internal class NotificationRouter(private val maps: MapsNavigationBridge, private val whatsApp: WhatsAppAlerts) {
     /** Attach to a Maps route already running, and record the WhatsApp notifications already posted. */
     fun connected(active: Array<out StatusBarNotification>) {
-        active.filter(::isMapsNavigation).maxByOrNull { it.postTime }?.let { maps.onPosted(it.notification) }
+        val route = active.filter(::isMapsNavigation).maxByOrNull { it.postTime }
+        // No Maps route now: one that ended while we were unbound must not stay active.
+        if (route != null) maps.onPosted(route.notification) else maps.onLost()
         whatsApp.seed(active.filter(::isWhatsApp).map(::waNotification))
     }
+
+    /** Unbound: no removal callbacks arrive until the listener is back, so stop trusting the last turn. */
+    fun disconnected() = maps.onLost()
 
     fun posted(sbn: StatusBarNotification) {
         when {

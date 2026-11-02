@@ -4,13 +4,14 @@ import androidx.compose.runtime.Composable
 import app.safar.ui.nav.Navigator
 import app.safar.ui.nav.Route
 import app.safar.ui.onboarding.OnboardingScreen
+import app.safar.ui.pair.PairScreen
 
 /** The router: one line per route. Replace a `PendingScreen` line with the real screen when it lands. */
 @Composable
 fun RouteHost(route: Route, navigator: Navigator) {
     when (route) {
         Route.Onboarding -> OnboardingScreen(navigator)
-        Route.Pair -> PendingScreen(navigator, "Pairing", "Find your bike")
+        Route.Pair -> PairScreen(navigator)
         Route.Home -> PendingScreen(navigator, "Today", "Today", tab = true)
         Route.Ride -> PendingScreen(navigator, "Ride", "Ride mode")
         Route.Navigate -> PendingScreen(navigator, "Route · via Google Maps", "Where to?", tab = true)

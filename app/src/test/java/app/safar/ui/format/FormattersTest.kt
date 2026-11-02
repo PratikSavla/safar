@@ -113,6 +113,21 @@ class FormattersTest {
         assertEquals(ValueUnit("01.2", "K"), ClusterText.distance(1200))
         assertEquals(ValueUnit("12.5", "K"), ClusterText.distance(12_500))
         assertEquals(ValueUnit("0123", "K"), ClusterText.distance(123_000))
+        assertEquals("01.2", ClusterText.distance(1234).value)
+        assertEquals("12.5", ClusterText.distance(12_480).value)
+        assertEquals("0100", ClusterText.distance(99_950).value)
+    }
+
+    @Test
+    fun `cluster distance rounds km ties like JS toFixed`() {
+        assertEquals(ValueUnit("01.1", "K"), ClusterText.distance(1150))
+        assertEquals(ValueUnit("02.0", "K"), ClusterText.distance(2050))
+        assertEquals(ValueUnit("09.9", "K"), ClusterText.distance(9950))
+        assertEquals(ValueUnit("12.3", "K"), ClusterText.distance(12_350))
+    }
+
+    @Test
+    fun `cluster status words replace the distance`() {
         assertEquals("GPS OFF", ClusterText.statusWord('4'))
         assertEquals(null, ClusterText.statusWord('1'))
     }

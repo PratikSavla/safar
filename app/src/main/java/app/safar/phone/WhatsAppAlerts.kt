@@ -54,6 +54,30 @@ class WhatsAppAlerts(
         if (unreadByKey.remove(key) != null) center.whatsAppMessagesLeft(unreadByKey.values.sum())
     }
 
+    /**
+     * The listener (re)connected: records the chat and missed-call notifications already posted, without
+     * frames, so a later re-post counts only new messages. Counts of notifications removed while the listener
+     * was away drop as on [removed].
+     */
+    @Synchronized
+    fun seed(active: List<WaNotification>) {
+        val unread = HashMap<String, Int>()
+        val missed = HashMap<String, Int>()
+        for (n in active) {
+            when (classifyWhatsApp(n)) {
+                WaKind.MESSAGE -> unread[n.key] = unreadCount(n)
+                WaKind.MISSED_CALL -> missed[n.key] = missedCount(n)
+                else -> Unit
+            }
+        }
+        missedByKey.clear()
+        missedByKey.putAll(missed)
+        unreadByKey.clear()
+        unreadByKey.putAll(unread)
+        center.whatsAppMissedLeft(missed.values.sum())
+        center.whatsAppMessagesLeft(unread.values.sum())
+    }
+
     private fun onRinging(n: WaNotification) {
         callKeys += n.key
         val name = waSenderName(n)

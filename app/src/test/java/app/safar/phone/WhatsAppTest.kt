@@ -112,6 +112,34 @@ class WhatsAppTest {
     }
 
     @Test
+    fun seededChatsCountOnlyNewMessages() {
+        val rig = AlertRig()
+        val alerts = WhatsAppAlerts(rig.center, rig.clock)
+        val chat = wa(key = "a", category = CATEGORY_MESSAGE).copy(messageCount = 4)
+        val missed = wa(key = "m", title = "Rider", category = CATEGORY_MISSED_CALL, text = "2 missed voice calls")
+        alerts.seed(listOf(chat, missed))
+        assertTrue(rig.outbox.frames.isEmpty(), "seeding sends nothing")
+        alerts.posted(chat.copy(messageCount = 5))
+        assertEquals(listOf("5:Alex:1:W"), rig.outbox.frames)
+        alerts.removed("a")
+        assertEquals("5::0:W", rig.outbox.frames.last())
+        alerts.posted(missed.copy(text = "3 missed voice calls"))
+        assertEquals("4:Rider:1:W", rig.outbox.frames.last())
+    }
+
+    @Test
+    fun reseedDropsChatsRemovedWhileDisconnected() {
+        val rig = AlertRig()
+        val alerts = WhatsAppAlerts(rig.center, rig.clock)
+        alerts.posted(wa(key = "a", category = CATEGORY_MESSAGE).copy(messageCount = 2))
+        alerts.posted(wa(key = "b", title = "Rider", category = CATEGORY_MESSAGE).copy(messageCount = 1))
+        alerts.seed(listOf(wa(key = "b", title = "Rider", category = CATEGORY_MESSAGE).copy(messageCount = 1)))
+        assertEquals(1, rig.center.state.value.messages.count)
+        alerts.seed(emptyList())
+        assertEquals("5::0:W", rig.outbox.frames.last())
+    }
+
+    @Test
     fun ringingThenOngoingIsAnswered() {
         val rig = AlertRig()
         val alerts = WhatsAppAlerts(rig.center, rig.clock)

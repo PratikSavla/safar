@@ -54,9 +54,10 @@ class SafarNotificationListener : NotificationListenerService() {
 
 /** Sends each notification to the Maps bridge or the WhatsApp alerts. */
 internal class NotificationRouter(private val maps: MapsNavigationBridge, private val whatsApp: WhatsAppAlerts) {
-    /** Attach to a route that was already running in Google Maps when the listener connected. */
+    /** Attach to a Maps route already running, and record the WhatsApp notifications already posted. */
     fun connected(active: Array<out StatusBarNotification>) {
         active.filter(::isMapsNavigation).maxByOrNull { it.postTime }?.let { maps.onPosted(it.notification) }
+        whatsApp.seed(active.filter(::isWhatsApp).map(::waNotification))
     }
 
     fun posted(sbn: StatusBarNotification) {

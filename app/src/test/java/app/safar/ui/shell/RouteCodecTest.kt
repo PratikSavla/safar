@@ -8,7 +8,7 @@ import kotlin.test.assertNull
 class RouteCodecTest {
     private val all = listOf(
         Route.Onboarding, Route.Pair, Route.Home, Route.Ride, Route.Navigate, Route.Alerts, Route.Trips, Route.Fuel,
-        Route.Service, Route.Parked, Route.Bike, Route.Log, Route.IconTest, Route.Settings,
+        Route.Service, Route.Parked, Route.Bike, Route.Log, Route.IconTest, Route.Settings, Route.Permissions,
         Route.Place(), Route.Place(placeId = 4), Route.Place(sharedText = ""), Route.Place(sharedText = "Main Rd|NH 48|0"),
         Route.Place(placeId = 2, sharedText = "1Main Rd"), Route.Trip(12), Route.FuelUp(), Route.FuelUp(9),
     )

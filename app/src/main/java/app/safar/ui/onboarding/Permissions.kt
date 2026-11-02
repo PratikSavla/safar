@@ -39,6 +39,9 @@ object SafarPermissions {
 
     fun isGranted(context: Context, id: PermId): Boolean =
         if (id == PermId.NOTIFICATION_ACCESS) notificationAccess(context) else granted(context, runtime(id))
+
+    /** Items not allowed right now, in [PermId] order. A restored phone starts with all of them off. */
+    fun missing(context: Context): Set<PermId> = PermId.entries.filterTo(LinkedHashSet()) { !isGranted(context, it) }
 }
 
 /**

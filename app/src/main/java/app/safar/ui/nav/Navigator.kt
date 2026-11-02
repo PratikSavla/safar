@@ -25,6 +25,8 @@ sealed interface Route {
     /** Debug: send each turn icon code to the cluster (assignment task 4). */
     data object IconTest : Route
     data object Settings : Route
+    /** What Safar may use on this phone: the onboarding permission list, reachable from Today and Settings. */
+    data object Permissions : Route
 }
 
 /** What every screen gets to move around. Implemented by the app shell (MainActivity). */

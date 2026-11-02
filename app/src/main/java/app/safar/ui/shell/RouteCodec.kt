@@ -13,6 +13,7 @@ internal object RouteCodec {
     private val plain: Map<String, Route> = listOf(
         Route.Onboarding, Route.Pair, Route.Home, Route.Ride, Route.Navigate, Route.Alerts, Route.Trips,
         Route.Fuel, Route.Service, Route.Parked, Route.Bike, Route.Log, Route.IconTest, Route.Settings,
+        Route.Permissions,
     ).associateBy { nameOf(it) }
 
     fun encode(route: Route): String = when (route) {
@@ -52,6 +53,7 @@ internal object RouteCodec {
         Route.Log -> "log"
         Route.IconTest -> "icontest"
         Route.Settings -> "settings"
+        Route.Permissions -> "permissions"
         is Route.Place -> "place"
         is Route.Trip -> "trip"
         is Route.FuelUp -> "fuelup"

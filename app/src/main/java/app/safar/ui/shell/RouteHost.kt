@@ -13,6 +13,7 @@ import app.safar.ui.nav.Route
 import app.safar.ui.navigate.NavigateScreen
 import app.safar.ui.navigate.PlaceScreen
 import app.safar.ui.onboarding.OnboardingScreen
+import app.safar.ui.onboarding.PermissionsScreen
 import app.safar.ui.pair.PairScreen
 import app.safar.ui.parked.ParkedScreen
 import app.safar.ui.ride.RideScreen
@@ -42,5 +43,6 @@ fun RouteHost(route: Route, navigator: Navigator) {
         Route.Log -> LogScreen(navigator)
         Route.IconTest -> IconTestScreen(navigator)
         Route.Settings -> SettingsScreen(navigator, bottomBar = TabBarSpace)
+        Route.Permissions -> PermissionsScreen(navigator)
     }
 }

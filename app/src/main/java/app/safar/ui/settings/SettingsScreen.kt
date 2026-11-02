@@ -108,7 +108,8 @@ internal fun SettingsContent(
             actions.onTheme,
         )
         SectionHeader("Phone access")
-        NotificationAccessRow(access.notificationAccess, actions.onAccess, divider = false)
+        NotificationAccessRow(access.notificationAccess, actions.onAccess)
+        LinkRow("All permissions", AtlasIcons.check, { actions.onOpen(Route.Permissions) }, subtitle = "Nearby devices, location, phone and notifications", divider = false)
         SectionHeader("Your bike")
         LinkRow("Bike information", AtlasIcons.bike, { actions.onOpen(Route.Bike) }, subtitle = "Model, serial number and software version", divider = false)
         SectionHeader("Backup")

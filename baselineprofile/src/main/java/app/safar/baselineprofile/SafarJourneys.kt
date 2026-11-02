@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.Direction
+import androidx.test.uiautomator.StaleObjectException
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 import java.util.regex.Pattern
@@ -18,6 +19,7 @@ private const val TAG = "SafarJourneys"
 private const val WAIT_MS = 5_000L
 private const val START_WAIT_MS = 10_000L
 private const val POLL_MS = 100L
+private const val MAX_SCROLLS = 8
 
 /** Package under test, passed by the Gradle build as `targetAppId`. */
 val targetPackage: String
@@ -66,15 +68,45 @@ private fun MacrobenchmarkScope.pageScroller(): UiObject2? =
 
 /** Flings the current page to the bottom and back to the top. */
 fun MacrobenchmarkScope.scrollPage() {
-    val scroller = pageScroller()
-    if (scroller == null) {
-        Log.w(TAG, "No scrollable page on screen")
-        return
+    for (direction in listOf(Direction.DOWN, Direction.DOWN, Direction.UP, Direction.UP)) {
+        if (!fling(direction)) return
     }
-    repeat(2) { scroller.fling(Direction.DOWN) }
     device.waitForIdle()
-    repeat(2) { scroller.fling(Direction.UP) }
-    device.waitForIdle()
+}
+
+/**
+ * One fling. A page that lays itself out again (first data, a card appearing) replaces its nodes, so a scroller
+ * found earlier goes stale. False when there is no scroller.
+ */
+private fun MacrobenchmarkScope.fling(direction: Direction): Boolean = onScroller { it.fling(direction) }
+
+/** Runs [gesture] on a freshly found scroller, looking it up again once if it goes stale. */
+private fun MacrobenchmarkScope.onScroller(gesture: (UiObject2) -> Unit): Boolean {
+    repeat(2) { attempt ->
+        val scroller = pageScroller()
+        if (scroller == null) {
+            Log.w(TAG, "No scrollable page on screen")
+            return false
+        }
+        try {
+            gesture(scroller)
+            return true
+        } catch (e: StaleObjectException) {
+            Log.w(TAG, "Scroller went stale (attempt ${attempt + 1}), looking it up again", e)
+            device.waitForIdle()
+        }
+    }
+    return false
+}
+
+/** Scrolls the page down a step at a time until [selector] is on screen; null if it never shows up. */
+private fun MacrobenchmarkScope.scrollTo(selector: BySelector): UiObject2? {
+    repeat(MAX_SCROLLS) {
+        device.findObject(selector)?.let { return it }
+        if (!onScroller { it.scroll(Direction.DOWN, 0.6f) }) return null
+        device.waitForIdle()
+    }
+    return device.findObject(selector)
 }
 
 /** Taps a stub tab: Today, Route, Trips, Alerts or Settings. */
@@ -87,7 +119,7 @@ fun MacrobenchmarkScope.openTab(label: String) {
 /** Opens a garage tile on Today ("Fuel, 120 km left", "Service, not set up"), scrolls it, and comes back. */
 fun MacrobenchmarkScope.visitGarage(name: String) {
     val tile = By.desc(Pattern.compile("^${Pattern.quote(name)}, .*"))
-    val found = device.findObject(tile) ?: pageScroller()?.scrollUntil(Direction.DOWN, Until.findObject(tile))
+    val found = scrollTo(tile)
     if (found == null) {
         Log.w(TAG, "Garage tile \"$name\" not found")
         return

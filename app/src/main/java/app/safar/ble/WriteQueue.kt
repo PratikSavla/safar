@@ -8,7 +8,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.cancellation.CancellationException
 
-private const val TAG = "SafarBle"
 
 /** Dequeue order: events first (calls, messages, rider), then navigation, then status (docs 12.4 R4). */
 enum class FramePriority { EVENT, NAVIGATION, STATUS }

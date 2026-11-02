@@ -35,5 +35,6 @@ class FakeTripList(initial: List<Trip> = emptyList()) : TripRepository {
     override suspend fun start(trip: Trip): Long = error("not used")
     override suspend fun update(trip: Trip) = error("not used")
     override suspend fun addPoints(points: List<TrackPoint>) = error("not used")
+    override suspend fun replaceTrack(tripId: Long, points: List<TrackPoint>) = error("not used")
     override suspend fun delete(id: Long) = error("not used")
 }

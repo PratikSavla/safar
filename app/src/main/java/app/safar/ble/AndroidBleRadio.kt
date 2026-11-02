@@ -17,6 +17,9 @@ class AndroidBleRadio(private val context: Context, private val log: DebugLog) :
 
     override fun canConnect(): Boolean = BlePermissions.canConnect(context)
 
+    override fun missingScanPermission(): String? =
+        if (BlePermissions.canScan(context)) null else BlePermissions.scanPermissionName()
+
     override fun scanner(scope: CoroutineScope): BikeScanner = BleScanner(context, log, scope)
 
     override fun open(address: String): GattPort? {

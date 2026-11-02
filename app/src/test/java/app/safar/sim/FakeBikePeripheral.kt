@@ -30,11 +30,18 @@ class WrittenFrame(val atMillis: Long, val bytes: ByteArray) {
  */
 class FakeBikePeripheral(
     val name: String,
-    val address: String,
+    address: String,
     private val scope: CoroutineScope,
     private val clock: () -> Long,
 ) {
     val mode: ChecksumMode = checksumModeFor(name)
+
+    /** The address it advertises from now; [rotateAddress] changes it like a resolvable private address. */
+    var address: String = address
+        private set
+
+    /** Addresses it no longer answers on; a connect to one of them times out. */
+    val formerAddresses = mutableListOf<String>()
     var poweredOn = true
     var mtu = BIKE_MTU
     var cluster = ClusterSpec()
@@ -103,6 +110,12 @@ class FakeBikePeripheral(
 
     fun powerOn() {
         poweredOn = true
+    }
+
+    /** Advertises from [newAddress] from now on; the old address stops answering. */
+    fun rotateAddress(newAddress: String) {
+        formerAddresses += address
+        address = newAddress
     }
 
     internal fun onConnectRequest() {

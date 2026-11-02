@@ -55,7 +55,7 @@ class ReconnectTest {
     }
 
     @Test
-    fun dropBacksOffTwoFiveTenThenThirtySecondsToTheSavedAddress() = runTest {
+    fun dropBacksOffTwoFiveTenThenThirtySecondsToTheSavedAddressWithASearchEveryTwoFailures() = runTest {
         val rig = connectedRig()
         val dropAt = rig.time
         rig.bike.powerOff()
@@ -67,6 +67,8 @@ class ReconnectTest {
         assertEquals(mapOf("reason" to "supervision timeout"), rig.recording.named("Link ended").single().detail)
 
         // Each attempt to the switched-off bike ends with the 20 s connect timeout, then the next back-off.
+        // Attempts 2 and 4 are the second failure in a row, a minute or more after the last search: an 8 s
+        // search by name runs (and finds nothing) before the back-off.
         val timeout = ConnectTiming.CONNECT_TIMEOUT_MS
         var at = dropAt
         val expectedRequests = mutableListOf<Long>()
@@ -79,12 +81,19 @@ class ReconnectTest {
             assertEquals(LinkState.Connecting(MOTO_NAME), rig.link, "attempt ${index + 1}")
             at += timeout
             rig.advance(timeout)
+            if (index == 1 || index == 3) {
+                assertEquals(LinkState.Connecting(MOTO_NAME), rig.link, "searching after attempt ${index + 1}")
+                at += ConnectTiming.FIND_SCAN_MS
+                rig.advance(ConnectTiming.FIND_SCAN_MS)
+            }
             val next = Timing.reconnectDelayMs(index + 2)
             assertEquals(LinkState.Reconnecting(index + 2, CLOCK_BASE + at + next), rig.link)
         }
         assertEquals(listOf(0L) + expectedRequests, rig.bike.connectRequests)
         assertTrue(rig.radio.opened.all { it == BIKE_ADDRESS }, "direct connect to the saved address")
-        assertEquals(0, rig.radio.scanner.starts, "no scan while reconnecting")
+        assertEquals(0, rig.radio.scanner.starts, "the rider's scan is not used")
+        assertEquals(2, rig.radio.findScanner.starts, "one search per two failures, at most one a minute")
+        assertEquals(2, rig.recording.named("Bike not found by name").size)
         assertEquals(emptyList(), rig.txAfter(dropAt), "no write attempted while the link is down")
     }
 

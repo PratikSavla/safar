@@ -35,7 +35,7 @@ object LogPrivacy {
     val BIKE_KEYS: Set<String> = setOf("bike", "bikeName", "device")
 
     /** Detail keys holding a MAC address. The vendor half stays. */
-    val ADDRESS_KEYS: Set<String> = setOf("address", "mac")
+    val ADDRESS_KEYS: Set<String> = setOf("address", "mac", "oldAddress", "newAddress")
 
     /** Detail keys holding a device serial number or system ID. Masked completely. */
     val SERIAL_KEYS: Set<String> = setOf("serial", "systemId")

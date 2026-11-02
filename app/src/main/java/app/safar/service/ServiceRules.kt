@@ -16,7 +16,9 @@ import app.safar.ui.format.Formatters
  * (docs 2.5).
  */
 fun shouldRunService(policy: ReconnectPolicy.State): Boolean = when (policy) {
-    is ReconnectPolicy.State.Connecting, is ReconnectPolicy.State.Connected, is ReconnectPolicy.State.Waiting -> true
+    is ReconnectPolicy.State.Connecting, is ReconnectPolicy.State.Connected, is ReconnectPolicy.State.Waiting,
+    is ReconnectPolicy.State.Searching,
+    -> true
     is ReconnectPolicy.State.BluetoothOff -> policy.resumeAddress != null
     ReconnectPolicy.State.Idle -> false
 }

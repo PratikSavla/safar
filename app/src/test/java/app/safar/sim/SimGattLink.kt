@@ -22,7 +22,12 @@ import java.util.UUID
  * A bike-side drop goes through the bridge's own [onGattDisconnected], so the "Disconnected" event comes from
  * app code. As in GattClient, a write waits for the bike's ack, and [markLost] fails it at once with status -1.
  */
-class SimGattLink(private val bike: FakeBikePeripheral, private val log: DebugLog) : GattPort {
+class SimGattLink(
+    private val bike: FakeBikePeripheral,
+    private val log: DebugLog,
+    /** The address dialled; one the bike left ([FakeBikePeripheral.rotateAddress]) never answers. */
+    private val address: String = bike.address,
+) : GattPort {
     private val state = MutableStateFlow<GattLink>(GattLink.Connecting)
     override val link: StateFlow<GattLink> = state.asStateFlow()
 
@@ -40,8 +45,9 @@ class SimGattLink(private val bike: FakeBikePeripheral, private val log: DebugLo
     private var pendingWrite: CompletableDeferred<WriteOutcome>? = null
 
     override suspend fun connect(timeoutMs: Long): Boolean {
-        bike.onConnectRequest()
-        if (!bike.poweredOn) {
+        val reachable = address == bike.address
+        if (reachable) bike.onConnectRequest()
+        if (!bike.poweredOn || !reachable) {
             delay(timeoutMs)
             markLost(GattClient.STATUS_LOCAL, "connect timeout after ${timeoutMs / 1000} s")
             return false

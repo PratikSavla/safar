@@ -20,6 +20,18 @@ object ConnectTiming {
 
     /** MTU the app asks for (docs 2.2 step 5). The bike answers 65; a frame needs [MIN_MTU_FOR_FRAME]. */
     const val REQUEST_MTU = 250
+
+    /**
+     * Safar's own reconnect fallback, not in the original app: after this many failed direct connects in a
+     * row to the saved address, one scan looks for the bike by its advertised name (its address may rotate).
+     */
+    const val FIND_AFTER_FAILURES = 2
+
+    /** How long that fallback scan looks for the bike. */
+    const val FIND_SCAN_MS = 8_000L
+
+    /** At most one fallback scan per this interval, to save battery. */
+    const val FIND_MIN_INTERVAL_MS = 60_000L
 }
 
 /** Bluetooth SIG 16-bit UUID in the base UUID. */

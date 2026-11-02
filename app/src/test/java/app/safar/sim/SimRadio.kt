@@ -35,7 +35,7 @@ class FakeBluetooth(on: Boolean = true, private val dropLinks: () -> Unit = {}) 
     }
 }
 
-/** A scan that finds every powered-on bike of [bikes] at once. [starts] counts scans. */
+/** A scan that finds every powered-on bike of [bikes] at its current address at once. [starts] counts scans. */
 class FakeScanner(private val bikes: () -> List<FakeBikePeripheral>) : BikeScanner {
     private val found = MutableStateFlow<List<ScannedBike>>(emptyList())
     private val active = MutableStateFlow(false)
@@ -67,20 +67,36 @@ class FakeScanner(private val bikes: () -> List<FakeBikePeripheral>) : BikeScann
 /** HCI 0x16, "terminated by local host": the status a link gets when the phone's adapter turns off. */
 const val ADAPTER_OFF_STATUS = 0x16
 
-/** [BleRadio] whose GATT links reach the simulated [bikes]. [opened] lists every address a link was opened to. */
+/**
+ * [BleRadio] whose GATT links reach the simulated [bikes]. [opened] lists every address a link was opened to;
+ * an address a bike left still opens a link, which times out like a real connect to a vanished address.
+ */
 class SimRadio(private val bikes: List<FakeBikePeripheral>, private val log: DebugLog) : BleRadio {
     override val bluetooth = FakeBluetooth { bikes.forEach { it.dropLink(ADAPTER_OFF_STATUS) } }
-    val scanner = FakeScanner { bikes }
+
+    /** Every scanner handed out, in order: BikeManager asks for the rider's first, then its finder's. */
+    val scanners = mutableListOf<FakeScanner>()
+
+    /** The rider's scan on the Pair screen. */
+    val scanner: FakeScanner get() = scanners[0]
+
+    /** The reconnect fallback's scan (search by name). */
+    val findScanner: FakeScanner get() = scanners[1]
     val opened = mutableListOf<String>()
     val links = mutableListOf<SimGattLink>()
 
+    /** Set to a permission name to deny scanning, as a phone without BLUETOOTH_SCAN does. */
+    var deniedScanPermission: String? = null
+
     override fun canConnect(): Boolean = true
 
-    override fun scanner(scope: CoroutineScope): BikeScanner = scanner
+    override fun missingScanPermission(): String? = deniedScanPermission
+
+    override fun scanner(scope: CoroutineScope): BikeScanner = FakeScanner { bikes }.also { scanners += it }
 
     override fun open(address: String): GattPort? {
         opened += address
-        val bike = bikes.firstOrNull { it.address == address } ?: return null
-        return SimGattLink(bike, log).also { links += it }
+        val bike = bikes.firstOrNull { it.address == address || address in it.formerAddresses } ?: return null
+        return SimGattLink(bike, log, address).also { links += it }
     }
 }

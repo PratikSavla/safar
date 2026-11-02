@@ -16,6 +16,9 @@ interface BleRadio {
     /** True when the app may connect (BLUETOOTH_CONNECT granted on API 31+). */
     fun canConnect(): Boolean
 
+    /** Null when the app may scan, else the missing permission (BLUETOOTH_SCAN, or location below API 31). */
+    fun missingScanPermission(): String?
+
     fun scanner(scope: CoroutineScope): BikeScanner
 
     /** A new, unconnected link to [address], or null when the address cannot be used (logged). */

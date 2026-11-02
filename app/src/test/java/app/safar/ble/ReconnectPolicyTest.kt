@@ -30,7 +30,9 @@ class ReconnectPolicyTest {
         val p = connected()
         val delays = mutableListOf<Long>()
         repeat(6) { i ->
-            val actions = p.onLinkLost()
+            val lost = p.onLinkLost()
+            // Every second failure in a row searches by name first; nothing found, the back-off goes on.
+            val actions = if (Action.Find(mac) in lost) lost + p.onFindDone(null) else lost
             val timer = actions.filterIsInstance<Action.StartTimer>().single()
             delays += timer.delayMs
             assertTrue(Action.CloseLink in actions)
@@ -126,7 +128,7 @@ class ReconnectPolicyTest {
 
     @Test
     fun customDelaysAreUsed() {
-        val p = ReconnectPolicy { attempt -> attempt * 100L }
+        val p = ReconnectPolicy(delayFor = { attempt -> attempt * 100L }, findAfter = Int.MAX_VALUE)
         p.connect(mac)
         p.onLinkLost()
         p.onTimer()

@@ -13,7 +13,6 @@ import app.safar.core.SavedBike
 import app.safar.data.SavedBikeRecord
 import app.safar.data.SavedBikeStore
 import app.safar.data.ServiceRepository
-import app.safar.data.seedDefaultsIfEmpty
 import app.safar.protocol.MAX_ICON_CODE
 import app.safar.protocol.MIN_ICON_CODE
 import app.safar.service.shouldRunService
@@ -42,7 +41,7 @@ class BikeManager(
     private val radio: BleRadio,
     private val log: DebugLog,
     private val savedStore: SavedBikeStore,
-    private val serviceItems: () -> ServiceRepository,
+    serviceItems: () -> ServiceRepository,
     private val inputs: () -> SessionInputs,
     parent: CoroutineScope,
     private val now: () -> Long = System::currentTimeMillis,
@@ -50,8 +49,12 @@ class BikeManager(
     serial: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1),
 ) : BikeController, ClusterOutbox {
     private val scope = CoroutineScope(parent.coroutineContext + SupervisorJob(parent.coroutineContext.job) + serial)
-    private val policy = ReconnectPolicy()
+    private val policy = ReconnectPolicy(clock = now)
+
+    /** The rider's scan (Pair screen). Created before [finder]'s own scanner. */
     private val scanner = radio.scanner(scope)
+    private val finder = BikeFinder(radio, log, scope)
+    private val records = BikeRecords(log, savedStore, serviceItems, now)
     private val runner = LinkRunner(radio, log, now)
     private val bluetooth = radio.bluetooth
 
@@ -189,6 +192,8 @@ class BikeManager(
                 is Action.StartTimer -> startTimer(action.delayMs)
                 Action.CancelTimer -> timerJob?.cancel()
                 Action.CloseLink -> closeLink()
+                is Action.Find -> finder.find(nameFor(action.address)) { apply(policy.onFindDone(it)) }
+                Action.StopFind -> finder.cancel()
             }
         }
         publishLink()
@@ -214,8 +219,8 @@ class BikeManager(
         _state.update { it.copy(cluster = null) }
     }
 
-    private fun nameFor(address: String): String? =
-        scanner.nameOf(address) ?: savedStore.saved.value?.takeIf { it.address == address }?.name
+    private fun nameFor(address: String): String? = scanner.nameOf(address) ?: finder.nameOf(address)
+        ?: savedStore.saved.value?.takeIf { it.address == address }?.name
 
     private fun startLink(address: String, attempt: Int) {
         closeLink()
@@ -245,9 +250,7 @@ class BikeManager(
             apply(policy.onLinkReady())
             _state.update { it.copy(mtu = ready.mtu, deviceInfo = ready.deviceInfo, framesReceived = 0) }
             if (target.firstConnection) seedPending = true
-            if (target.firstConnection || savedStore.saved.value?.address != target.address) {
-                scope.launch { saveBike(SavedBikeRecord(name, target.address)) }
-            }
+            if (records.needsSave(name, target.address)) scope.launch { records.save(name, target.address) }
         }
 
         override fun onReading(reading: ClusterReading) {
@@ -258,32 +261,8 @@ class BikeManager(
             if (seedPending) {
                 // Survives a link that drops before its first reading; a failed seed is tried on the next one.
                 seedPending = false
-                scope.launch { if (!seedService(reading.odometerKm)) seedPending = true }
+                scope.launch { if (!records.seedService(reading.odometerKm)) seedPending = true }
             }
-        }
-    }
-
-    private suspend fun saveBike(record: SavedBikeRecord) = guardedIo("Saving the bike") {
-        savedStore.save(record)
-        log.event("Bike saved", mapOf("bike" to record.name, "address" to record.address))
-    }
-
-    private suspend fun seedService(odometerKm: Int) = guardedIo("Seeding service reminders") {
-        val seeded = serviceItems().seedDefaultsIfEmpty(odometerKm, now())
-        log.event("Service reminders", mapOf("seeded" to "$seeded", "odometerKm" to "$odometerKm"))
-    }
-
-    /** Runs [block], logging a failure; returns whether it completed. */
-    private suspend fun guardedIo(what: String, block: suspend () -> Unit): Boolean {
-        try {
-            block()
-            return true
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "$what failed", e)
-            log.event("$what failed", mapOf("error" to (e.message ?: e.javaClass.simpleName)), error = true)
-            return false
         }
     }
 

@@ -28,6 +28,7 @@ class ServiceRulesTest {
         assertTrue(shouldRunService(ReconnectPolicy.State.Connecting(address, 0)))
         assertTrue(shouldRunService(ReconnectPolicy.State.Connected(address)))
         assertTrue(shouldRunService(ReconnectPolicy.State.Waiting(address, 2, 5_000L)))
+        assertTrue(shouldRunService(ReconnectPolicy.State.Searching(address, 3)), "search by name")
         assertTrue(shouldRunService(ReconnectPolicy.State.BluetoothOff(resumeAddress = address)))
         assertFalse(shouldRunService(ReconnectPolicy.State.Idle), "user disconnect stops it")
     }

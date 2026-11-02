@@ -1,14 +1,23 @@
 package app.safar.ble
 
+import app.safar.protocol.ConnectTiming
 import app.safar.protocol.Timing
 
 /**
  * The one reconnect state machine (docs 2.4, 2.5, 12.4 R3). Pure: it returns the [Action]s to run and keeps
  * no timers. A lost link or a failed connect waits 2 s, 5 s, 10 s, then every 30 s, and connects directly to
- * the same address (no scan). A user disconnect stops it. Bluetooth off stops it and remembers the address;
- * Bluetooth on resumes it.
+ * the same address (no scan). After [findAfter] failed connects in a row it runs one scan for the bike by
+ * name ([Action.Find]), at most once per [findIntervalMs] on [clock], because an address may rotate: a bike
+ * found there is connected at once, else the back-off goes on. A user disconnect stops it. Bluetooth off
+ * stops it and remembers the address; Bluetooth on resumes it.
  */
-class ReconnectPolicy(private val delayFor: (attempt: Int) -> Long = Timing::reconnectDelayMs) {
+class ReconnectPolicy(
+    private val clock: () -> Long = { 0L },
+    private val findAfter: Int = ConnectTiming.FIND_AFTER_FAILURES,
+    private val findIntervalMs: Long = ConnectTiming.FIND_MIN_INTERVAL_MS,
+    /** Last, so `ReconnectPolicy { attempt -> ... }` sets it. */
+    private val delayFor: (attempt: Int) -> Long = Timing::reconnectDelayMs,
+) {
 
     sealed interface State {
         data object Idle : State
@@ -24,18 +33,32 @@ class ReconnectPolicy(private val delayFor: (attempt: Int) -> Long = Timing::rec
 
         /** Back-off before reconnect [attempt] (1-based), which starts after [delayMs]. */
         data class Waiting(val address: String, val attempt: Int, val delayMs: Long) : State
+
+        /** Direct connects to [address] kept failing: a scan looks for its bike by name before [attempt]. */
+        data class Searching(val address: String, val attempt: Int) : State
     }
 
     sealed interface Action {
         data class Connect(val address: String, val attempt: Int) : Action
         data class StartTimer(val delayMs: Long) : Action
         data object CancelTimer : Action
+
         /** Disconnect and close the GATT of the current link, if any. */
         data object CloseLink : Action
+
+        /** Scan for the bike of [address] by its name; report the result to [onFindDone]. */
+        data class Find(val address: String) : Action
+
+        /** Stop the running [Find] scan; no result is expected any more. */
+        data object StopFind : Action
     }
 
     var state: State = State.Idle
         private set
+
+    /** Failed connects in a row since the last success, scan or new connect. */
+    private var failures = 0
+    private var lastFindAt: Long? = null
 
     /** Address the policy is working on, in any state but Idle. */
     val address: String?
@@ -45,7 +68,11 @@ class ReconnectPolicy(private val delayFor: (attempt: Int) -> Long = Timing::rec
             is State.Connecting -> s.address
             is State.Connected -> s.address
             is State.Waiting -> s.address
+            is State.Searching -> s.address
         }
+
+    /** [Action.StopFind] when leaving [State.Searching], else nothing. */
+    private fun stopFind(): Action? = Action.StopFind.takeIf { state is State.Searching }
 
     /** Rider taps a bike, or the app starts with a saved bike. */
     fun connect(address: String): List<Action> {
@@ -58,13 +85,16 @@ class ReconnectPolicy(private val delayFor: (attempt: Int) -> Long = Timing::rec
             return emptyList()
         }
         val close = s is State.Connecting || s is State.Connected
+        val stop = stopFind()
+        failures = 0
         state = State.Connecting(address, 0)
-        return listOfNotNull(Action.CancelTimer, Action.CloseLink.takeIf { close }, Action.Connect(address, 0))
+        return listOfNotNull(Action.CancelTimer, stop, Action.CloseLink.takeIf { close }, Action.Connect(address, 0))
     }
 
     /** GATT connected, MTU set, characteristics found and notify on. */
     fun onLinkReady(): List<Action> {
         val s = state as? State.Connecting ?: return emptyList()
+        failures = 0
         state = State.Connected(s.address)
         return emptyList()
     }
@@ -76,9 +106,33 @@ class ReconnectPolicy(private val delayFor: (attempt: Int) -> Long = Timing::rec
             is State.Connected -> s.address to 1
             else -> return emptyList()
         }
+        failures = if (state is State.Connecting) failures + 1 else 0
+        if (failures >= findAfter && findAllowed()) {
+            failures = 0
+            lastFindAt = clock()
+            state = State.Searching(address, attempt)
+            return listOf(Action.CloseLink, Action.Find(address))
+        }
+        return listOf(Action.CloseLink, backOff(address, attempt))
+    }
+
+    /**
+     * The [Action.Find] scan ended: [found] is the address the bike advertised from, or null. Found at the
+     * same address, it did not move (a setup failure, say): the back-off goes on as if not found.
+     */
+    fun onFindDone(found: String?): List<Action> {
+        val s = state as? State.Searching ?: return emptyList()
+        if (found == null || found == s.address) return listOf(backOff(s.address, s.attempt))
+        state = State.Connecting(found, s.attempt)
+        return listOf(Action.Connect(found, s.attempt))
+    }
+
+    private fun findAllowed(): Boolean = lastFindAt.let { it == null || clock() - it >= findIntervalMs }
+
+    private fun backOff(address: String, attempt: Int): Action {
         val delay = delayFor(attempt)
         state = State.Waiting(address, attempt, delay)
-        return listOf(Action.CloseLink, Action.StartTimer(delay))
+        return Action.StartTimer(delay)
     }
 
     fun onTimer(): List<Action> {
@@ -89,14 +143,18 @@ class ReconnectPolicy(private val delayFor: (attempt: Int) -> Long = Timing::rec
 
     /** User disconnect or forget: no more reconnects until the rider connects again. */
     fun disconnect(): List<Action> {
+        val stop = stopFind()
+        failures = 0
         state = if (state is State.BluetoothOff) State.BluetoothOff(null) else State.Idle
-        return listOf(Action.CancelTimer, Action.CloseLink)
+        return listOfNotNull(Action.CancelTimer, stop, Action.CloseLink)
     }
 
     fun onBluetoothOff(): List<Action> {
         if (state is State.BluetoothOff) return emptyList()
+        val stop = stopFind()
+        failures = 0
         state = State.BluetoothOff(address)
-        return listOf(Action.CancelTimer, Action.CloseLink)
+        return listOfNotNull(Action.CancelTimer, stop, Action.CloseLink)
     }
 
     fun onBluetoothOn(): List<Action> {

@@ -58,3 +58,22 @@ private fun RouteGpsOffPreview() = Frame(activeState(NavStatusCode.GPS_OFF).copy
 @Preview(heightDp = 900)
 @Composable
 private fun RouteWaitingPreview() = Frame(NavigateState(phase = RoutePhase.WAITING_FIRST_UPDATE, nav = NavState(waiting = true, destinationLabel = "Home")))
+
+@Preview(heightDp = 1000)
+@Composable
+private fun PlaceChooserPreview() = SafarTheme(ThemeMode.LIGHT) {
+    PlaceContent(PlaceState(lockReason = "Locked while moving (42 km/h). Stop to type."), PlaceActions(), rememberToastState())
+}
+
+@Preview(heightDp = 1200)
+@Composable
+private fun PlaceSharedPreview() = SafarTheme(ThemeMode.DARK) {
+    val draft = draftFromShare("Lake View Point\nMain Rd, Sample Town\nhttps://maps.app.goo.gl/AbCdEf123")
+    PlaceContent(PlaceState(draft = draft), PlaceActions(), rememberToastState())
+}
+
+@Preview(heightDp = 1200, fontScale = 1.4f)
+@Composable
+private fun PlaceEditPreview() = SafarTheme(ThemeMode.LIGHT) {
+    PlaceContent(PlaceState(editing = true, draft = draftFromPlace(PreviewPlaces[1]), confirmDelete = true), PlaceActions(), rememberToastState())
+}

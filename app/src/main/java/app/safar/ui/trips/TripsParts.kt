@@ -27,8 +27,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.CardStyle
-import app.safar.ui.components.NumberWithUnit
 import app.safar.ui.components.Freshness
+import app.safar.ui.components.NumberWithUnit
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.StatCell
 import app.safar.ui.components.StatGrid

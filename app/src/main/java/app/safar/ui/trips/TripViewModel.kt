@@ -56,7 +56,7 @@ class TripViewModel(
     /** True once the trip is gone; the screen then goes back. */
     val deleted: StateFlow<Boolean> = _deleted.asStateFlow()
 
-    /** Toast messages ("Renamed", failures). */
+    /** Toast messages ("Ride renamed", failures). */
     val notices = Notices()
 
     fun rename(input: String) {

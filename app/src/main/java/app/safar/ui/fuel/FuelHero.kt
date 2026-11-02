@@ -27,12 +27,12 @@ import app.safar.data.FuelMethod
 import app.safar.data.FuelStats
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasIcon
-import app.safar.ui.components.FuelBars
-import app.safar.ui.components.Kicker
-import app.safar.ui.components.NumberWithUnit
 import app.safar.ui.components.DevOnly
 import app.safar.ui.components.DeveloperLine
 import app.safar.ui.components.Freshness
+import app.safar.ui.components.FuelBars
+import app.safar.ui.components.Kicker
+import app.safar.ui.components.NumberWithUnit
 import app.safar.ui.components.rememberStale
 import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas

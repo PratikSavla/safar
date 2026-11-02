@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.offset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import app.safar.ui.components.AtlasToastHost
+import app.safar.ui.components.LocalDeveloperMode
 import app.safar.ui.components.ProvideNow
 import app.safar.ui.components.TicketStubTabs
 import app.safar.ui.components.rememberToastState
@@ -72,8 +73,8 @@ fun SafarShell(shell: ShellViewModel) {
         }
         KeepScreenOn(chrome.keepScreenOn)
         val ui = remember(shell, autoRide) { shellUi(shell, autoRide) }
-        // One clock for every age text in the app (components/Now.kt).
-        CompositionLocalProvider(LocalShellUi provides ui) {
+        // One clock for every age text in the app (components/Now.kt); Developer mode for every screen.
+        CompositionLocalProvider(LocalShellUi provides ui, LocalDeveloperMode provides settings.developerMode) {
             ProvideNow {
                 Box(Modifier.fillMaxSize().background(Atlas.colors.paper)) {
                     BackHandler(enabled = stack.canGoBack, onBack = shell::back)

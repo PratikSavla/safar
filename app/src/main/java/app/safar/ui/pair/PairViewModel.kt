@@ -11,13 +11,26 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
 
 class PairViewModel(private val bike: BikeController, settings: SettingsStore) : ViewModel() {
-    private val picked = MutableStateFlow<String?>(null)
+    /** One tap on a cluster. [seq] makes a second tap on the same cluster a new pick. */
+    private data class Pick(val address: String, val seq: Long)
+
+    private class Tracked(val pick: Pick?, val inputs: PairInputs)
+
+    private val picked = MutableStateFlow<Pick?>(null)
+    private var picks = 0L
     private var autoScanned = false
 
-    val inputs: StateFlow<PairInputs?> = combine(bike.state, settings.settings, picked) { b, s, p -> PairInputs(b, s.riderName, p) }
+    val inputs: StateFlow<PairInputs?> = combine(bike.state, settings.settings, picked, ::Triple)
+        .runningFold(null as Tracked?) { prev, (b, s, p) ->
+            val attempted = p != null && pickAttempted(prev?.pick == p, prev?.inputs?.attempted == true, b.link)
+            Tracked(p, PairInputs(b, s.riderName, p?.address, attempted))
+        }
+        .map { it?.inputs }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
     /** First visit with Bluetooth ready: scan once by itself (pair.js `enter`). */
@@ -34,7 +47,8 @@ class PairViewModel(private val bike: BikeController, settings: SettingsStore) :
     }
 
     fun pick(address: String) {
-        picked.value = address
+        picks += 1
+        picked.value = Pick(address, picks)
         if (bike.state.value.scanning) bike.stopScan()
         bike.connect(address)
     }

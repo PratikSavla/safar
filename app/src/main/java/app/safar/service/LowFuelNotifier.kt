@@ -50,13 +50,13 @@ object LowFuelNotifier {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "Low fuel", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "A reminder when the cluster's fuel gauge reaches its last bar."
+                description = "A reminder when your bike’s fuel gauge reaches its last bar."
             },
         )
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_safar)
-            .setContentTitle("Low fuel: 1 bar left")
-            .setContentText("The cluster reads its last fuel bar. Time to look for a pump.")
+            .setContentTitle("Low fuel — 1 bar left")
+            .setContentText("Your bike’s fuel gauge is on its last bar. Time to find a pump.")
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)

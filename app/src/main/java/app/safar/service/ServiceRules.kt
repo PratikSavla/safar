@@ -1,5 +1,6 @@
 package app.safar.service
 
+import android.annotation.SuppressLint
 import android.content.pm.ServiceInfo
 import android.os.Build
 import app.safar.core.BikeState
@@ -22,6 +23,7 @@ fun shouldRunService(state: BikeState): Boolean = when (state.link) {
  * Foreground service types this start may use, or null when none is allowed (API 34+ needs a granted
  * runtime permission per type). Below API 29 types do not exist and 0 is returned.
  */
+@SuppressLint("InlinedApi") // Compile-time constants, only returned for sdk >= 29.
 fun foregroundServiceTypes(sdk: Int, bluetoothGranted: Boolean, locationGranted: Boolean): Int? {
     if (sdk < Build.VERSION_CODES.Q) return 0
     val device = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE

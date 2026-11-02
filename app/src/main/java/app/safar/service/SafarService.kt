@@ -1,5 +1,6 @@
 package app.safar.service
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.util.Log
@@ -60,6 +61,7 @@ class SafarService : LifecycleService() {
     }
 
     /** startForeground with the types this start may use (API 34+ checks permissions per type). */
+    @SuppressLint("InlinedApi") // The type mask is 0 below API 29; ServiceCompat ignores it there.
     private fun goForeground(): Boolean {
         val types = allowedServiceTypes(this)
         if (types == null) {

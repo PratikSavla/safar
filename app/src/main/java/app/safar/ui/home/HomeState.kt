@@ -108,10 +108,14 @@ internal fun ledgerUi(bike: BikeState, fuel: FuelStats): LedgerUi? {
     )
 }
 
-/** Phone GPS speed: whole km/h, "live" while moving, else the fix age. */
+/** Phone GPS speed: whole km/h, "live" while moving, else the fix age. [fixAt] is null while live (not shown). */
 data class SpeedUi(val kmh: Int?, val live: Boolean, val fixAt: Long?)
 
-internal fun speedUi(ride: RideState): SpeedUi = SpeedUi(ride.speedKmh?.roundToInt(), ride.moving && ride.speedKmh != null, ride.lastFixAtMillis)
+internal fun speedUi(ride: RideState): SpeedUi {
+    val live = ride.moving && ride.speedKmh != null
+    // While live the cell says "live": leaving the fix time out keeps a new fix at the same speed from re-emitting.
+    return SpeedUi(ride.speedKmh?.roundToInt(), live, if (live) null else ride.lastFixAtMillis)
+}
 
 /** Missed calls and unread WhatsApp: shown above the ledger when either is non-zero. */
 data class CountsUi(val missed: AlertCounter, val messages: AlertCounter) {

@@ -32,6 +32,7 @@ private val DATE_LINE = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy", Locale.U
 @Composable
 fun HomeScreen(navigator: Navigator, vm: HomeViewModel = viewModel { HomeViewModel.fromContainer() }) {
     val ui by vm.ui.collectAsStateWithLifecycle()
+    val speed = vm.speed.collectAsStateWithLifecycle()
     val fixes = rememberBtFixes(onChanged = {})
     val actions = remember(navigator, vm, fixes) {
         ConnActions(
@@ -41,35 +42,40 @@ fun HomeScreen(navigator: Navigator, vm: HomeViewModel = viewModel { HomeViewMod
             enableBluetooth = fixes.enableBluetooth,
         )
     }
-    HomeContent(ui, actions, navigator::go)
+    HomeContent(ui, { speed.value }, actions, navigator::go)
 }
 
 @Composable
-internal fun HomeContent(ui: HomeUi?, actions: ConnActions, go: (Route) -> Unit) {
-    val now by rememberNow(periodMillis = 60_000)
+internal fun HomeContent(ui: HomeUi?, speed: () -> SpeedUi, actions: ConnActions, go: (Route) -> Unit) {
     AtlasPage(bottomBar = TabBarSpace) {
-        val dateLine = DATE_LINE.format(Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault())).uppercase(Locale.UK)
-        val name = ui?.riderName?.ifEmpty { null } ?: "rider"
-        Masthead(dateLine, "Today", kickerAside = ui?.let { "Entry № ${it.entryNo}" }, titleEm = ", $name.")
+        TodayMasthead(ui?.riderName?.ifEmpty { null } ?: "rider", ui?.entryNo)
         if (ui == null) return@AtlasPage
         ConnectionCard(ui.conn, ui.autoRideOn, actions)
         NavStrip(ui.nav) { go(Route.Navigate) }
         CountsStrip(ui.counts) { go(Route.Alerts) }
         SectionHeader("The ledger", Modifier.padding(top = 0.dp)) { ui.modelName?.let { Kicker(it) } }
-        Ledger(ui.ledger, ui.speed)
+        Ledger(ui.ledger, speed)
         SectionHeader("Garage")
         Garage(ui.garage, go)
     }
 }
 
+/** "MON, 03 NOV 2026" over "Today, Alex.": the only part of the page the minute clock recomposes. */
+@Composable
+private fun TodayMasthead(name: String, entryNo: Int?) {
+    val now by rememberNow(periodMillis = 60_000)
+    val dateLine = DATE_LINE.format(Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault())).uppercase(Locale.UK)
+    Masthead(dateLine, "Today", kickerAside = entryNo?.let { "Entry № $it" }, titleEm = ", $name.")
+}
+
 @Preview(heightDp = 1400)
 @Composable
 private fun HomePreview() = SafarTheme(ThemeMode.LIGHT) {
-    HomeContent(HomePreviewData.connected(), HomePreviewData.noActions, {})
+    HomeContent(HomePreviewData.connected(), { HomePreviewData.speed }, HomePreviewData.noActions, {})
 }
 
 @Preview(heightDp = 1400)
 @Composable
 private fun HomeReconnectingDarkPreview() = SafarTheme(ThemeMode.DARK) {
-    HomeContent(HomePreviewData.reconnecting(), HomePreviewData.noActions, {})
+    HomeContent(HomePreviewData.reconnecting(), { HomePreviewData.speed }, HomePreviewData.noActions, {})
 }

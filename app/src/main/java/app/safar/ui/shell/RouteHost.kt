@@ -1,6 +1,7 @@
 package app.safar.ui.shell
 
 import androidx.compose.runtime.Composable
+import app.safar.ui.home.HomeScreen
 import app.safar.ui.nav.Navigator
 import app.safar.ui.nav.Route
 import app.safar.ui.onboarding.OnboardingScreen
@@ -12,7 +13,7 @@ fun RouteHost(route: Route, navigator: Navigator) {
     when (route) {
         Route.Onboarding -> OnboardingScreen(navigator)
         Route.Pair -> PairScreen(navigator)
-        Route.Home -> PendingScreen(navigator, "Today", "Today", tab = true)
+        Route.Home -> HomeScreen(navigator)
         Route.Ride -> PendingScreen(navigator, "Ride", "Ride mode")
         Route.Navigate -> PendingScreen(navigator, "Route · via Google Maps", "Where to?", tab = true)
         is Route.Place -> PendingScreen(navigator, "Route", "Save a place")

@@ -3,6 +3,7 @@ package app.safar.phone
 import app.safar.core.NavSnapshot
 import app.safar.core.NavStatusCode
 import app.safar.core.PhoneSnapshot
+import app.safar.core.cellularOk
 import app.safar.protocol.MapsNotification
 import app.safar.protocol.NavStatus
 import app.safar.protocol.NavUpdate
@@ -74,12 +75,9 @@ fun reduceMaps(
     )
 }
 
-/**
- * Phone facts for the navigation status byte. Cellular counts as fine while the phone has internet (Wi-Fi
- * hotspot, or signal bars unknown without permission), because Google Maps keeps routing then.
- */
+/** Phone facts for the navigation status byte; see [cellularOk] for the network rule. */
 fun phoneConditions(phone: PhoneSnapshot): PhoneConditions =
-    PhoneConditions(gpsOn = phone.gpsOn, cellularOk = phone.signalBars > 0 || phone.hasInternet, internetOk = phone.hasInternet)
+    PhoneConditions(gpsOn = phone.gpsOn, cellularOk = phone.cellularOk, internetOk = phone.hasInternet)
 
 fun navStatusCode(status: NavStatus): NavStatusCode = NavStatusCode.entries.first { it.code == status.code }
 

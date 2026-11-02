@@ -120,6 +120,14 @@ class SessionFramesTest {
     }
 
     @Test
+    fun wifiOnlyPhoneKeepsTheTurnArrowOnTheCluster() {
+        val wifiOnly = good.copy(signalBars = 0, hasInternet = true)
+        val data = NavFrameMapper(zone).map(snap(), wifiOnly, active = true)
+        assertEquals(NavStatus.NORMAL, data.status)
+        assertEquals(4, data.iconCode)
+    }
+
+    @Test
     fun statusPriorityFollowsDocs43() {
         val all = NavStatusCode.ARRIVED
         val noGps = good.copy(gpsOn = false, signalBars = 0, hasInternet = false)
@@ -131,6 +139,8 @@ class SessionFramesTest {
         assertEquals(NavStatus.DESTINATION_REACHED, navStatusFor(NavStatusCode.ARRIVED, good, false))
         assertEquals(NavStatus.VIA_POINT_REACHED, navStatusFor(NavStatusCode.VIA_POINT, good, false))
         assertEquals(NavStatus.NORMAL, navStatusFor(NavStatusCode.NORMAL, good, false))
+        // Poor or unknown bars (or no SIM) with working internet: Maps keeps routing, the cluster keeps its arrows.
+        assertEquals(NavStatus.NORMAL, navStatusFor(NavStatusCode.NORMAL, good.copy(signalBars = 0), false))
         assertEquals(NavStatus.GPS_OFF, navStatusFor(NavStatusCode.GPS_OFF, good, false))
         assertEquals(NavStatus.NO_NETWORK_SIGNAL, navStatusFor(NavStatusCode.NO_NETWORK, good, false))
         assertEquals(NavStatus.NO_INTERNET, navStatusFor(NavStatusCode.NO_INTERNET, good, false))

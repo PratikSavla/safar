@@ -5,6 +5,7 @@ import app.safar.core.ClusterReading
 import app.safar.core.NavSnapshot
 import app.safar.core.NavStatusCode
 import app.safar.core.PhoneSnapshot
+import app.safar.core.cellularOk
 import app.safar.data.Settings
 import app.safar.protocol.CLUSTER_TYPE
 import app.safar.protocol.ChecksumMode
@@ -85,10 +86,13 @@ class ClearedFlagTracker(private val holdTicks: Int = HOLD_TICKS) {
     }
 }
 
-/** Navigation status byte (docs 4.3) with its priority: GPS off, no network, no internet, reroute, arrived, via. */
+/**
+ * Navigation status byte (docs 4.3) with its priority: GPS off, no network, no internet, reroute, arrived, via.
+ * No network uses the phone layer's rule ([cellularOk]), so the cluster agrees with what the app shows.
+ */
 fun navStatusFor(code: NavStatusCode, phone: PhoneSnapshot, rerouteAlreadySent: Boolean): NavStatus = when {
     !phone.gpsOn || code == NavStatusCode.GPS_OFF -> NavStatus.GPS_OFF
-    phone.signalBars <= 0 || code == NavStatusCode.NO_NETWORK -> NavStatus.NO_NETWORK_SIGNAL
+    !phone.cellularOk || code == NavStatusCode.NO_NETWORK -> NavStatus.NO_NETWORK_SIGNAL
     !phone.hasInternet || code == NavStatusCode.NO_INTERNET -> NavStatus.NO_INTERNET
     code == NavStatusCode.RECALCULATING && !rerouteAlreadySent -> NavStatus.REROUTING
     code == NavStatusCode.ARRIVED -> NavStatus.DESTINATION_REACHED

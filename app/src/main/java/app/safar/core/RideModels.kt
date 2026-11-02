@@ -78,6 +78,12 @@ data class PhoneSnapshot(
     val gpsOn: Boolean = true,
 )
 
+/**
+ * Cellular counts as fine while the phone has internet (Wi-Fi hotspot, poor or unknown bars), because Google Maps
+ * keeps routing then. The one rule for both the phone's navigation status and the cluster's status byte.
+ */
+val PhoneSnapshot.cellularOk: Boolean get() = signalBars > 0 || hasInternet
+
 /** Phone GPS. [speedKmh] is null without a recent fix. [moving] = above 10 km/h (UX rule 3 locks input). */
 data class RideState(
     val speedKmh: Float? = null,

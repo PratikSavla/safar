@@ -1,6 +1,8 @@
 package app.safar.ui.trips
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.itemsIndexed
+import app.safar.ui.components.AtlasLazyPage
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -16,7 +18,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.safar.core.AppContainer
 import app.safar.data.ThemeMode
-import app.safar.ui.components.AtlasPage
 import app.safar.ui.components.EmptyState
 import app.safar.ui.components.Gap
 import app.safar.ui.components.Kicker
@@ -58,7 +59,28 @@ fun TripsContent(
     bottomBar: (@Composable () -> Unit)? = null,
 ) {
     var shown by rememberSaveable { mutableIntStateOf(PAGE) }
-    AtlasPage(topo = TopoTransform.Journal, bottomBar = bottomBar) {
+    AtlasLazyPage(topo = TopoTransform.Journal, bottomBar = bottomBar) {
+        item(key = "head", contentType = "head") { TripsHead(state, onOpen) }
+        itemsIndexed(state.rows.take(shown), key = { _, row -> row.id }, contentType = { _, _ -> "postcard" }) { i, row ->
+            Box(Modifier.padding(top = if (i > 0) 14.dp else 0.dp)) {
+                Postcard(row, tilt = if (i % 2 == 1) 0.5f else -0.6f, thumb = thumbFor(row.id), onClick = { onOpen(row.id) })
+            }
+        }
+        item(key = "foot", contentType = "foot") {
+            Column {
+                if (state.rows.size > shown) {
+                    TextAction("Show older entries", { shown += PAGE }, Modifier.padding(top = 12.dp))
+                }
+                Footnote("Tracks come from phone GPS. Distances from the bike’s odometer at connect and disconnect.")
+                Gap(72.dp) // clear of the shell's ticket-stub tabs
+            }
+        }
+    }
+}
+
+@Composable
+private fun TripsHead(state: TripsUiState, onOpen: (Long) -> Unit) {
+    Column {
         Masthead(
             kicker = "Journal · ${state.bikeName ?: "your bike"}",
             title = "Roads",
@@ -71,16 +93,6 @@ fun TripsContent(
         if (state.rows.isEmpty() && !state.loading) {
             EmptyState("No rides yet.", message = "Connect the bike and ride; trips land here by themselves.")
         }
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            state.rows.take(shown).forEachIndexed { i, row ->
-                Postcard(row, tilt = if (i % 2 == 1) 0.5f else -0.6f, thumb = thumbFor(row.id), onClick = { onOpen(row.id) })
-            }
-        }
-        if (state.rows.size > shown) {
-            TextAction("Show older entries", { shown += PAGE }, Modifier.padding(top = 12.dp))
-        }
-        Footnote("Tracks come from phone GPS. Distances from the bike’s odometer at connect and disconnect.")
-        Gap(72.dp) // clear of the shell's ticket-stub tabs
     }
 }
 

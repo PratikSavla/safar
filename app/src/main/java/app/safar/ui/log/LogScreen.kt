@@ -1,5 +1,8 @@
 package app.safar.ui.log
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.lazy.items
+import app.safar.ui.components.AtlasLazyPage
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -20,7 +23,6 @@ import app.safar.BuildConfig
 import app.safar.core.AppContainer
 import app.safar.core.LogRecord
 import app.safar.ui.components.AtlasBottomSheet
-import app.safar.ui.components.AtlasPage
 import app.safar.ui.components.AtlasToastHost
 import app.safar.ui.components.AtlasToastState
 import app.safar.ui.components.BackTopBar
@@ -84,7 +86,7 @@ internal fun LogContent(state: LogScreenState, actions: LogActions, toast: Atlas
     state.selected?.let { lastRecord[0] = it }
     val lastExport = remember { arrayOfNulls<ExportSheet>(1) }
     state.export?.let { lastExport[0] = it }
-    AtlasPage(
+    AtlasLazyPage(
         modifier,
         overlay = {
             AtlasToastHost(toast, Modifier.align(Alignment.BottomCenter), bottomPadding = 40.dp)
@@ -96,6 +98,20 @@ internal fun LogContent(state: LogScreenState, actions: LogActions, toast: Atlas
             }
         },
     ) {
+        item(key = "head", contentType = "head") { LogHead(state, actions) }
+        if (state.rows.isEmpty()) {
+            item(key = "empty", contentType = "empty") {
+                EmptyState("Nothing on the wire.", Modifier.padding(top = 8.dp), message = "Connect the bike, or loosen the filters.")
+            }
+        } else {
+            items(state.rows, key = { it.id }, contentType = { "row" }) { LogRowItem(it, actions.onOpen) }
+        }
+    }
+}
+
+@Composable
+private fun LogHead(state: LogScreenState, actions: LogActions) {
+    Column {
         BackTopBar("Debug log · suzuki-ble-log/1", "The", actions.onBack, titleEm = " wire.")
         if (!state.debugLogOn) LogOffRow(actions.onDebugLog)
         SessionBar(state.sessionActive, actions.onSession, actions.onExport)
@@ -106,11 +122,6 @@ internal fun LogContent(state: LogScreenState, actions: LogActions, toast: Atlas
             Modifier.padding(top = 10.dp, bottom = 4.dp),
             style = Atlas.type.src.copy(color = Atlas.colors.ink3),
         )
-        if (state.rows.isEmpty()) {
-            EmptyState("Nothing on the wire.", Modifier.padding(top = 8.dp), message = "Connect the bike, or loosen the filters.")
-        } else {
-            state.rows.forEach { LogRowItem(it, actions.onOpen) }
-        }
     }
 }
 

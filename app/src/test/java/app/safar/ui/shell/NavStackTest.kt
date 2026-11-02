@@ -68,6 +68,18 @@ class NavStackTest {
     }
 
     @Test
+    fun decodeKeepsEntryIdsAndTheCounter() {
+        // After a reset and a pop the ids are 2, 3, 5: renumbering them 1, 2, 3 would hand Trip the Trips state.
+        val s = NavStack().resetTo(Route.Trips).resetTo(Route.Home).go(Route.Trips).go(Route.Fuel).back().go(Route.Trip(7))
+        assertEquals(listOf(2L, 3L, 5L), s.entries.map { it.id })
+        assertEquals(listOf("2|home", "3|trips", "5|trip|7"), s.encode())
+        val back = NavStack.decode(s.encode(), s.nextId)
+        assertEquals(s.entries, back.entries)
+        assertEquals(6L, back.nextId)
+        assertEquals(10L, NavStack.decode(s.encode(), 10L).nextId)
+    }
+
+    @Test
     fun decodeSkipsUnknownEntries() {
         val s = NavStack.decode(listOf("home", "warp-drive", "fuel"))
         assertEquals(listOf(Route.Home, Route.Fuel), routes(s))

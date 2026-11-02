@@ -42,7 +42,7 @@ class ShellViewModel(
     navigation: NavigationBridge,
     private val ride: RideTracker,
 ) : ViewModel(), Navigator {
-    private val _stack = MutableStateFlow(NavStack.decode(saved.get<ArrayList<String>>(KEY_STACK)))
+    private val _stack = MutableStateFlow(NavStack.decode(saved.get<ArrayList<String>>(KEY_STACK), saved.get<Long>(KEY_NEXT_ID)))
     val stack: StateFlow<NavStack> = _stack.asStateFlow()
 
     private val stores = HashMap<Long, ViewModelStore>()
@@ -106,6 +106,7 @@ class ShellViewModel(
         if (next == prev) return
         _stack.value = next
         saved[KEY_STACK] = next.encode()
+        saved[KEY_NEXT_ID] = next.nextId
         prev.removedIn(next).forEach { id -> stores.remove(id)?.clear() }
         if (_autoRide.value && prev.top?.route == Route.Ride && next.top?.route != Route.Ride) setAutoRide(false)
     }
@@ -143,6 +144,7 @@ class ShellViewModel(
 
     private companion object {
         const val KEY_STACK = "shell.stack"
+        const val KEY_NEXT_ID = "shell.nextId"
         const val KEY_AUTO_RIDE = "shell.autoRide"
         const val STOP_TIMEOUT_MS = 5_000L
     }

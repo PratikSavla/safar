@@ -48,16 +48,29 @@ data class NavStack(
         return entries.map { it.id }.filterNot { it in kept }
     }
 
-    fun encode(): ArrayList<String> = entries.mapTo(ArrayList()) { RouteCodec.encode(it.route) }
+    /** One `id|route` string per entry: the ids key each page's saved UI state, so they survive too. */
+    fun encode(): ArrayList<String> = entries.mapTo(ArrayList()) { "${it.id}$ID_SEP${RouteCodec.encode(it.route)}" }
 
     companion object {
         private val ROOTS = setOf(Route.Home, Route.Onboarding)
+        private const val ID_SEP = '|'
 
-        /** Rebuilds a saved stack with fresh ids; unreadable entries are skipped. Empty when nothing is usable. */
-        fun decode(saved: List<String>?): NavStack {
-            val routes = saved.orEmpty().mapNotNull(RouteCodec::decode)
-            val entries = routes.mapIndexed { i, r -> StackEntry(i + 1L, r) }
-            return NavStack(entries, nextId = entries.size + 1L)
+        /**
+         * Rebuilds a saved stack with its entry ids, so restored page state lands on the same page.
+         * Unreadable entries are skipped. A stack saved without ids gets fresh ones. [nextId] is the saved
+         * counter; ids are never reused below it. Empty when nothing is usable.
+         */
+        fun decode(saved: List<String>?, nextId: Long? = null): NavStack {
+            val items = saved.orEmpty()
+            val ids = items.map { it.substringBefore(ID_SEP, "").toLongOrNull() }
+            val withIds = items.isNotEmpty() && ids.all { it != null } && ids.toSet().size == ids.size
+            val entries = items.mapIndexedNotNull { i, text ->
+                val id = if (withIds) ids[i] else i + 1L
+                val route = RouteCodec.decode(if (withIds) text.substringAfter(ID_SEP) else text)
+                if (id != null && route != null) StackEntry(id, route) else null
+            }
+            val next = maxOf(nextId ?: 1L, (entries.maxOfOrNull { it.id } ?: 0L) + 1)
+            return NavStack(entries, nextId = next)
         }
     }
 }

@@ -25,6 +25,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
@@ -140,17 +141,46 @@ internal fun RideTurn(turn: TurnUi) {
     }
 }
 
+/** Largest speed numeral, in dp. */
+private val MAX_SPEED_DP = 208.dp
+private const val UNIT_GAP_DP = 6
+
+/** Speed numeral size, and whether "km/h" sits beside it (a wide, short box: landscape) instead of under it. */
+internal data class SpeedLayout(val numeral: Dp, val unitBeside: Boolean)
+
+/**
+ * Sizes the numeral so the measured unit ([unitWidth] x [unitHeight], which grows with the font scale) always
+ * fits: under the number, or beside it when that leaves a larger number.
+ */
+internal fun speedLayout(maxWidth: Dp, maxHeight: Dp, chars: Int, unitWidth: Dp, unitHeight: Dp): SpeedLayout {
+    val perChar = 0.62f * chars.coerceAtLeast(2)
+    val gap = UNIT_GAP_DP.dp
+    val stacked = min(min(maxWidth / perChar, min(maxHeight * 0.7f, maxHeight - unitHeight - gap)), MAX_SPEED_DP)
+    val beside = min(min((maxWidth - unitWidth - gap) / perChar, maxHeight * 0.85f), MAX_SPEED_DP)
+    return if (beside > stacked) SpeedLayout(beside.coerceAtLeast(0.dp), true) else SpeedLayout(stacked.coerceAtLeast(0.dp), false)
+}
+
 /** The speed, as large as the space allows (ride.css `.r-speed`), rust above the speed alert. */
 @Composable
 internal fun RideSpeed(ui: RideUi, modifier: Modifier) {
     val c = Atlas.colors
     val text = ui.speedKmh?.toString() ?: "—"
+    val unitStyle = Atlas.type.serifItalic.copy(fontSize = Atlas.type.serifItalic.fontSize * 1.6f, color = c.ink2)
+    val unit = rememberTextMeasurer().measure("km/h", unitStyle).size
+    val density = LocalDensity.current
     BoxWithConstraints(modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = if (ui.speedKmh == null) "No GPS speed yet" else "Speed ${ui.speedKmh} kilometres per hour" }, contentAlignment = Alignment.Center) {
-        val byWidth = maxWidth / (0.62f * text.length.coerceAtLeast(2))
-        val size = min(min(byWidth, maxHeight * 0.7f), 208.dp)
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            BasicText(text, style = glance(size, 800, if (ui.overLimit) c.rust else c.ink).copy(letterSpacing = (-0.05).em), maxLines = 1)
-            BasicText("km/h", Modifier.padding(top = 6.dp), style = Atlas.type.serifItalic.copy(fontSize = Atlas.type.serifItalic.fontSize * 1.6f, color = c.ink2))
+        val layout = with(density) { speedLayout(maxWidth, maxHeight, text.length, unit.width.toDp(), unit.height.toDp()) }
+        val number = @Composable { BasicText(text, style = glance(layout.numeral, 800, if (ui.overLimit) c.rust else c.ink).copy(letterSpacing = (-0.05).em), maxLines = 1) }
+        if (layout.unitBeside) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                number()
+                BasicText("km/h", Modifier.padding(start = UNIT_GAP_DP.dp), style = unitStyle, maxLines = 1)
+            }
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                number()
+                BasicText("km/h", Modifier.padding(top = UNIT_GAP_DP.dp), style = unitStyle, maxLines = 1)
+            }
         }
     }
 }

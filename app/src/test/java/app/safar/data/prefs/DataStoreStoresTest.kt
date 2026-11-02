@@ -7,7 +7,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -27,7 +29,9 @@ class DataStoreStoresTest {
     @After
     fun tearDown() = scope.cancel()
 
-    private fun store(name: String) = createPreferencesStore(name, scope) { tmp.root.resolve("$name.preferences_pb") }
+    private fun file(name: String) = tmp.root.resolve("$name.preferences_pb")
+
+    private fun store(name: String) = createPreferencesStore(name, scope) { file(name) }
 
     @Test
     fun settingsUpdatePersistsAndEmits() = runBlocking {
@@ -50,6 +54,19 @@ class DataStoreStoresTest {
         assertEquals(record, withTimeout(5_000) { store.saved.first { it != null } })
         store.clear()
         assertNull(withTimeout(5_000) { store.saved.first { it == null } })
+    }
+
+    @Test
+    fun savedBikeIsLoadedOnlyWithTheStoredValue() = runBlocking {
+        val record = SavedBikeRecord("SBM01A1B2C3D", "AA:BB:CC:00:11:22")
+        val writerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        DataStoreSavedBikeStore(createPreferencesStore("saved_bike", writerScope) { file("saved_bike") }, writerScope)
+            .save(record)
+        writerScope.coroutineContext.job.cancelAndJoin()
+
+        val store = DataStoreSavedBikeStore(store("saved_bike"), scope)
+        withTimeout(5_000) { store.loaded.first { it } }
+        assertEquals(record, store.saved.value, "loaded means the stored bike is already in saved")
     }
 
     @Test

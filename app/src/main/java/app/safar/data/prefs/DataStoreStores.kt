@@ -16,11 +16,14 @@ import app.safar.data.SettingsStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
 
@@ -92,14 +95,22 @@ class DataStoreSavedBikeStore(
     private val nameKey = stringPreferencesKey("name")
     private val addressKey = stringPreferencesKey("address")
 
-    override val saved: StateFlow<SavedBikeRecord?> = dataStore.data
-        .retryOnIoError("saved bike")
-        .map { prefs ->
-            val name = prefs[nameKey]
-            val address = prefs[addressKey]
-            if (name != null && address != null) SavedBikeRecord(name, address) else null
+    private val savedState = MutableStateFlow<SavedBikeRecord?>(null)
+    private val loadedState = MutableStateFlow(false)
+    override val saved: StateFlow<SavedBikeRecord?> = savedState.asStateFlow()
+    override val loaded: StateFlow<Boolean> = loadedState.asStateFlow()
+
+    init {
+        // Not stateIn: [loaded] must turn true only after [saved] holds the value read from disk.
+        scope.launch {
+            dataStore.data.retryOnIoError("saved bike").collect { prefs ->
+                val name = prefs[nameKey]
+                val address = prefs[addressKey]
+                savedState.value = if (name != null && address != null) SavedBikeRecord(name, address) else null
+                loadedState.value = true
+            }
         }
-        .stateIn(scope, SharingStarted.Eagerly, null)
+    }
 
     override suspend fun save(record: SavedBikeRecord) = dataStore.editLogged("saved bike") {
         it[nameKey] = record.name

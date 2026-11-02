@@ -32,6 +32,7 @@ class TripViewModelTest {
         override suspend fun start(trip: Trip): Long = error("not used")
         override suspend fun update(trip: Trip) = Unit
         override suspend fun addPoints(points: List<TrackPoint>) = Unit
+        override suspend fun replaceTrack(tripId: Long, points: List<TrackPoint>) = Unit
         override suspend fun delete(id: Long) { deleted += id }
     }
 

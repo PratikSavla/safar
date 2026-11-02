@@ -43,6 +43,24 @@ interface TripDao {
     @Insert
     suspend fun insertPoints(rows: List<TrackPointEntity>)
 
+    @Query("SELECT EXISTS(SELECT 1 FROM trip WHERE id = :id)")
+    suspend fun exists(id: Long): Boolean
+
+    @Query("DELETE FROM track_point WHERE tripId = :tripId")
+    suspend fun deleteTrack(tripId: Long)
+
+    /**
+     * Replaces trip [tripId]'s track with [rows] in one transaction, so a reader sees the old track or the new
+     * one, never a mix. Returns false, changing nothing, when the trip was deleted meanwhile.
+     */
+    @Transaction
+    suspend fun replaceTrack(tripId: Long, rows: List<TrackPointEntity>): Boolean {
+        if (!exists(tripId)) return false
+        deleteTrack(tripId)
+        if (rows.isNotEmpty()) insertPoints(rows)
+        return true
+    }
+
     /** Track points go with the trip through the foreign key's ON DELETE CASCADE. */
     @Query("DELETE FROM trip WHERE id = :id")
     suspend fun delete(id: Long)

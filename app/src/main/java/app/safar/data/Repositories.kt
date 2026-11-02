@@ -44,6 +44,12 @@ interface TripRepository {
     suspend fun start(trip: Trip): Long
     suspend fun update(trip: Trip)
     suspend fun addPoints(points: List<TrackPoint>)
+
+    /**
+     * Replaces trip [tripId]'s stored track with [points] in one transaction (used to thin a finished trip,
+     * see [thinTrack]). Ignored when the trip no longer exists.
+     */
+    suspend fun replaceTrack(tripId: Long, points: List<TrackPoint>)
     suspend fun delete(id: Long)
 }
 

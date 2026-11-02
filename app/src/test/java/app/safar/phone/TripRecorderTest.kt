@@ -3,10 +3,13 @@ package app.safar.phone
 import app.safar.core.ClusterReading
 import app.safar.data.GpsFix
 import app.safar.data.TrackPoint
+import app.safar.data.TrackThinning
 import app.safar.data.Trip
 import app.safar.data.TripRepository
+import app.safar.data.thinTrack
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -27,6 +30,10 @@ class TripRecorderTest {
         override suspend fun start(trip: Trip): Long = (saved.size + 1L).also { saved[it] = trip.copy(id = it) }
         override suspend fun update(trip: Trip) { saved[trip.id] = trip }
         override suspend fun addPoints(points: List<TrackPoint>) { batches += points }
+        override suspend fun replaceTrack(tripId: Long, points: List<TrackPoint>) {
+            batches.replaceAll { batch -> batch.filter { it.tripId != tripId } }
+            batches += points
+        }
         override suspend fun delete(id: Long) { deleted += id; saved.remove(id) }
     }
 
@@ -90,7 +97,9 @@ class TripRecorderTest {
         val short = dead.start(1_000_000, null)
         val recorder = TripRecorder({ repo }, ZoneOffset.UTC)
         val running = recorder.start(2_000_000, null)
-        assertEquals(OpenTrips(kept = 1, deleted = 1), recorder.closeOpenTrips())
+        val closed = mutableListOf<Long>()
+        assertEquals(OpenTrips(kept = 1, deleted = 1), recorder.closeOpenTrips { closed += it })
+        assertEquals(listOf(long), closed, "only the kept trip is handed on")
         val done = repo.saved.getValue(long)
         assertEquals(190_000L, done.endMillis, "time of the last saved point")
         assertEquals(2.11, done.distanceKm, 0.01)
@@ -99,6 +108,18 @@ class TripRecorderTest {
         assertEquals(listOf(short), repo.deleted)
         assertNull(repo.saved.getValue(running).endMillis, "the trip recording now stays open")
         assertEquals(OpenTrips(0, 0), recorder.closeOpenTrips())
+    }
+
+    @Test
+    fun finishedStraightTripThinsToItsEnds() = runTest {
+        val repo = FakeTrips()
+        val recorder = TripRecorder({ repo }, ZoneOffset.UTC)
+        val id = recorder.start(0, null)
+        repeat(25) { recorder.onFix(fix(it), 40f) }
+        assertNotNull(recorder.end(300_000, null))
+        assertEquals(TrackThinning(before = 25, after = 2), repo.thinTrack(id))
+        assertEquals(listOf(0L, 240_000L), repo.track(id).first().map { it.atMillis })
+        assertEquals(TrackThinning(before = 2, after = 2), repo.thinTrack(id), "a second pass changes nothing")
     }
 
     @Test

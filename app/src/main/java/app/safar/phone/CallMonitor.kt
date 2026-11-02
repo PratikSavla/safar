@@ -14,12 +14,18 @@ import androidx.core.content.ContextCompat
 import app.safar.core.AlertSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** How long a ringing event waits for the PHONE_STATE broadcast that carries the number. */
 private const val NUMBER_WAIT_MS = 600L
+/** The call log entry is written after the call is removed: look this many times, this far apart. */
+private const val CALL_LOG_TRIES = 4
+private const val CALL_LOG_RETRY_MS = 400L
 
 /**
  * Phone calls -> [AlertCenterImpl] (docs 5.4, 5.7). Call state comes from `TelephonyCallback.CallStateListener`
@@ -42,7 +48,7 @@ internal class CallMonitor(
     private val number = IncomingNumber()
     private val tracker = CallTracker()
     private var ringingName: String? = null
-    private var ringStartedAt = 0L
+    private var callLogMark: Long? = null
     private var receiverRegistered = false
     private var callbackRegistered = false
 
@@ -97,11 +103,12 @@ internal class CallMonitor(
 
     private suspend fun handle(phase: CallPhase) {
         when (tracker.next(phase)) {
-            CallTransition.RINGING -> {
-                ringStartedAt = System.currentTimeMillis()
+            CallTransition.RINGING -> coroutineScope {
+                val mark = async(Dispatchers.IO) { lookup.callLogMark() }
                 val name = ringingCallerName()
                 ringingName = name
                 alerts.callRinging(name, AlertSource.PHONE)
+                callLogMark = mark.await()
             }
             CallTransition.ANSWERED -> alerts.callAnswered(ringingName ?: UNKNOWN_CALLER, AlertSource.PHONE)
             CallTransition.MISSED -> alerts.callMissed(missedCallerName(), AlertSource.PHONE)
@@ -111,6 +118,7 @@ internal class CallMonitor(
         if (phase == CallPhase.IDLE) {
             number.clear()
             ringingName = null
+            callLogMark = null
         }
     }
 
@@ -121,8 +129,17 @@ internal class CallMonitor(
 
     private suspend fun missedCallerName(): String {
         ringingName?.takeIf { it != UNKNOWN_CALLER }?.let { return it }
-        return withContext(Dispatchers.IO) {
-            lookup.displayName(number.current ?: lookup.latestCallLogNumber(ringStartedAt))
+        val incoming = number.current ?: callLogNumber()
+        return withContext(Dispatchers.IO) { lookup.displayName(incoming) }
+    }
+
+    /** The missed call's number from its call log entry, once Telecom has written it. */
+    private suspend fun callLogNumber(): String? {
+        val mark = callLogMark ?: return null
+        repeat(CALL_LOG_TRIES) { attempt ->
+            if (attempt > 0) delay(CALL_LOG_RETRY_MS)
+            withContext(Dispatchers.IO) { lookup.incomingNumberAfter(mark) }?.let { return it }
         }
+        return null
     }
 }

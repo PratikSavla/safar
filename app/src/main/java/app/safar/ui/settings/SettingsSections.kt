@@ -136,9 +136,8 @@ internal fun AboutCard(onVersionTap: () -> Unit = {}) {
     }
 }
 
-/** Where the rider's data is kept safe: Android's own backup, switched on or off in the phone's Settings. */
+/** Where the rider's data lives: on this phone only, outside Android's backup. */
 @Composable
-internal fun BackupBlock(onOpenSettings: () -> Unit) {
+internal fun BackupBlock() {
     Note(BACKUP_NOTE)
-    SecondaryButton("Open phone settings", onOpenSettings, Modifier.fillMaxWidth().padding(top = 12.dp))
 }

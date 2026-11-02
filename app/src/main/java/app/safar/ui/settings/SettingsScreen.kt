@@ -38,7 +38,6 @@ class SettingsActions(
     val onSettings: (String, (Settings) -> Settings) -> Unit = { _, _ -> },
     val onTheme: (ThemeMode) -> Unit = {},
     val onAccess: () -> Unit = {},
-    val onBackup: () -> Unit = {},
     val onOpen: (Route) -> Unit = {},
     val onDeveloperMode: (Boolean) -> Unit = {},
     val onVersionTap: () -> Unit = {},
@@ -65,7 +64,6 @@ fun SettingsScreen(navigator: Navigator, modifier: Modifier = Modifier, bottomBa
             onSettings = vm::toggle,
             onTheme = vm::setTheme,
             onAccess = { SystemAccess.openNotificationAccess(context) },
-            onBackup = { if (!SystemAccess.openPhoneSettings(context)) shell.toast("Couldn’t open your phone’s settings") },
             onOpen = navigator::go,
             onDeveloperMode = { on ->
                 vm.setDeveloperMode(on)
@@ -111,7 +109,7 @@ internal fun SettingsContent(
         SectionHeader("Your bike")
         LinkRow("Bike information", AtlasIcons.bike, { actions.onOpen(Route.Bike) }, subtitle = "Model, serial number and software version", divider = false)
         SectionHeader("Backup")
-        BackupBlock(actions.onBackup)
+        BackupBlock()
         SectionHeader("About")
         AboutCard(actions.onVersionTap)
         DeveloperModeRow(state.settings.developerMode, actions.onDeveloperMode)

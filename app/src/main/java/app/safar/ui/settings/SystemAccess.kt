@@ -38,12 +38,6 @@ object SystemAccess {
         start(context, Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS), "notification access settings") ||
             start(context, appDetails(context), "app details settings")
 
-    /**
-     * The phone's Settings app, where the rider finds Backup. Android has no public screen for backup itself, so
-     * this opens the top level.
-     */
-    fun openPhoneSettings(context: Context): Boolean = start(context, Intent(Settings.ACTION_SETTINGS), "phone settings")
-
     /** Google Maps search: the rider picks a place and taps Start; Safar joins when the turn notification appears. */
     fun openMapsSearch(context: Context): Boolean {
         val search = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=")).setPackage(MAPS_PACKAGE)

@@ -74,6 +74,9 @@ fun tankSubtitle(model: BikeModel?, own: Double?): String {
     return if (yours != null) "$spec $yours" else spec
 }
 
-/** The Backup note in Settings. Android's own backup carries Safar's data; the rider switches it in Settings. */
+/**
+ * The Backup note in Settings. Safar opts out of Android backup and device transfer (allowBackup="false" and the
+ * data extraction rules), so the note says so plainly and matches onboarding's "On this phone only".
+ */
 const val BACKUP_NOTE =
-    "Your rides, fuel log, places and settings are saved with your phone’s backup. Turn it on or off in your phone’s Settings > Backup."
+    "Safar keeps everything on this phone. It isn’t part of your phone’s backup, so a new phone starts fresh."

@@ -15,12 +15,8 @@ import app.safar.core.AlertSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 
 /** How long a ringing event waits for the PHONE_STATE broadcast that carries the number. */
 private const val NUMBER_WAIT_MS = 600L
@@ -28,8 +24,9 @@ private const val NUMBER_WAIT_MS = 600L
 /**
  * Phone calls -> [AlertCenterImpl] (docs 5.4, 5.7). Call state comes from `TelephonyCallback.CallStateListener`
  * on API 31+ and from the `PHONE_STATE` broadcast below. The broadcast is registered on every API level for
- * the incoming number (`EXTRA_INCOMING_NUMBER`, needs READ_CALL_LOG). Events run one at a time in order, so
- * a ringing frame that waits for the caller name is sent before the answered or missed frame.
+ * the incoming number (`EXTRA_INCOMING_NUMBER`, needs READ_CALL_LOG), taken from RINGING broadcasts only
+ * ([IncomingNumber]). Events run one at a time in order, so a ringing frame that waits for the caller name
+ * is sent before the answered or missed frame.
  * Needs READ_PHONE_STATE; without it nothing is registered until [refresh] finds it granted.
  */
 internal class CallMonitor(
@@ -42,7 +39,7 @@ internal class CallMonitor(
     private val lookup = CallerLookup(this.context)
     private val telephony: TelephonyManager? = this.context.getSystemService(TelephonyManager::class.java)
     private val events = Channel<CallPhase>(Channel.UNLIMITED)
-    private val number = MutableStateFlow<String?>(null)
+    private val number = IncomingNumber()
     private val tracker = CallTracker()
     private var ringingName: String? = null
     private var ringStartedAt = 0L
@@ -76,10 +73,9 @@ internal class CallMonitor(
     @Suppress("DEPRECATION") // EXTRA_INCOMING_NUMBER is the only source of the ringing number.
     private fun onPhoneState(intent: Intent) {
         if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED) return
-        intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)?.takeIf { it.isNotBlank() }?.let { number.value = it }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            callPhaseOf(intent.getStringExtra(TelephonyManager.EXTRA_STATE))?.let { events.trySend(it) }
-        }
+        val phase = callPhaseOf(intent.getStringExtra(TelephonyManager.EXTRA_STATE))
+        number.onBroadcast(phase, intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER))
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) phase?.let { events.trySend(it) }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -113,20 +109,20 @@ internal class CallMonitor(
             null -> Unit
         }
         if (phase == CallPhase.IDLE) {
-            number.value = null
+            number.clear()
             ringingName = null
         }
     }
 
     private suspend fun ringingCallerName(): String {
-        val incoming = number.value ?: withTimeoutOrNull(NUMBER_WAIT_MS) { number.filterNotNull().first() }
+        val incoming = number.await(NUMBER_WAIT_MS)
         return withContext(Dispatchers.IO) { lookup.displayName(incoming) }
     }
 
     private suspend fun missedCallerName(): String {
         ringingName?.takeIf { it != UNKNOWN_CALLER }?.let { return it }
         return withContext(Dispatchers.IO) {
-            lookup.displayName(number.value ?: lookup.latestCallLogNumber(ringStartedAt))
+            lookup.displayName(number.current ?: lookup.latestCallLogNumber(ringStartedAt))
         }
     }
 }

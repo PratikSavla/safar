@@ -44,7 +44,7 @@ import app.safar.ui.theme.AtlasShapes
 @Composable
 internal fun LogOffRow(onTurnOn: (Boolean) -> Unit) {
     Box(Modifier.fillMaxWidth().padding(bottom = 14.dp).background(Atlas.colors.amberWash, AtlasShapes.small).padding(horizontal = 10.dp)) {
-        SwitchRow("Debug log is off", false, onTurnOn, subtitle = "Still keeps the last 500 entries in memory for support.", divider = false)
+        SwitchRow("Recording is off", false, onTurnOn, subtitle = "The last 500 entries are still kept in memory.", divider = false)
     }
 }
 
@@ -76,7 +76,7 @@ private fun RecordingMark(modifier: Modifier) {
     Row(modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         // Layer alpha read in the layer block: a blink only updates a layer property, no recomposition or redraw.
         Box(Modifier.size(8.dp).then(onScreen.modifier).graphicsLayer { alpha = if (blinkShown(phase.value)) 1f else 0.2f }.background(c.rust, CircleShape))
-        BasicText("writing to file", style = Atlas.type.src.copy(color = c.rust))
+        BasicText("recording to file", style = Atlas.type.src.copy(color = c.rust))
     }
 }
 

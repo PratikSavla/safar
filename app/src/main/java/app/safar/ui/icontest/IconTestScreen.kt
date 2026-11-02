@@ -31,13 +31,14 @@ import app.safar.ui.art.TurnArrow
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.AtlasPage
 import app.safar.ui.components.BackTopBar
+import app.safar.ui.components.DeveloperFreshness
 import app.safar.ui.components.Gap
 import app.safar.ui.components.Note
 import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.SectionHeader
-import app.safar.ui.components.SourceLine
 import app.safar.ui.components.WarnLine
+import app.safar.ui.format.FreshnessText
 import app.safar.ui.nav.Navigator
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
@@ -46,7 +47,7 @@ private const val COLUMNS = 4
 
 class IconTestActions(val onBack: () -> Unit = {}, val onSend: (Int) -> Unit = {}, val onNext: () -> Unit = {}, val onPrevious: () -> Unit = {})
 
-/** Debug: send each cluster turn icon 1..45 and compare the cluster with the drawing (assignment task 4). */
+/** Developer mode: send each cluster turn icon 1..45 and compare the cluster with the drawing (assignment task 4). */
 @Composable
 fun IconTestScreen(navigator: Navigator, modifier: Modifier = Modifier) {
     val vm = viewModel { IconTestViewModel(AppContainer.bike) }
@@ -57,8 +58,8 @@ fun IconTestScreen(navigator: Navigator, modifier: Modifier = Modifier) {
 @Composable
 internal fun IconTestContent(state: IconTestState, actions: IconTestActions, modifier: Modifier = Modifier) {
     AtlasPage(modifier) {
-        BackTopBar("Debug · navigation frame", "Turn", actions.onBack, titleEm = " icons.")
-        Note("Tap an icon to send one navigation frame with that code. The cluster should draw the same arrow.")
+        BackTopBar("Developer · icon test", "Turn", actions.onBack, titleEm = " icons.")
+        Note("Tap an icon to send one navigation frame with that code. The display should show the same arrow.")
         Gap(14.dp)
         if (!state.connected) {
             WarnLine("Bike not connected. Frames are dropped until it connects.", Modifier.padding(bottom = 14.dp))
@@ -86,7 +87,8 @@ private fun CurrentCard(state: IconTestState, actions: IconTestActions) {
             }
         }
         val sent = if (state.lastSentCode != null) "code ${state.lastSentCode} sent to the bike" else "nothing sent yet"
-        SourceLine(sent, state.lastSentAtMillis, Modifier.padding(top = 10.dp))
+        val at = state.lastSentAtMillis
+        DeveloperFreshness(Modifier.padding(top = 10.dp)) { now, zone -> FreshnessText.developer(sent, at, now, zone = zone) }
         Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SecondaryButton("Previous", actions.onPrevious, Modifier.weight(1f), icon = AtlasIcons.back)
             PrimaryButton("Next", actions.onNext, Modifier.weight(1f), icon = AtlasIcons.arrow)

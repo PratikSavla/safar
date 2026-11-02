@@ -57,6 +57,8 @@ class MainActivity : ComponentActivity() {
 
     private fun sharedText(intent: Intent?): String? {
         if (intent?.action != Intent.ACTION_SEND || intent.type != "text/plain") return null
+        // Reopened from Recents: Android hands back the share that started the task. It was handled then.
+        if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return null
         return intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }
     }
 

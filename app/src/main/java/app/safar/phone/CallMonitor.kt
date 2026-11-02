@@ -50,7 +50,11 @@ internal class CallMonitor(
     private var ringingName: String? = null
     private var callLogMark: Long? = null
     private var receiverRegistered = false
-    private var callbackRegistered = false
+    /**
+     * The API 31+ call state callback. TelephonyManager keeps only a weak reference to a registered callback,
+     * so this field must hold it: a local object is collected at the next GC and call alerts stop.
+     */
+    private var callStateCallback: Any? = null
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) = onPhoneState(intent)
@@ -71,8 +75,8 @@ internal class CallMonitor(
             receiverRegistered = true
             log.info("calls.listening", mapOf("api" to Build.VERSION.SDK_INT.toString()))
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !callbackRegistered) {
-            callbackRegistered = registerCallState()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && callStateCallback == null) {
+            callStateCallback = registerCallState()
         }
     }
 
@@ -85,8 +89,8 @@ internal class CallMonitor(
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private fun registerCallState(): Boolean {
-        val tm = telephony ?: return false
+    private fun registerCallState(): TelephonyCallback? {
+        val tm = telephony ?: return null
         val callback = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
             override fun onCallStateChanged(state: Int) {
                 events.trySend(callPhaseOf(state))
@@ -94,10 +98,10 @@ internal class CallMonitor(
         }
         return try {
             tm.registerTelephonyCallback(ContextCompat.getMainExecutor(context), callback)
-            true
+            callback
         } catch (e: SecurityException) {
             Log.w(TAG, "Call state listener refused", e)
-            false
+            null
         }
     }
 

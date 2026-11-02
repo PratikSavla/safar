@@ -1,6 +1,5 @@
 package app.safar.data.prefs
 
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import app.safar.data.SavedBikeRecord
 import app.safar.data.Settings
 import app.safar.data.ThemeMode
@@ -28,8 +27,7 @@ class DataStoreStoresTest {
     @After
     fun tearDown() = scope.cancel()
 
-    private fun store(name: String) =
-        PreferenceDataStoreFactory.create(scope = scope) { tmp.root.resolve("$name.preferences_pb") }
+    private fun store(name: String) = createPreferencesStore(name, scope) { tmp.root.resolve("$name.preferences_pb") }
 
     @Test
     fun settingsUpdatePersistsAndEmits() = runBlocking {
@@ -52,5 +50,15 @@ class DataStoreStoresTest {
         assertEquals(record, withTimeout(5_000) { store.saved.first { it != null } })
         store.clear()
         assertNull(withTimeout(5_000) { store.saved.first { it == null } })
+    }
+
+    @Test
+    fun corruptFileResetsToDefaultsAndAcceptsWrites() = runBlocking {
+        tmp.root.resolve("settings.preferences_pb").writeBytes(ByteArray(64) { 0xFF.toByte() })
+        val store = DataStoreSettingsStore(store("settings"), scope)
+        store.update { it.copy(onboarded = true, riderName = "Alex") }
+        val s = withTimeout(5_000) { store.settings.first { it.onboarded } }
+        assertEquals("Alex", s.riderName)
+        assertEquals(Settings().theme, s.theme)
     }
 }

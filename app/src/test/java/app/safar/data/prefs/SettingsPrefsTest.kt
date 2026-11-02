@@ -12,8 +12,8 @@ import org.junit.Test
 import java.io.IOException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class SettingsPrefsTest {
     @Test
@@ -50,16 +50,36 @@ class SettingsPrefsTest {
     }
 
     @Test
-    fun ioErrorReadsAsEmpty() = runTest {
-        val broken = flow<Preferences> { throw IOException("disk") }
-        val prefs = broken.orEmptyOnIoError("settings").first()
-        assertEquals(Settings(), readSettings(prefs))
-        assertFalse(readSettings(prefs).onboarded)
+    fun ioErrorIsRetriedWithBackoffUntilReadSucceeds() = runTest {
+        var reads = 0
+        val flaky = flow {
+            reads++
+            if (reads <= 3) throw IOException("disk")
+            emit(mutablePreferencesOf(SettingsKeys.ONBOARDED to true) as Preferences)
+        }
+        val prefs = flaky.retryOnIoError("settings").first()
+        assertTrue(readSettings(prefs).onboarded)
+        assertEquals(4, reads)
+        // Waits of 500, 1000 and 2000 ms on the virtual clock.
+        assertEquals(3_500, testScheduler.currentTime)
+    }
+
+    @Test
+    fun retryDelayIsCapped() = runTest {
+        var reads = 0
+        val flaky = flow {
+            reads++
+            if (reads <= 8) throw IOException("disk")
+            emit(emptyPreferences())
+        }
+        flaky.retryOnIoError("settings", firstDelayMs = 500, maxDelayMs = 4_000).first()
+        // 500 + 1000 + 2000 + 4000 * 5.
+        assertEquals(23_500, testScheduler.currentTime)
     }
 
     @Test
     fun otherErrorsPropagate() = runTest {
         val broken = flow<Preferences> { throw IllegalStateException("bug") }
-        assertFailsWith<IllegalStateException> { broken.orEmptyOnIoError("settings").first() }
+        assertFailsWith<IllegalStateException> { broken.retryOnIoError("settings").first() }
     }
 }

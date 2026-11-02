@@ -39,16 +39,16 @@ data class GarageInputs(
     val developerMode: Boolean = false,
 )
 
-/** Fuel, Log fuel, Service / Parked, Trips, Navigate / Alerts, Bike, and Debug log in Developer mode (home.js `garage`). */
+/** Fuel, Log fuel, Service / Parked, Trips, Route / Alerts, Bike, and Debug log in Developer mode (home.js `garage`). */
 internal fun garageTiles(g: GarageInputs): List<GarageTile> = listOfNotNull(
     GarageTile("fuel", "Fuel", fuelHint(g.fuel), Route.Fuel, warn = (g.fuel.bars ?: Int.MAX_VALUE) <= 1),
     GarageTile("logfuel", "Log fuel", "at the pump", Route.FuelUp(), accent = true),
     serviceTile(g.services, g.odometerKm),
     GarageTile("parked", "Parked", if (g.parked == null) "nothing saved" else "", Route.Parked, hintAtMillis = g.parked?.atMillis),
     GarageTile("trips", "Trips", tripsHint(g.trips), Route.Trips),
-    GarageTile("navigate", "Navigate", navHint(g.nav, g.placesCount), Route.Navigate),
+    GarageTile("navigate", "Route", navHint(g.nav, g.placesCount), Route.Navigate),
     GarageTile("alerts", "Alerts", if (g.alertCount > 0) "${g.alertCount} new" else "all quiet", Route.Alerts, warn = g.alertCount > 0),
-    GarageTile("bike", "Bike", if (g.link == LinkState.Connected) "firmware, serial" else "saved info", Route.Bike),
+    GarageTile("bike", "Bike", if (g.link == LinkState.Connected) "model, serial" else "saved info", Route.Bike),
     GarageTile("log", "Debug log", if (g.debugLog) "recording" else "${g.logCount} in memory", Route.Log).takeIf { g.developerMode },
 )
 

@@ -87,7 +87,8 @@ private fun Tile(t: GarageTile, modifier: Modifier, onClick: () -> Unit) {
         AtlasIcon(TILE_ICONS[t.key] ?: AtlasIcons.info, tint = if (t.accent) c.rust else c.ink2, size = 20.dp, modifier = Modifier.padding(bottom = 2.dp))
         // Two lines: at a large font scale "Debug log" wraps instead of being cut to "Debug l…".
         BasicText(t.name, style = Atlas.type.serifTitle.copy(fontSize = Atlas.type.serifTitle.fontSize * 0.88f, color = c.ink), maxLines = 2, overflow = TextOverflow.Ellipsis)
-        BasicText(hint, style = Atlas.type.src.copy(fontSize = Atlas.type.src.fontSize * 0.92f, color = if (t.warn) c.rust else c.ink3), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // Two lines as well, so "log a full tank" or "next in 300 km" wraps at a large font scale instead of "log a full …".
+        BasicText(hint, style = Atlas.type.src.copy(fontSize = Atlas.type.src.fontSize * 0.92f, color = if (t.warn) c.rust else c.ink3), maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -144,7 +145,7 @@ fun CountsStrip(counts: CountsUi, onOpen: () -> Unit) {
 fun NavStrip(nav: NavStripUi?, onOpen: () -> Unit) {
     if (nav == null) return
     val c = Atlas.colors
-    AtlasCard(Modifier.padding(top = 10.dp), style = CardStyle.LINE, onClick = onOpen, onClickLabel = "Open navigation") {
+    AtlasCard(Modifier.padding(top = 10.dp), style = CardStyle.LINE, onClick = onOpen, onClickLabel = "Open Route") {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             TurnArrow(nav.iconCode, size = 44.dp, color = if (nav.waiting) c.ink3 else c.rust)
             Column(Modifier.weight(1f)) {

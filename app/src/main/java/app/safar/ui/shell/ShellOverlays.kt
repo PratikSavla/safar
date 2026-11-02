@@ -4,10 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -29,6 +25,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -49,6 +46,7 @@ import app.safar.core.AlertSource
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.Stamp
+import app.safar.ui.components.rememberLoopPhase
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 
@@ -103,9 +101,9 @@ private fun TelegramBody(b: CallBanner, onOpen: () -> Unit) {
 @Composable
 private fun RingPulse() {
     val ink = Atlas.colors.onRust
-    val t = rememberInfiniteTransition(label = "ring")
-    val p by t.animateFloat(0f, 1f, infiniteRepeatable(tween(1000, easing = LinearEasing), RepeatMode.Restart), label = "ringPhase")
-    Canvas(Modifier.size(28.dp)) {
+    val phase = rememberLoopPhase(1000, "ringPhase")
+    Canvas(Modifier.size(28.dp).graphicsLayer()) {
+        val p = phase.value
         val r = 5.dp.toPx()
         drawCircle(ink.copy(alpha = 0.7f * (1 - p)), r + 12.dp.toPx() * p, Offset(size.width / 2, size.height / 2))
         drawCircle(ink, r, Offset(size.width / 2, size.height / 2))
@@ -123,19 +121,24 @@ internal fun RideFlash(serial: Int) {
         anim.snapTo(0f)
         anim.animateTo(1f, tween(FLASH_MS, easing = LinearEasing))
     }
-    val p = anim.value
-    if (p >= 1f) return
-    // 0..18 %: scale 2.4 -> 1.5 and fade in; hold; 80..100 %: fade out.
-    val alpha = when {
-        p < 0.18f -> p / 0.18f
-        p > 0.8f -> (1f - p) / 0.2f
-        else -> 1f
-    }
-    val scale = if (p < 0.18f) 2.4f - 0.9f * (p / 0.18f) else 1.5f
+    val done by remember(anim) { derivedStateOf { anim.value >= 1f } }
+    if (done) return
     Box(Modifier.fillMaxSize().semantics { liveRegion = LiveRegionMode.Polite }, contentAlignment = Alignment.Center) {
         Box(
             Modifier
-                .graphicsLayer { this.alpha = alpha; scaleX = scale; scaleY = scale; rotationZ = -6f }
+                .graphicsLayer {
+                    // 0..18 %: scale 2.4 -> 1.5 and fade in; hold; 80..100 %: fade out. Read here, not in composition.
+                    val p = anim.value
+                    alpha = when {
+                        p < 0.18f -> p / 0.18f
+                        p > 0.8f -> (1f - p) / 0.2f
+                        else -> 1f
+                    }
+                    val scale = if (p < 0.18f) 2.4f - 0.9f * (p / 0.18f) else 1.5f
+                    scaleX = scale
+                    scaleY = scale
+                    rotationZ = -6f
+                }
                 .background(Atlas.colors.paper, AtlasShapes.stamp),
         ) {
             Stamp("Ride mode · auto", tilted = false, solid = true)

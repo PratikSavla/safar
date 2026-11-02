@@ -1,11 +1,5 @@
 package app.safar.ui.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,12 +7,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -45,14 +39,14 @@ fun WarnLine(text: String, modifier: Modifier = Modifier, color: Color = Atlas.c
 /** Rust dashes marching to the right (`.wait-line`): something is on its way. Decorative. */
 @Composable
 fun MarchingRule(modifier: Modifier = Modifier, color: Color = Atlas.colors.rust) {
-    val t = rememberInfiniteTransition(label = "march")
-    val phase by t.animateFloat(0f, 1f, infiniteRepeatable(tween(700, easing = LinearEasing), RepeatMode.Restart), label = "marchPhase")
-    Canvas(modifier.fillMaxWidth().height(3.dp)) {
+    val phase = rememberLoopPhase(700, "marchPhase")
+    // Own layer, phase read while drawing: each frame redraws this 3 dp strip, not the page it sits on.
+    Canvas(modifier.fillMaxWidth().height(3.dp).graphicsLayer()) {
         val dash = 10.dp.toPx()
         val gap = 8.dp.toPx()
         drawLine(
             color, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), strokeWidth = size.height,
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash, gap), phase = -(dash + gap) * phase),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash, gap), phase = -(dash + gap) * phase.value),
         )
     }
 }

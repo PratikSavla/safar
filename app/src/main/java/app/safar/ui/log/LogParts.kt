@@ -1,11 +1,5 @@
 package app.safar.ui.log
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.StartOffset
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,11 +18,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,6 +34,8 @@ import app.safar.ui.components.ButtonTone
 import app.safar.ui.components.DashedRule
 import app.safar.ui.components.Hairline
 import app.safar.ui.components.SwitchRow
+import app.safar.ui.components.blinkShown
+import app.safar.ui.components.rememberLoopPhase
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 
@@ -75,10 +70,10 @@ internal fun SessionBar(sessionActive: Boolean, onSession: () -> Unit, onExport:
 @Composable
 private fun RecordingMark(modifier: Modifier) {
     val c = Atlas.colors
-    val t = rememberInfiniteTransition(label = "rec")
-    val a by t.animateFloat(1f, 0f, infiniteRepeatable(tween(500), RepeatMode.Reverse, StartOffset(0)), label = "recBlink")
+    val phase = rememberLoopPhase(1000, "recBlink")
     Row(modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Box(Modifier.size(8.dp).alpha(if (a > 0.5f) 1f else 0.2f).background(c.rust, CircleShape))
+        // Layer alpha read in the layer block: a blink only updates a layer property, no recomposition or redraw.
+        Box(Modifier.size(8.dp).graphicsLayer { alpha = if (blinkShown(phase.value)) 1f else 0.2f }.background(c.rust, CircleShape))
         BasicText("writing to file", style = Atlas.type.src.copy(color = c.rust))
     }
 }

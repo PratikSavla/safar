@@ -1,11 +1,5 @@
 package app.safar.ui.service
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,13 +10,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -31,12 +25,14 @@ import app.safar.data.ServiceIcon
 import app.safar.data.ServiceState
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasButton
+import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.ButtonTone
 import app.safar.ui.components.Hairline
 import app.safar.ui.components.IconBox
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.StampTone
-import app.safar.ui.components.AtlasIcon
+import app.safar.ui.components.blinkShown
+import app.safar.ui.components.rememberLoopPhase
 import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
 import kotlin.math.roundToInt
@@ -109,16 +105,10 @@ internal fun ServiceItemCard(row: ServiceRowUi, onDone: () -> Unit, onInterval: 
 private fun ServiceRoad(row: ServiceRowUi, accent: Color) {
     val c = Atlas.colors
     val overdue = row.status.state == ServiceState.OVERDUE
-    val blink = if (overdue) {
-        val t = rememberInfiniteTransition(label = "svcBlink")
-        val v by t.animateFloat(0f, 2f, infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart), label = "svcBlinkPhase")
-        v < 1f
-    } else {
-        true
-    }
+    val blink = if (overdue) rememberLoopPhase(1200, "svcBlink") else null
     val spoken = "${(row.drawn * 100).roundToInt()} percent of the way to the next service"
     Box(Modifier.fillMaxWidth().height(26.dp).padding(start = 4.dp).clearAndSetSemantics { contentDescription = spoken }) {
-        Canvas(Modifier.fillMaxWidth().height(26.dp).padding(end = 22.dp)) {
+        Canvas(Modifier.fillMaxWidth().height(26.dp).padding(end = 22.dp).then(if (blink != null) Modifier.graphicsLayer() else Modifier)) {
             val y = 12.dp.toPx() + 1.25.dp.toPx()
             val w = 2.5.dp.toPx()
             val dash = PathEffect.dashPathEffect(floatArrayOf(7.dp.toPx(), 5.dp.toPx()))
@@ -127,7 +117,7 @@ private fun ServiceRoad(row: ServiceRowUi, accent: Color) {
             drawLine(accent, Offset(0f, y), Offset(x, y), w)
             val r = 7.dp.toPx()
             drawCircle(c.paper, r, Offset(x, y))
-            if (blink) drawCircle(accent, r - 1.5.dp.toPx(), Offset(x, y), style = Stroke(3.dp.toPx()))
+            if (blink == null || blinkShown(blink.value)) drawCircle(accent, r - 1.5.dp.toPx(), Offset(x, y), style = Stroke(3.dp.toPx()))
         }
         AtlasIcon(AtlasIcons.flag, Modifier.align(Alignment.TopEnd), tint = c.ink2, size = 22.dp)
     }

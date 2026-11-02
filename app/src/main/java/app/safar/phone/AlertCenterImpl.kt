@@ -24,8 +24,9 @@ const val FEED_LIMIT = 50
  *
  * Missed calls keep one counter on the cluster (name and source of the latest), but the phone and WhatsApp
  * parts are counted apart so removing WhatsApp's missed-call notifications only drops the WhatsApp part.
- * A count frame is sent when the count goes up or drops to 0; a partial drop updates the screen only, so the
- * cluster does not pop a new alert for a smaller number.
+ * When WhatsApp notifications are removed, the WhatsApp counts drop to what the remaining notifications still
+ * hold. A count frame is sent when the count goes up or drops to 0; a partial drop updates the screen only, so
+ * the cluster does not pop a new alert for a smaller number.
  *
  * Pure Kotlin and thread-safe: [outbox] and [settings] are read lazily on each event.
  */
@@ -89,14 +90,16 @@ class AlertCenterImpl(
         send("missed") { it.sendMissedCalls(name, total, source) }
     }
 
-    /** WhatsApp removed all of its missed-call notifications. */
-    fun whatsAppMissedCleared() {
+    /** WhatsApp's missed-call notifications that are still posted hold [left] missed calls. Never raises. */
+    fun whatsAppMissedLeft(left: Int) {
         val zero = synchronized(lock) {
-            if (whatsAppMissed == 0) return
-            whatsAppMissed = 0
-            mutable.value = mutable.value.copy(missed = mutable.value.missed.copy(count = phoneMissed))
-            if (phoneMissed == 0) feed(FeedKind.CLEARED, "", AlertSource.WHATSAPP, 0)
-            phoneMissed == 0
+            val next = left.coerceIn(0, whatsAppMissed)
+            if (next == whatsAppMissed) return
+            whatsAppMissed = next
+            val total = (phoneMissed + whatsAppMissed).coerceAtMost(MAX_COUNT)
+            mutable.value = mutable.value.copy(missed = mutable.value.missed.copy(count = total))
+            if (total == 0) feed(FeedKind.CLEARED, "", AlertSource.WHATSAPP, 0)
+            total == 0
         }
         if (zero) send("missed cleared") { it.sendMissedCalls("", 0, AlertSource.WHATSAPP) }
     }
@@ -113,10 +116,19 @@ class AlertCenterImpl(
         send("message") { it.sendMessages(sender, total, AlertSource.WHATSAPP) }
     }
 
-    /** WhatsApp removed all of its message notifications (read on the phone or dismissed). */
-    fun whatsAppMessagesCleared() {
-        synchronized(lock) { if (mutable.value.messages.count == 0) return }
-        clearMessages()
+    /**
+     * WhatsApp's chat notifications that are still posted hold [left] unread messages (a chat was read or
+     * dismissed). Never raises the count: after the rider cleared it, older chats do not come back.
+     */
+    fun whatsAppMessagesLeft(left: Int) {
+        val zero = synchronized(lock) {
+            val current = mutable.value.messages
+            val next = left.coerceIn(0, current.count)
+            if (next == current.count) return
+            if (next > 0) mutable.value = mutable.value.copy(messages = current.copy(count = next))
+            next == 0
+        }
+        if (zero) clearMessages()
     }
 
     override fun clearMissedCalls() {

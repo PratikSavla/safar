@@ -40,7 +40,7 @@ class AlertCountersTest {
         rig.center.callMissed("Rider", AlertSource.WHATSAPP, 2)
         assertEquals("4:Rider:3:W", rig.outbox.frames.last())
         val sent = rig.outbox.frames.size
-        rig.center.whatsAppMissedCleared()
+        rig.center.whatsAppMissedLeft(0)
         assertEquals(1, rig.center.state.value.missed.count)
         assertEquals(sent, rig.outbox.frames.size, "a partial drop updates the screen only")
     }
@@ -49,10 +49,36 @@ class AlertCountersTest {
     fun whatsAppMissedClearToZeroSendsFrame() {
         val rig = AlertRig()
         rig.center.callMissed("Rider", AlertSource.WHATSAPP)
-        rig.center.whatsAppMissedCleared()
+        rig.center.whatsAppMissedLeft(0)
         assertEquals("4::0:W", rig.outbox.frames.last())
-        rig.center.whatsAppMissedCleared()
+        rig.center.whatsAppMissedLeft(0)
         assertEquals(2, rig.outbox.frames.size, "nothing left to clear")
+    }
+
+    @Test
+    fun whatsAppMissedPartialDropUpdatesScreenOnly() {
+        val rig = AlertRig()
+        rig.center.callMissed("Rider", AlertSource.WHATSAPP, 3)
+        rig.center.whatsAppMissedLeft(1)
+        assertEquals(1, rig.center.state.value.missed.count)
+        assertEquals(listOf("4:Rider:3:W"), rig.outbox.frames)
+        rig.center.whatsAppMissedLeft(5)
+        assertEquals(1, rig.center.state.value.missed.count, "never raised by what is left")
+    }
+
+    @Test
+    fun whatsAppMessagesLeftDropsToRemainingUnread() {
+        val rig = AlertRig()
+        rig.center.messageReceived("Alex", 5)
+        rig.center.messageReceived("Rider", 1)
+        rig.center.whatsAppMessagesLeft(1)
+        assertEquals(1, rig.center.state.value.messages.count)
+        assertEquals("Rider", rig.center.state.value.messages.lastName)
+        assertEquals(2, rig.outbox.frames.size, "a partial drop updates the screen only")
+        rig.center.whatsAppMessagesLeft(0)
+        assertEquals("5::0:W", rig.outbox.frames.last())
+        rig.center.whatsAppMessagesLeft(0)
+        assertEquals(3, rig.outbox.frames.size, "nothing left to clear")
     }
 
     @Test

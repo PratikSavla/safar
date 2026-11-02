@@ -11,8 +11,9 @@ const val WA_ANSWER_WINDOW_MS = 60_000L
 /**
  * Turns WhatsApp notifications into [AlertCenterImpl] events (docs 5.7). WhatsApp re-posts a chat's
  * notification on each new message, so counts are tracked per notification key and only the increase is
- * reported. When the last notification of a kind is removed, the count drops to 0 and the 0-count frame goes
- * out. Pure Kotlin; the listener calls it on its main thread, and the methods are synchronized anyway.
+ * reported. When a notification is removed, the center's WhatsApp count drops to the sum of the remaining ones;
+ * when the last one goes, that is 0 and the 0-count frame goes out. Pure Kotlin; the listener calls it on its
+ * main thread, and the methods are synchronized anyway.
  */
 class WhatsAppAlerts(
     private val center: AlertCenterImpl,
@@ -41,8 +42,8 @@ class WhatsAppAlerts(
     fun removed(key: String) {
         ringing?.takeIf { it.key == key }?.let { ringing = it.copy(posted = false) }
         if (callKeys.remove(key) && callKeys.isEmpty()) center.callEnded(AlertSource.WHATSAPP)
-        if (missedByKey.remove(key) != null && missedByKey.isEmpty()) center.whatsAppMissedCleared()
-        if (unreadByKey.remove(key) != null && unreadByKey.isEmpty()) center.whatsAppMessagesCleared()
+        if (missedByKey.remove(key) != null) center.whatsAppMissedLeft(missedByKey.values.sum())
+        if (unreadByKey.remove(key) != null) center.whatsAppMessagesLeft(unreadByKey.values.sum())
     }
 
     private fun onRinging(n: WaNotification) {
@@ -70,11 +71,13 @@ class WhatsAppAlerts(
         val count = missedCount(n)
         val previous = missedByKey.put(n.key, count) ?: 0
         if (count > previous) center.callMissed(waSenderName(n), AlertSource.WHATSAPP, count - previous)
+        if (count < previous) center.whatsAppMissedLeft(missedByKey.values.sum())
     }
 
     private fun onMessage(n: WaNotification) {
         val count = unreadCount(n)
         val previous = unreadByKey.put(n.key, count) ?: 0
         if (count > previous) center.messageReceived(waSenderName(n), count - previous)
+        if (count < previous) center.whatsAppMessagesLeft(unreadByKey.values.sum())
     }
 }

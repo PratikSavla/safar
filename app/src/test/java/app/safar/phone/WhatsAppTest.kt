@@ -78,11 +78,37 @@ class WhatsAppTest {
         alerts.posted(wa(key = "a", category = CATEGORY_MESSAGE))
         alerts.posted(wa(key = "b", title = "Rider", category = CATEGORY_MESSAGE))
         alerts.removed("a")
-        assertEquals(2, rig.outbox.frames.size, "one chat still unread")
+        assertEquals(2, rig.outbox.frames.size, "one chat still unread: screen only")
+        assertEquals(1, rig.center.state.value.messages.count)
         alerts.removed("b")
         assertEquals("5::0:W", rig.outbox.frames.last())
         alerts.removed("b")
         assertEquals(3, rig.outbox.frames.size)
+    }
+
+    @Test
+    fun readingOneChatDropsItsMessages() {
+        val rig = AlertRig()
+        val alerts = WhatsAppAlerts(rig.center, rig.clock)
+        alerts.posted(wa(key = "a", category = CATEGORY_MESSAGE).copy(messageCount = 5))
+        alerts.posted(wa(key = "b", title = "Rider", category = CATEGORY_MESSAGE).copy(messageCount = 1))
+        assertEquals("5:Rider:6:W", rig.outbox.frames.last())
+        alerts.removed("a")
+        assertEquals(1, rig.center.state.value.messages.count)
+        alerts.posted(wa(key = "b", title = "Rider", category = CATEGORY_MESSAGE).copy(messageCount = 2))
+        assertEquals(listOf("5:Alex:5:W", "5:Rider:6:W", "5:Rider:2:W"), rig.outbox.frames)
+    }
+
+    @Test
+    fun removingOneMissedCallNotificationDropsItsCalls() {
+        val rig = AlertRig()
+        val alerts = WhatsAppAlerts(rig.center, rig.clock)
+        alerts.posted(wa(key = "m1", category = CATEGORY_MISSED_CALL, text = "2 missed voice calls"))
+        alerts.posted(wa(key = "m2", title = "Rider", category = CATEGORY_MISSED_CALL, text = "missed voice call"))
+        alerts.removed("m1")
+        assertEquals(1, rig.center.state.value.missed.count)
+        alerts.posted(wa(key = "m2", title = "Rider", category = CATEGORY_MISSED_CALL, text = "2 missed voice calls"))
+        assertEquals("4:Rider:2:W", rig.outbox.frames.last())
     }
 
     @Test

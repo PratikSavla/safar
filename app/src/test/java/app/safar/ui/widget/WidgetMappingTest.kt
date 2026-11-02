@@ -55,7 +55,7 @@ class WidgetMappingTest {
         val s = widgetSnapshot(bike, NavState(), emptyList(), Settings(), FuelFixtures.NOW, zone)
         assertEquals("waiting" to WidgetTone.AMBER, s.link to s.tone)
         assertEquals("From your last ride", s.footer)
-        assertEquals("rough guess", s.rangeNote)
+        assertEquals("log a full tank", s.rangeNote, "no range yet, so no rough guess under the dash")
         val dev = widgetSnapshot(bike, NavState(), emptyList(), Settings(developerMode = true), FuelFixtures.NOW, zone)
         assertEquals("last seen on bike · 12:00", dev.footer)
         val connectedNoReading = BikeState(link = LinkState.Connected, saved = saved)

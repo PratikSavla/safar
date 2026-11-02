@@ -4,7 +4,7 @@ import app.safar.core.BikeState
 import app.safar.core.LinkState
 import app.safar.core.NavState
 import app.safar.core.NavStatusCode
-import app.safar.data.FuelMethod
+import app.safar.data.FuelStats
 import app.safar.data.FuelUp
 import app.safar.data.Settings
 import app.safar.data.fuelStats
@@ -13,6 +13,7 @@ import app.safar.ui.copy.LinkCopy
 import app.safar.ui.copy.Phrases
 import app.safar.ui.format.Formatters
 import app.safar.ui.format.FreshnessText
+import app.safar.ui.fuel.rangeNote
 import java.time.ZoneId
 
 // Pure mapping for the home-screen widget (ux/variant-b/js/screens/widget.js `safarWidget`). No Android imports.
@@ -98,12 +99,8 @@ fun widgetTurn(nav: NavState): WidgetTurn? {
     return WidgetTurn(snap.iconCode, TurnCodes.spec(snap.iconCode).name, Formatters.navDistance(snap.distanceToTurnM).toString())
 }
 
-/** Under the range: nothing when it comes from the rider's fuel-ups, else how rough it is or how to get one. */
-fun rangeNote(method: FuelMethod): String? = when (method) {
-    FuelMethod.HISTORY -> null
-    FuelMethod.BARS -> "rough guess"
-    FuelMethod.NONE -> LOG_FULL_TANK
-}
+/** Under the range: the app's own note ([app.safar.ui.fuel.rangeNote]), in the widget's lower case. */
+fun widgetRangeNote(stats: FuelStats): String? = rangeNote(stats)?.replaceFirstChar { it.lowercase() }
 
 fun widgetSnapshot(bike: BikeState, nav: NavState, fuelUps: List<FuelUp>, settings: Settings, nowMillis: Long, zone: ZoneId): WidgetSnapshot {
     val reading = bike.cluster ?: bike.lastCluster
@@ -124,7 +121,7 @@ fun widgetSnapshot(bike: BikeState, nav: NavState, fuelUps: List<FuelUp>, settin
         bars = reading?.fuelBars,
         barsMax = model?.fuelBars ?: DEFAULT_BARS,
         range = range,
-        rangeNote = rangeNote(stats.method),
+        rangeNote = widgetRangeNote(stats),
         footer = widgetFooter(bike, nowMillis, zone, settings.developerMode),
         turn = turn,
         description = widgetDescription(name, LinkCopy.headline(bike), odometer, tripA, range, turn),

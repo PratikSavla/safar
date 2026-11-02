@@ -67,14 +67,26 @@ class FuelMappingTest {
     @Test
     fun `method lines match the prototype`() {
         val none = requireNotNull(fuelUiState(emptyList(), Settings(), BikeState(), FuelFixtures.NOW, zone).stats)
-        assertEquals("No estimate yet. Log a full tank to start.", methodLine(none))
+        assertEquals("Range shows after two full tanks. Log a full tank to start.", methodLine(none))
+        assertEquals("Log a full tank", rangeNote(none))
         assertEquals("12 litre tank. Fuel left not known yet.", tankDescription(none))
         assertEquals(0f, tankFraction(none))
         val bars = requireNotNull(
             fuelUiState(emptyList(), Settings(), BikeState(saved = saved, cluster = FuelFixtures.cluster(100, 3)), FuelFixtures.NOW, zone).stats,
         )
         assertEquals(FuelMethod.BARS, bars.method)
-        assertEquals("A rough guess from the fuel bars. Log a full tank for a better one.", methodLine(bars))
+        assertNull(bars.rangeKm)
+        assertEquals("Range shows after two full tanks. Log a full tank to start.", methodLine(bars))
+        assertEquals("Log a full tank", rangeNote(bars), "no rough guess under a dash")
+        val oneFull = listOf(FuelFixtures.FUEL_UPS.first())
+        val afterOne = requireNotNull(
+            fuelUiState(oneFull, Settings(), BikeState(saved = saved, cluster = FuelFixtures.cluster(11_000, 3)), FuelFixtures.NOW, zone).stats,
+        )
+        assertNull(afterOne.rangeKm)
+        assertEquals("Range shows after your next full tank.", methodLine(afterOne))
+        assertEquals("After your next full tank", rangeNote(afterOne))
+        val history = requireNotNull(fuelUiState(FuelFixtures.FUEL_UPS, Settings(), BikeState(saved = saved), FuelFixtures.NOW, zone).stats)
+        assertNull(rangeNote(history))
         assertEquals(0.5f, tankFraction(bars))
     }
 

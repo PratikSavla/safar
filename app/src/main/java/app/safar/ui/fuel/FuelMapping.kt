@@ -77,11 +77,26 @@ fun fuelDate(atMillis: Long, zone: ZoneId): String = shortDate.format(Instant.of
 /** "last full tank", "last 3 full tanks": the tanks the average is taken over. */
 fun averageOver(segments: Int): String = min(AVERAGE_TANKS, segments).let { if (it == 1) "last full tank" else "last $it full tanks" }
 
-/** How the range was worked out, under the big number (fuel.js `methodLine`). */
-fun methodLine(stats: FuelStats): String = when (stats.method) {
-    FuelMethod.HISTORY -> "Worked out from your ${averageOver(stats.segments.size)}: ${stats.avgKmpl?.let(::jsNumber)} km/L."
-    FuelMethod.BARS -> "A rough guess from the fuel bars. Log a full tank for a better one."
-    FuelMethod.NONE -> "No estimate yet. Log a full tank to start."
+/**
+ * How the range was worked out, under the big number (fuel.js `methodLine`). Range needs km/L, which takes two
+ * full tanks in a row, so while there is no number the line says what will bring one instead of "rough guess".
+ */
+fun methodLine(stats: FuelStats): String = when {
+    stats.rangeKm == null && stats.lastFull == null -> "Range shows after two full tanks. Log a full tank to start."
+    stats.rangeKm == null -> "Range shows after your next full tank."
+    stats.method == FuelMethod.HISTORY -> "Worked out from your ${averageOver(stats.segments.size)}: ${stats.avgKmpl?.let(::jsNumber)} km/L."
+    else -> "A rough guess from the fuel bars. Log a full tank for a better one."
+}
+
+/**
+ * The short note under a small range figure (Today, the widget): nothing for a worked-out range, "Rough guess"
+ * only next to a number, else what brings a range.
+ */
+fun rangeNote(stats: FuelStats): String? = when {
+    stats.rangeKm == null && stats.lastFull == null -> "Log a full tank"
+    stats.rangeKm == null -> "After your next full tank"
+    stats.method == FuelMethod.HISTORY -> null
+    else -> "Rough guess"
 }
 
 /** Developer mode only: the technical source of the range figure. */

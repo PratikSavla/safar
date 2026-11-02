@@ -131,10 +131,7 @@ class HomeStateTest {
     }
 
     @Test
-    fun rangeSaysSomethingOnlyWhenItIsAGuessOrMissing() {
-        assertNull(rangeNote(FuelMethod.HISTORY))
-        assertEquals("Rough guess", rangeNote(FuelMethod.BARS))
-        assertEquals("Log a full tank", rangeNote(FuelMethod.NONE))
+    fun rangeSourceAndRideCountRead() {
         assertEquals("calculated · fuel-ups", rangeSource(FuelMethod.HISTORY))
         assertEquals("1 ride" to "12 rides", ridesLabel(1) to ridesLabel(12))
     }

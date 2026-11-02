@@ -14,6 +14,7 @@ import app.safar.ui.components.StampTone
 import app.safar.ui.components.ValueOrigin
 import app.safar.ui.copy.LinkCopy
 import app.safar.ui.format.Formatters
+import app.safar.ui.fuel.rangeNote
 import app.safar.ui.format.ValueSource
 import kotlin.math.roundToInt
 
@@ -97,13 +98,6 @@ internal fun rangeSource(method: FuelMethod): String = when (method) {
     FuelMethod.NONE -> "no full-tank fuel-ups yet"
 }
 
-/** The rider's note under the range: nothing for a worked-out range, a hint otherwise. */
-internal fun rangeNote(method: FuelMethod): String? = when (method) {
-    FuelMethod.HISTORY -> null
-    FuelMethod.BARS -> "Rough guess"
-    FuelMethod.NONE -> "Log a full tank"
-}
-
 /** Null until the first cluster frame ever (the ledger shows its empty page). */
 internal fun ledgerUi(bike: BikeState, fuel: FuelStats): LedgerUi? {
     val live = bike.link == LinkState.Connected && bike.cluster != null
@@ -124,7 +118,7 @@ internal fun ledgerUi(bike: BikeState, fuel: FuelStats): LedgerUi? {
     return LedgerUi(
         odometerKm = r.odometerKm, tripAKm = r.tripAKm, tripBKm = r.tripBKm, fuelBars = bars, fuelMax = fuel.barsMax,
         gear = r.gear?.toString() ?: NO_GEAR, readingAt = r.receivedAtMillis, live = live,
-        rangeText = range, rangeNote = rangeNote(fuel.method), rangeSource = rangeSource(fuel.method),
+        rangeText = range, rangeNote = rangeNote(fuel), rangeSource = rangeSource(fuel.method),
         fuelWarning = warning, warningText = warnText,
     )
 }

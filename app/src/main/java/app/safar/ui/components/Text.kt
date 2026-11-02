@@ -17,6 +17,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import app.safar.ui.format.FreshnessText
+import app.safar.ui.format.ValueSource
 import app.safar.ui.theme.Atlas
 import java.util.Locale
 
@@ -46,18 +48,38 @@ fun SectionHeader(title: String, modifier: Modifier = Modifier, aside: (@Composa
     }
 }
 
-/** Caption that says where a value came from and how old it is: "↳ bike · 3 s ago" (UX rule: every bike value). */
+/**
+ * Old caption "↳ bike · 3 s ago". Now Developer mode only: a free-text source and a ready-made age cannot tell
+ * whether the value is stale, so normal mode shows nothing. Use [Freshness] for values, or plain copy for notes.
+ */
+@Deprecated("Use Freshness(source, atMillis) for values; plain copy (Note) for anything a rider must read.")
 @Composable
 fun SourceLine(source: String, modifier: Modifier = Modifier, age: String? = null) {
-    val text = if (age == null) "↳ $source" else "↳ $source · $age"
-    // Two lines, so a narrow column at a large font scale wraps the source instead of cutting it.
-    BasicText(text, modifier, style = Atlas.type.src.copy(color = Atlas.colors.ink3), maxLines = 2, overflow = TextOverflow.Ellipsis)
+    DevOnly { DeveloperLine(if (age == null) "↳ $source" else "↳ $source · $age", modifier) }
 }
 
-/** [SourceLine] with a live age from [atMillis]; "waiting" until the first reading. Only this text recomposes on a tick. */
+/**
+ * Old live caption. Delegates to [Freshness]: the full line in Developer mode, a calm note only when stale in
+ * normal mode. The source is guessed from the text; a "last known" source counts as a dropped link.
+ */
+@Deprecated("Use Freshness(ValueSource, atMillis, connected = ...).")
 @Composable
 fun SourceLine(source: String, atMillis: Long?, modifier: Modifier = Modifier) {
-    SourceLine(source, modifier, age = if (atMillis == null) "waiting" else liveAge(atMillis))
+    val connected = "last known" !in source
+    if (LocalDeveloperMode.current) {
+        DeveloperFreshness(modifier) { now, zone -> FreshnessText.developer(source, atMillis, now, zone = zone) }
+    } else {
+        val kind = legacySource(source)
+        Freshness(kind, atMillis, modifier, connected = connected)
+    }
+}
+
+/** Best guess of a [ValueSource] from an old free-text source label. */
+internal fun legacySource(label: String): ValueSource = when {
+    "Google Maps" in label -> ValueSource.GOOGLE_MAPS
+    "phone" in label || "GPS" in label -> ValueSource.PHONE_GPS
+    "bike" in label -> ValueSource.BIKE
+    else -> ValueSource.CALCULATED
 }
 
 /** Serif introduction paragraph (`.lede`). */
@@ -93,6 +115,6 @@ fun Masthead(kicker: String, title: String, modifier: Modifier = Modifier, kicke
 private fun TextPreview() = PreviewSurface {
     Masthead("Route · via Google Maps", "Where to", kickerAside = "idle", titleEm = "?")
     SectionHeader("Destinations") { Kicker("3 saved") }
-    SourceLine("bike", age = "3 s ago")
+    Freshness(ValueSource.BIKE, atMillis = null)
     Lede("Safar sends turns, callers and the clock to your cluster.")
 }

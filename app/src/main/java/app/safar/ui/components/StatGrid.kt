@@ -62,16 +62,18 @@ fun NumberWithUnit(
 }
 
 /**
- * One cell of a [StatGrid]: kicker, figure with unit, then either where it came from ([source], drawn as a
- * [SourceLine]) or a plain mono [note].
+ * One cell of a [StatGrid]: kicker, figure with unit, then its [origin] drawn as [Freshness] (nothing while
+ * fresh), the old [source] caption, and/or a plain [note].
  */
 data class StatCell(
     val label: String,
     val value: String,
     val unit: String? = null,
+    /** Old free-text caption ("↳ last 3 tanks"), still shown. New cells: rider words in [note], freshness in [origin]. */
     val source: String? = null,
     val note: String? = null,
     val valueColor: Color? = null,
+    val origin: ValueOrigin? = null,
 )
 
 /**
@@ -102,7 +104,8 @@ private fun StatCellView(cell: StatCell, numberStyle: TextStyle, modifier: Modif
     Column(modifier.padding(top = 14.dp, bottom = 12.dp).semantics(mergeDescendants = true) {}) {
         Kicker(cell.label)
         NumberWithUnit(cell.value, cell.unit, numberStyle, Modifier.padding(top = 6.dp, bottom = 2.dp), color = cell.valueColor ?: c.ink)
-        if (cell.source != null) SourceLine(cell.source)
+        if (cell.origin != null) Freshness(cell.origin)
+        if (cell.source != null) DeveloperLine("↳ ${cell.source}")
         if (cell.note != null) BasicText(cell.note, style = Atlas.type.src.copy(color = c.ink3))
     }
 }

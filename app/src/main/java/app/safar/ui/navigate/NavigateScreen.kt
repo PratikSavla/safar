@@ -30,6 +30,7 @@ import app.safar.ui.components.SectionHeader
 import app.safar.ui.components.TextAction
 import app.safar.ui.components.TopoTransform
 import app.safar.ui.components.WarnLine
+import app.safar.ui.components.byMode
 import app.safar.ui.components.rememberToastState
 import app.safar.ui.nav.Navigator
 import app.safar.ui.nav.Route
@@ -53,8 +54,8 @@ class NavigateActions(
 )
 
 /**
- * Route tab (ux navigate.js): Google Maps status, destinations, "Somewhere else", and while navigating a
- * mirror of exactly what the cluster receives. No map drawing. [bottomBar] is the shell's tab strip.
+ * Route tab (ux navigate.js): Google Maps status, destinations, "Somewhere else", and while navigating the
+ * next turn as the bike shows it (the exact frame in Developer mode). No map drawing. [bottomBar] is the shell's tab strip.
  */
 @Composable
 fun NavigateScreen(navigator: Navigator, modifier: Modifier = Modifier, bottomBar: (@Composable () -> Unit)? = null) {
@@ -109,13 +110,13 @@ internal fun NavigateContent(
     ) {
         val dest = state.nav.destinationLabel
         Masthead(
-            "Route · via Google Maps",
+            "Route · with Google Maps",
             if (live) "En route" else "Where to",
-            kickerAside = if (live) "live" else "idle",
+            kickerAside = if (live) "navigating" else null,
             titleEm = if (live) (dest?.let { " to $it" } ?: "") else "?",
         )
         if (live && !state.bikeConnected) {
-            WarnLine("Bike not connected. Turns will reach the cluster once it reconnects.", Modifier.padding(bottom = 14.dp))
+            WarnLine("Bike not connected. Turns show on your bike once it reconnects.", Modifier.padding(bottom = 14.dp))
         }
         when (state.phase) {
             RoutePhase.ACTIVE -> state.mirror?.let { ActiveRoute(it, state.bikeConnected, actions.onEnd) }
@@ -128,7 +129,7 @@ internal fun NavigateContent(
             RoutePhase.PICK -> PickBody(state, access, actions)
         }
         BasicText(
-            "No map here on purpose. Maps is the map; the cluster is the display.",
+            "No map here on purpose. Google Maps draws the map; your bike shows the turns.",
             Modifier.fillMaxWidth().padding(top = 28.dp),
             style = Atlas.type.src.copy(color = Atlas.colors.ink3, textAlign = TextAlign.Center),
         )
@@ -154,8 +155,8 @@ private fun ColumnScope.PickBody(state: NavigateState, access: AccessStatus, act
         )
         val hint = when {
             selected == null -> "Save a place, or search in Google Maps."
-            !access.notificationAccess -> "Grant notification access first, so Safar can read the turns."
-            else -> readableNavUri(selected.query)
+            !access.notificationAccess -> "First allow Safar to read Google Maps alerts, so it can see the turns."
+            else -> byMode("Google Maps opens with a two-wheeler route.", readableNavUri(selected.query))
         }
         BasicText(
             hint,

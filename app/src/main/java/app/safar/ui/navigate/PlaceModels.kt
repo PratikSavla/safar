@@ -32,7 +32,7 @@ fun draftFromShare(text: String?): PlaceDraft? = parseMapsShare(text)?.let {
 fun draftFromPlace(p: Place): PlaceDraft = PlaceDraft(p.source, p.label, p.detail, p.query, p.kind, lat = p.lat, lng = p.lng)
 
 fun draftFromLocation(lat: Double, lng: Double, accuracyM: Float): PlaceDraft =
-    PlaceDraft(PlaceSource.HERE, "", "GPS position · ±${accuracyM.roundToInt()} m", latLngQuery(lat, lng), PlaceKind.HOME, lat = lat, lng = lng)
+    PlaceDraft(PlaceSource.HERE, "", "Your location · within ${accuracyM.roundToInt()} m", latLngQuery(lat, lng), PlaceKind.HOME, lat = lat, lng = lng)
 
 fun typedDraft(): PlaceDraft = PlaceDraft(PlaceSource.TYPED, "", "", "", PlaceKind.STAR)
 
@@ -64,7 +64,7 @@ enum class SourceTone { MOSS, SLATE, INK }
 
 fun PlaceSource.stamp(): Pair<String, SourceTone> = when (this) {
     PlaceSource.MAPS -> "Shared from Google Maps" to SourceTone.MOSS
-    PlaceSource.HERE -> "GPS · where you stood" to SourceTone.SLATE
+    PlaceSource.HERE -> "Where you stood" to SourceTone.SLATE
     PlaceSource.TYPED -> "Typed address" to SourceTone.INK
     PlaceSource.PARKED -> "From where you parked" to SourceTone.SLATE
     PlaceSource.TRIP -> "Where a ride ended" to SourceTone.SLATE

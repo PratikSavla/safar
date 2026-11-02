@@ -25,15 +25,18 @@ import app.safar.ui.art.LcdClusterPreview
 import app.safar.ui.art.TurnArrow
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.DashedRule
+import app.safar.ui.components.DevOnly
+import app.safar.ui.components.Freshness
 import app.safar.ui.components.Gap
 import app.safar.ui.components.LeaderRow
 import app.safar.ui.components.MarchingRule
 import app.safar.ui.components.Note
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.SectionHeader
-import app.safar.ui.components.SourceLine
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.StampTone
+import app.safar.ui.components.byMode
+import app.safar.ui.format.ValueSource
 import app.safar.ui.theme.Atlas
 
 /** Card with a marching rust line, an italic serif title and a note (`.wait-card`). */
@@ -54,7 +57,7 @@ internal fun WaitCard(title: String, note: String, modifier: Modifier = Modifier
 internal fun AwaitingMaps(onCancel: () -> Unit) {
     WaitCard(
         "Pick a place in Google Maps…",
-        "Search, choose two-wheeler, tap Start. Safar joins the route by itself and sends turns to the cluster.",
+        "Search, pick the two-wheeler tab and tap Start. Safar joins in by itself and shows the turns on your bike.",
     )
     Gap(14.dp)
     SecondaryButton("Cancel", onCancel, Modifier.fillMaxWidth())
@@ -63,25 +66,27 @@ internal fun AwaitingMaps(onCancel: () -> Unit) {
 @Composable
 internal fun WaitingFirstUpdate(onEnd: () -> Unit) {
     WaitCard(
-        "Waiting for the first Maps update…",
-        "Nothing goes to the cluster until Maps posts its first turn. That avoids the empty navigation frame the official app sends.",
+        "Waiting for Google Maps…",
+        "Turns show on your bike as soon as Google Maps gives the first one.",
     )
     Gap(14.dp)
     SecondaryButton("End navigation", onEnd, Modifier.fillMaxWidth(), icon = AtlasIcons.cross)
 }
 
-/** Mirror of the next navigation frame, the LCD preview and End (`.mirror`, `.navlcd`). */
+/** The next turn (`.mirror`), the display preview in Developer mode (`.navlcd`), and End. */
 @Composable
 internal fun ActiveRoute(m: NavMirror, bikeConnected: Boolean, onEnd: () -> Unit) {
     MirrorCard(m, bikeConnected)
-    SectionHeader("On the cluster")
-    LcdClusterPreview(
-        turnCode = m.clusterIcon,
-        toTurnMeters = m.toTurnMeters,
-        eta = m.etaSent,
-        remainingMeters = m.remainingMeters,
-        status = m.status.code,
-    )
+    DevOnly {
+        SectionHeader("Cluster preview")
+        LcdClusterPreview(
+            turnCode = m.clusterIcon,
+            toTurnMeters = m.toTurnMeters,
+            eta = m.etaSent,
+            remainingMeters = m.remainingMeters,
+            status = m.status.code,
+        )
+    }
     Gap(26.dp)
     SecondaryButton("End navigation", onEnd, Modifier.fillMaxWidth(), icon = AtlasIcons.cross)
 }
@@ -108,27 +113,30 @@ private fun MirrorCard(m: NavMirror, bikeConnected: Boolean) {
                 }
             }
         }
-        Stamp("status ${m.status.code} · ${m.statusLabel}", Modifier.padding(top = 14.dp), tone = m.tone.stampTone())
+        Stamp(byMode(m.statusLabel, "status ${m.status.code} · ${m.statusLabel}"), Modifier.padding(top = 14.dp), tone = m.tone.stampTone())
         DashedRule(Modifier.padding(vertical = 10.dp))
         MirrorLeaders(m, bikeConnected)
-        SourceLine("Google Maps notification", m.receivedAtMillis, Modifier.padding(top = 6.dp))
+        Freshness(ValueSource.GOOGLE_MAPS, m.receivedAtMillis, Modifier.padding(top = 6.dp), detail = "notification")
         Note(
-            "The instruction text stays on your phone. The bike only gets the icon, distances, ETA and status.",
+            "Street names stay on your phone. Your bike shows the arrow, distances and arrival time.",
             Modifier.padding(top = 8.dp),
             color = c.ink3,
         )
     }
 }
 
+/** Arrival and distance left; the frame itself (icon code, raw ETA, period) in Developer mode. */
 @Composable
 private fun MirrorLeaders(m: NavMirror, bikeConnected: Boolean) {
-    val how = if (m.iconMatched) "matched icon" else "from text"
-    LeaderRow("Icon", "${m.clusterIcon} · ${if (m.clusterIcon == m.iconCode) m.iconName else "status"}")
-    LeaderRow("Icon source", "$how · ${m.iconCode}")
-    LeaderRow("To next turn", m.toTurn.toString())
-    LeaderRow("ETA", "${m.etaShown} · sent as ${m.etaSent}")
-    LeaderRow("Remaining", m.remaining.toString())
-    LeaderRow("Frame", if (bikeConnected) "type 1 · every ${Timing.NAVIGATION_PERIOD_MS} ms" else "paused · bike not connected")
+    LeaderRow("Arrive at", m.etaShown)
+    LeaderRow("Distance left", m.remaining.toString())
+    DevOnly {
+        val how = if (m.iconMatched) "matched icon" else "from text"
+        LeaderRow("Icon", "${m.clusterIcon} · ${if (m.clusterIcon == m.iconCode) m.iconName else "status"}")
+        LeaderRow("Icon source", "$how · ${m.iconCode}")
+        LeaderRow("ETA sent as", m.etaSent)
+        LeaderRow("Frame", if (bikeConnected) "type 1 · every ${Timing.NAVIGATION_PERIOD_MS} ms" else "paused · bike not connected")
+    }
 }
 
 private fun StatusTone.stampTone(): StampTone = when (this) {

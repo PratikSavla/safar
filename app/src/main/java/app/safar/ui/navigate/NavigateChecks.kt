@@ -31,28 +31,28 @@ import app.safar.ui.settings.AccessStatus
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 
-/** Google Maps status card (`.checks`): Maps installed, notification access, two-wheeler tip. */
+/** Google Maps status card (`.checks`): Maps installed, permission to read its alerts, two-wheeler tip. */
 @Composable
 internal fun ChecksCard(access: AccessStatus, onGrant: () -> Unit, modifier: Modifier = Modifier) {
     AtlasCard(modifier, style = CardStyle.LINE, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)) {
         CheckRow(
             ok = access.mapsInstalled,
             title = "Google Maps installed",
-            sub = if (access.mapsInstalled) "Maps draws the map. Safar only reads its turn notification." else "Install Google Maps to get turns on the cluster.",
+            sub = if (access.mapsInstalled) "Google Maps finds the route. Safar passes its turns to your bike." else "Install Google Maps to see turns on your bike.",
         )
         DashedRule(thickness = 1.dp, dash = 4.dp, gap = 3.dp)
         CheckRow(
             ok = access.notificationAccess,
-            title = "Notification access",
-            sub = if (access.notificationAccess) "Granted · Maps turns can be read" else "Needed to read turns from Maps",
+            title = "Read Google Maps alerts",
+            sub = if (access.notificationAccess) "Allowed · Safar can see the turns" else "Needed so Safar can see the turns",
         ) {
-            if (!access.notificationAccess) InkButton("Grant", onGrant, small = true)
+            if (!access.notificationAccess) InkButton("Allow", onGrant, small = true)
         }
         DashedRule(thickness = 1.dp, dash = 4.dp, gap = 3.dp)
         CheckRow(
             ok = null,
             title = "Two-wheeler mode",
-            sub = "In Maps, pick the motorcycle tab before you start. Routes and ETAs then suit a bike.",
+            sub = "In Google Maps, pick the two-wheeler tab before you start. Routes and arrival times then suit a bike.",
         ) { Stamp("tip", tone = StampTone.SLATE) }
     }
 }
@@ -63,7 +63,7 @@ private fun CheckRow(ok: Boolean?, title: String, sub: String, trailing: (@Compo
     val c = Atlas.colors
     val state = when (ok) {
         true -> "Done"
-        false -> "Missing"
+        false -> "Not yet"
         null -> "Tip"
     }
     Row(

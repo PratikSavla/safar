@@ -65,7 +65,7 @@ fun destinations(places: List<Place>, parked: ParkedSpot?): List<Destination> {
     if (parked == null) return saved
     val query = latLngQuery(parked.lat, parked.lng)
     val spot = Destination(
-        key = PARKED_KEY, placeId = null, label = "Where I parked", detail = parked.label ?: query, query = query,
+        key = PARKED_KEY, placeId = null, label = "Where I parked", detail = parked.label ?: "Saved spot", query = query,
         kind = DestKind.PARKED, via = "parked", startLabel = "your parked bike", atMillis = parked.atMillis,
     )
     return saved + spot
@@ -75,17 +75,17 @@ fun destinations(places: List<Place>, parked: ParkedSpot?): List<Destination> {
 fun resolveSelection(list: List<Destination>, selectedKey: String?): Destination? =
     list.firstOrNull { it.key == selectedKey } ?: list.firstOrNull()
 
-/** The intent text Maps gets, shown readable under the Start button (`google.navigation:q=<query>&mode=l`). */
+/** The intent text Maps gets (`google.navigation:q=<query>&mode=l`), shown under Start in Developer mode. */
 fun readableNavUri(query: String): String = "google.navigation:q=$query&mode=l"
 
 /** Rider-facing name of a status byte (docs 4.3). */
 fun NavStatusCode.label(): String = when (this) {
-    NavStatusCode.NO_NETWORK -> "No cellular network"
-    NavStatusCode.NORMAL -> "Normal"
+    NavStatusCode.NO_NETWORK -> "No mobile signal"
+    NavStatusCode.NORMAL -> "On route"
     NavStatusCode.RECALCULATING -> "Recalculating"
-    NavStatusCode.VIA_POINT -> "Via point reached"
+    NavStatusCode.VIA_POINT -> "Stop reached"
     NavStatusCode.GPS_OFF -> "GPS is off"
-    NavStatusCode.ARRIVED -> "Destination reached"
+    NavStatusCode.ARRIVED -> "You have arrived"
     NavStatusCode.NO_INTERNET -> "No internet"
 }
 

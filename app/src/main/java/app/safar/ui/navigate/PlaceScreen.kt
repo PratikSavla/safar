@@ -61,7 +61,7 @@ fun PlaceScreen(navigator: Navigator, placeId: Long?, sharedText: String?, modif
     val actions = PlaceActions(
         onBack = navigator::back,
         onMaps = {
-            if (SystemAccess.openMapsApp(context)) toast.show("In Maps: open a place → Share → Safar") else toast.show("Google Maps is not installed")
+            if (SystemAccess.openMapsApp(context)) toast.show("In Maps: open a place → Share → Safar") else toast.show("Google Maps isn’t installed")
         },
         onHere = { if (LastLocation.permitted(context)) readLocation() else permission.launch(LastLocation.PERMISSIONS) },
         onTyped = vm::chooseTyped,
@@ -82,7 +82,7 @@ internal fun PlaceContent(state: PlaceState, actions: PlaceActions, toast: Atlas
         topo = TopoTransform.Route,
         overlay = { AtlasToastHost(toast, Modifier.align(Alignment.BottomCenter), bottomPadding = 40.dp) },
     ) {
-        BackTopBar("Route · saved places", if (state.editing) "Edit place" else "Save a place", actions.onBack)
+        BackTopBar("Route · your places", if (state.editing) "Edit place" else "Save a place", actions.onBack)
         val draft = state.draft
         when {
             state.loading -> Note("Opening the place…")

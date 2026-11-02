@@ -21,8 +21,10 @@ data class FuelUpUiState(
     val locked: String? = null,
     val speedKmh: Float? = null,
     val currency: String = "₹",
+    /** A save or delete is being written; Save stays disabled so a double tap cannot log the receipt twice. */
+    val saving: Boolean = false,
 ) {
-    val canSave: Boolean get() = validation?.ok == true && locked == null && !missing
+    val canSave: Boolean get() = validation?.ok == true && locked == null && !missing && !saving
 }
 
 fun fuelUpUiState(

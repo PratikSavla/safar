@@ -45,9 +45,12 @@ class FuelUpViewModel(
     val done: StateFlow<String?> = _done.asStateFlow()
     val notices = Notices()
 
-    val state: StateFlow<FuelUpUiState> = combine(seed, form, fuel.fuelUps, settings.settings, combine(bike, ride, ::Pair)) { sd, f, list, s, (b, r) ->
+    /** True from the tap on Save or Delete until the write fails (on success the form closes). */
+    private val busy = MutableStateFlow(false)
+
+    val state: StateFlow<FuelUpUiState> = combine(seed, form, fuel.fuelUps, settings.settings, combine(bike, ride, busy, ::Triple)) { sd, f, list, s, (b, r, w) ->
         if (sd == null) return@combine FuelUpUiState()
-        fuelUpUiState(sd.entry, sd.missing, sd.sugg, f, list, tankLitres(s, b.saved?.model), s.currencySymbol, r)
+        fuelUpUiState(sd.entry, sd.missing, sd.sugg, f, list, tankLitres(s, b.saved?.model), s.currencySymbol, r).copy(saving = w)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FuelUpUiState())
 
     init {
@@ -74,7 +77,8 @@ class FuelUpViewModel(
         val b = bike.value
         val barsNow = if (b.link == LinkState.Connected) b.cluster?.fuelBars else null
         val record = toFuelUp(form.value, s.validation ?: return, sd.entry, sd.sugg, now(), barsNow) ?: return
-        launchLogged(TAG, "save of fuel-up ${record.id}", { notices.post("Could not save the fuel-up") }) {
+        if (!busy.compareAndSet(expect = false, update = true)) return
+        launchLogged(TAG, "save of fuel-up ${record.id}", { busy.value = false; notices.post("Could not save the fuel-up") }) {
             if (sd.entry == null) fuel.add(record) else fuel.update(record)
             _done.value = if (sd.entry == null) "Saved · range updated" else "Fuel-up updated · range updated"
         }
@@ -82,7 +86,8 @@ class FuelUpViewModel(
 
     fun delete() {
         val entry = seed.value?.entry ?: return
-        launchLogged(TAG, "delete of fuel-up ${entry.id}", { notices.post("Could not delete the fuel-up") }) {
+        if (!busy.compareAndSet(expect = false, update = true)) return
+        launchLogged(TAG, "delete of fuel-up ${entry.id}", { busy.value = false; notices.post("Could not delete the fuel-up") }) {
             fuel.delete(entry.id)
             _done.value = "Fuel-up deleted"
         }

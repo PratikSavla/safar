@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 
 /**
@@ -43,6 +44,16 @@ class SimGattLink(
 
     /** The write waiting for its ack, like GattClient's pending operation. */
     private var pendingWrite: CompletableDeferred<WriteOutcome>? = null
+
+    /** A write the queue gave up on (hard limit) that the bike has not acked yet, like GattClient's orphan. */
+    private var orphanWrite: CompletableDeferred<WriteOutcome>? = null
+
+    /** The next this many writes are refused as busy without reaching the bike, as a loaded stack does. */
+    var refuseWrites = 0
+
+    /** Writes refused as busy so far. */
+    var busyRefusals = 0
+        private set
 
     override suspend fun connect(timeoutMs: Long): Boolean {
         val reachable = address == bike.address
@@ -85,6 +96,16 @@ class SimGattLink(
 
     override suspend fun write(service: UUID, characteristic: UUID, frame: ByteArray): WriteOutcome {
         if (!isUp || service != GattUuids.SERVICE) return WriteOutcome.Failed("not connected")
+        // As GattClient: a write the caller gave up on is still held by the stack; wait for its ack first.
+        orphanWrite?.let { held ->
+            withTimeoutOrNull(ORPHAN_WAIT_MS) { held.await() } ?: return WriteOutcome.TimedOut
+            orphanWrite = null
+        }
+        if (refuseWrites > 0) {
+            refuseWrites--
+            busyRefusals++
+            return WriteOutcome.Busy("request busy")
+        }
         val result = CompletableDeferred<WriteOutcome>()
         pendingWrite = result
         try {
@@ -92,6 +113,7 @@ class SimGattLink(
             return result.await()
         } finally {
             pendingWrite = null
+            if (!result.isCompleted) orphanWrite = result
         }
     }
 
@@ -101,6 +123,7 @@ class SimGattLink(
         state.value = GattLink.Disconnected(status, reason)
         bike.detach(this)
         pendingWrite?.complete(WriteOutcome.Failed("status ${GattClient.STATUS_LOCAL}"))
+        orphanWrite?.complete(WriteOutcome.Failed("status ${GattClient.STATUS_LOCAL}"))
     }
 
     override fun close() {
@@ -120,5 +143,8 @@ class SimGattLink(
 
     private companion object {
         const val NOTIFY_BUFFER = 64
+
+        /** GattClient's OP_TIMEOUT_MS. */
+        const val ORPHAN_WAIT_MS = 10_000L
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -14,19 +15,23 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.safar.core.LinkState
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.DashedRule
+import app.safar.ui.components.DevOnly
+import app.safar.ui.components.DeveloperLine
 import app.safar.ui.components.DisplayTitle
 import app.safar.ui.components.InkButton
-import app.safar.ui.components.Note
 import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.TextAction
 import app.safar.ui.components.liveAge
+import app.safar.ui.components.rememberNow
+import app.safar.ui.copy.LinkCopy
+import app.safar.ui.copy.Phrases
 import app.safar.ui.theme.Atlas
 
 /** What the connection card can trigger. */
@@ -37,7 +42,10 @@ class ConnActions(
     val enableBluetooth: () -> Unit,
 )
 
-/** The one large connection state on Today (home-conn.js `connHero`). */
+/**
+ * The one large connection state on Today (home-conn.js `connHero`): headline and one calm sentence from
+ * [LinkCopy], the link drawing, then what the rider can do. Technical lines are Developer mode only.
+ */
 @Composable
 fun ConnectionCard(conn: ConnUi, autoRideOn: Boolean, actions: ConnActions, modifier: Modifier = Modifier) {
     val c = Atlas.colors
@@ -69,14 +77,14 @@ private fun ConnFoot(conn: ConnUi, autoRideOn: Boolean, actions: ConnActions) {
                 SecondaryButton("Pair another", actions.openPair, Modifier.weight(1f))
             }
         } else {
-            InkButton("Find my bike", actions.openPair, Modifier.fillMaxWidth().padding(top = 6.dp), icon = AtlasIcons.search)
+            InkButton(Phrases.LOOK_FOR_BIKE, actions.openPair, Modifier.fillMaxWidth().padding(top = 6.dp), icon = AtlasIcons.search)
         }
         ConnKind.SEARCHING -> Column {
-            Note("Scanning 10 s. Only Suzuki clusters are listed.")
-            TextAction("Open the scan", actions.openPair)
+            DevOnly { DeveloperLink(conn) }
+            TextAction(if (conn.savedAddress != null) "Pair another bike" else Phrases.LOOK_FOR_BIKE, actions.openPair)
         }
-        ConnKind.CONNECTING -> Note("Looking up services FFF0 · FFF1 · FFF2 by UUID. No PIN needed.")
-        ConnKind.BLUETOOTH_OFF -> InkButton("Turn on Bluetooth", actions.enableBluetooth, Modifier.fillMaxWidth().padding(top = 6.dp), icon = AtlasIcons.bt)
+        ConnKind.CONNECTING -> DevOnly { DeveloperLink(conn) }
+        ConnKind.BLUETOOTH_OFF -> InkButton(Phrases.TURN_ON_BLUETOOTH, actions.enableBluetooth, Modifier.fillMaxWidth().padding(top = 6.dp), icon = AtlasIcons.bt)
     }
 }
 
@@ -84,23 +92,31 @@ private fun ConnFoot(conn: ConnUi, autoRideOn: Boolean, actions: ConnActions) {
 private fun ConnectedFoot(conn: ConnUi, autoRideOn: Boolean, openRide: () -> Unit) {
     val c = Atlas.colors
     DashedRule(Modifier.padding(top = 4.dp, bottom = 10.dp), thickness = 1.dp, dash = 4.dp, gap = 3.dp)
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        BasicText(conn.bikeName.orEmpty(), Modifier.weight(1f), style = Atlas.type.src.copy(color = c.ink3), maxLines = 1, overflow = TextOverflow.Ellipsis)
-        LastFrameText(conn.lastFrameAt)
-    }
+    DevOnly { DeveloperLink(conn) }
     Column(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         PrimaryButton("Ride mode", openRide, Modifier.fillMaxWidth(), icon = AtlasIcons.ride)
         BasicText(
-            if (autoRideOn) "opens by itself above 10 km/h" else "auto-open is off",
-            Modifier.padding(top = 2.dp),
-            style = Atlas.type.src.copy(color = c.ink3),
+            if (autoRideOn) "Opens by itself when you start riding." else "Auto-open is off in Settings.",
+            Modifier.padding(top = 4.dp),
+            style = Atlas.type.uiSmall.copy(color = c.ink3, textAlign = TextAlign.Center),
         )
     }
 }
 
-/** "frames every 5 s · last 3 s ago": its own scope, so the clock tick recomposes this text only. */
+/**
+ * Developer mode: the bike's Bluetooth name and the link detail ("MTU 65 · notify on · last frame 3 s ago",
+ * "back-off ..."). Reads the clock here only, so its tick recomposes this line alone.
+ */
 @Composable
-private fun LastFrameText(lastFrameAt: Long?) {
-    val last = lastFrameAt?.let { liveAge(it) } ?: "waiting"
-    BasicText("frames every 5 s · last $last", style = Atlas.type.src.copy(color = Atlas.colors.ink3, textAlign = TextAlign.End), maxLines = 1)
+private fun DeveloperLink(conn: ConnUi) {
+    val now by rememberNow()
+    val detail = when (conn.link) {
+        LinkState.Connected -> listOfNotNull(
+            conn.mtu?.let { "MTU $it" },
+            "notify on",
+            "last frame ${conn.lastFrameAt?.let { liveAge(it) } ?: "waiting"}",
+        ).joinToString(" · ")
+        else -> LinkCopy.developerDetail(conn.link, now)
+    }
+    DeveloperLine(listOfNotNull(conn.bikeName, detail).joinToString(" · "), Modifier.padding(bottom = 4.dp))
 }

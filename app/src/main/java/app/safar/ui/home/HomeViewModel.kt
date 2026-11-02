@@ -25,6 +25,7 @@ import app.safar.data.SettingsStore
 import app.safar.data.Trip
 import app.safar.data.TripRepository
 import app.safar.data.fuelStats
+import app.safar.ui.copy.LinkCopy
 import app.safar.ui.service.odoNow
 import app.safar.ui.shell.ShellDeps
 import app.safar.ui.vm.throttleLatest
@@ -37,7 +38,7 @@ import kotlinx.coroutines.flow.stateIn
 
 /**
  * Everything Today shows, except phone GPS speed ([HomeViewModel.speed]), which changes every second and is read
- * by its one ledger cell. [entryNo] numbers the journal page ("Entry № 12").
+ * by its one ledger cell. [rideCount] is the number of trips on this phone ("12 rides").
  */
 @Immutable
 data class HomeUi(
@@ -49,7 +50,7 @@ data class HomeUi(
     val counts: CountsUi,
     val nav: NavStripUi?,
     val garage: List<GarageTile>,
-    val entryNo: Int,
+    val rideCount: Int,
 )
 
 /** Live link and phone state. */
@@ -72,18 +73,18 @@ internal fun homeUi(live: HomeLive, stored: HomeStored, logCount: Int, nowMillis
     val alertCount = live.alerts.missed.count + live.alerts.messages.count
     val garage = GarageInputs(
         fuel, odoNow(bike, stored.services, stored.fuelUps).km, stored.services, stored.parked, stored.trips, stored.placesCount,
-        nav, alertCount, bike.link, live.settings.debugLog, logCount,
+        nav, alertCount, bike.link, live.settings.debugLog, logCount, live.settings.developerMode,
     )
     return HomeUi(
         riderName = live.settings.riderName.trim(),
-        modelName = modelName(bike),
+        modelName = LinkCopy.modelName(bike),
         conn = connUi(bike),
         autoRideOn = live.settings.autoRideMode,
         ledger = ledgerUi(bike, fuel),
         counts = CountsUi(live.alerts.missed, live.alerts.messages),
         nav = nav,
         garage = garageTiles(garage),
-        entryNo = stored.trips.size + 1,
+        rideCount = stored.trips.size,
     )
 }
 

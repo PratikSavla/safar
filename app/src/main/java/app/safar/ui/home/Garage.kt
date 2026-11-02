@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -35,10 +36,14 @@ import app.safar.ui.art.TurnArrow
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.CardStyle
+import app.safar.ui.components.Freshness
 import app.safar.ui.components.Kicker
-import app.safar.ui.components.SourceLine
-import app.safar.ui.components.liveAge
+import app.safar.ui.components.developerMode
+import app.safar.ui.components.rememberNow
+import app.safar.ui.copy.Phrases
 import app.safar.ui.format.Formatters
+import app.safar.ui.format.FreshnessText
+import app.safar.ui.format.ValueSource
 import app.safar.ui.nav.Route
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
@@ -67,7 +72,7 @@ fun Garage(tiles: List<GarageTile>, onOpen: (Route) -> Unit) {
 @Composable
 private fun Tile(t: GarageTile, modifier: Modifier, onClick: () -> Unit) {
     val c = Atlas.colors
-    val hint = t.hintAtMillis?.let { liveAge(it, periodMillis = 30_000) } ?: t.hint
+    val hint = t.hintAtMillis?.let { tileAge(it) } ?: t.hint
     val outline = if (t.accent) c.rust else c.rule
     Column(
         modifier
@@ -86,13 +91,26 @@ private fun Tile(t: GarageTile, modifier: Modifier, onClick: () -> Unit) {
     }
 }
 
+/**
+ * "12 min ago" for a tile, in calm words with no seconds; the exact age in Developer mode. Reads the clock at
+ * 30 s steps here, so only this tile recomposes.
+ */
+@Composable
+private fun tileAge(atMillis: Long): String {
+    val now by rememberNow(periodMillis = 30_000)
+    return if (developerMode()) Formatters.age(atMillis, now) else FreshnessText.calmAge(atMillis, now)
+}
+
 /** Missed calls and WhatsApp counts (home.css `.counts`): a rust-washed strip that opens Alerts. */
 @Composable
 fun CountsStrip(counts: CountsUi, onOpen: () -> Unit) {
     if (!counts.visible) return
     val c = Atlas.colors
     val parts = buildList {
-        if (counts.missed.count > 0) add(Triple(AtlasIcons.missed, counts.missed.count, "missed · ${counts.missed.lastName.orEmpty()}"))
+        if (counts.missed.count > 0) {
+            val calls = if (counts.missed.count == 1) "missed call" else "missed calls"
+            add(Triple(AtlasIcons.missed, counts.missed.count, "$calls · ${counts.missed.lastName.orEmpty()}"))
+        }
         if (counts.messages.count > 0) {
             val what = if (counts.messages.source == AlertSource.WHATSAPP) "WhatsApp" else "messages"
             add(Triple(AtlasIcons.wa, counts.messages.count, "$what · ${counts.messages.lastName.orEmpty()}"))
@@ -121,7 +139,7 @@ fun CountsStrip(counts: CountsUi, onOpen: () -> Unit) {
     }
 }
 
-/** Active navigation on Today: the next turn as the cluster gets it, tap for the Route page. */
+/** Active navigation on Today: the next turn as your bike's display gets it, tap for the Route page. */
 @Composable
 fun NavStrip(nav: NavStripUi?, onOpen: () -> Unit) {
     if (nav == null) return
@@ -130,15 +148,16 @@ fun NavStrip(nav: NavStripUi?, onOpen: () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             TurnArrow(nav.iconCode, size = 44.dp, color = if (nav.waiting) c.ink3 else c.rust)
             Column(Modifier.weight(1f)) {
-                Kicker(if (nav.destination != null) "En route · ${nav.destination}" else "En route")
+                Kicker(if (nav.destination != null) "Heading to ${nav.destination}" else "Navigating")
                 val main = when {
-                    nav.waiting -> "Waiting for Google Maps…"
+                    nav.waiting -> Phrases.WAITING_FOR_MAPS
                     nav.statusWord != null -> nav.statusWord
-                    nav.distanceM != null -> Formatters.navDistance(nav.distanceM).toString()
+                    nav.distanceM != null -> "Next turn in ${Formatters.navDistance(nav.distanceM)}"
                     else -> "—"
                 }
-                BasicText(main, Modifier.padding(vertical = 2.dp), style = Atlas.type.serifTitle.copy(color = c.ink), maxLines = 1)
-                if (nav.receivedAt != null) SourceLine("Google Maps", nav.receivedAt) else SourceLine("Google Maps", age = "waiting")
+                BasicText(main, Modifier.padding(vertical = 2.dp), style = Atlas.type.serifTitle.copy(color = c.ink), maxLines = 2)
+                // Maps posts only when the turn changes, so this says nothing in normal mode; the age is for Developer mode.
+                if (nav.receivedAt != null) Freshness(ValueSource.GOOGLE_MAPS, nav.receivedAt)
             }
         }
     }

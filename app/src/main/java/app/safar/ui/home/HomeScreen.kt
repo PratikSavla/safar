@@ -48,25 +48,28 @@ fun HomeScreen(navigator: Navigator, vm: HomeViewModel = viewModel { HomeViewMod
 @Composable
 internal fun HomeContent(ui: HomeUi?, speed: () -> SpeedUi, actions: ConnActions, go: (Route) -> Unit) {
     AtlasPage(bottomBar = TabBarSpace) {
-        TodayMasthead(ui?.riderName?.ifEmpty { null } ?: "rider", ui?.entryNo)
+        TodayMasthead(ui?.riderName?.ifEmpty { null } ?: "rider", ui?.rideCount)
         if (ui == null) return@AtlasPage
         ConnectionCard(ui.conn, ui.autoRideOn, actions)
         NavStrip(ui.nav) { go(Route.Navigate) }
         CountsStrip(ui.counts) { go(Route.Alerts) }
-        SectionHeader("The ledger", Modifier.padding(top = 0.dp)) { ui.modelName?.let { Kicker(it) } }
+        SectionHeader("Readings", Modifier.padding(top = 0.dp)) { ui.modelName?.let { Kicker(it) } }
         Ledger(ui.ledger, speed)
         SectionHeader("Garage")
         Garage(ui.garage, go)
     }
 }
 
-/** "MON, 03 NOV 2026" over "Today, Alex.": the only part of the page the minute clock recomposes. */
+/** "MON, 03 NOV 2026 · 12 rides" over "Today, Alex.": the only part of the page the minute clock recomposes. */
 @Composable
-private fun TodayMasthead(name: String, entryNo: Int?) {
+private fun TodayMasthead(name: String, rideCount: Int?) {
     val now by rememberNow(periodMillis = 60_000)
     val dateLine = DATE_LINE.format(Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault())).uppercase(Locale.UK)
-    Masthead(dateLine, "Today", kickerAside = entryNo?.let { "Entry № $it" }, titleEm = ", $name.")
+    Masthead(dateLine, "Today", kickerAside = rideCount?.takeIf { it > 0 }?.let(::ridesLabel), titleEm = ", $name.")
 }
+
+/** "1 ride", "12 rides". */
+internal fun ridesLabel(count: Int): String = if (count == 1) "1 ride" else "$count rides"
 
 @Preview(heightDp = 1400)
 @Composable

@@ -5,6 +5,7 @@ import app.safar.core.LinkState
 import app.safar.core.LogKind
 import app.safar.core.LogRecord
 import app.safar.core.RideState
+import app.safar.data.Settings
 import app.safar.ui.testReading
 import app.safar.ui.testSaved
 import app.safar.ui.testing.FakeAlerts
@@ -45,7 +46,7 @@ class HomeViewModelTest {
     // Lazy: viewModelScope must start after the rule has set Dispatchers.Main.
     private val vm by lazy {
         HomeViewModel(
-            bike, ride, FakeNavigation(), FakeAlerts(), FakeSettings(), FakeFuelUps(), FakeServiceItems(), FakeParked(),
+            bike, ride, FakeNavigation(), FakeAlerts(), FakeSettings(Settings(developerMode = true)), FakeFuelUps(), FakeServiceItems(), FakeParked(),
             FakeTripList(), FakePlaces(), log, clock = { 10_000L },
         )
     }

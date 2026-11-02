@@ -35,10 +35,12 @@ data class GarageInputs(
     val link: LinkState,
     val debugLog: Boolean,
     val logCount: Int,
+    /** The Debug log tile shows in Developer mode only. */
+    val developerMode: Boolean = false,
 )
 
-/** Fuel, Log fuel, Service / Parked, Trips, Navigate / Alerts, Bike, Debug log (home.js `garage`). */
-internal fun garageTiles(g: GarageInputs): List<GarageTile> = listOf(
+/** Fuel, Log fuel, Service / Parked, Trips, Navigate / Alerts, Bike, and Debug log in Developer mode (home.js `garage`). */
+internal fun garageTiles(g: GarageInputs): List<GarageTile> = listOfNotNull(
     GarageTile("fuel", "Fuel", fuelHint(g.fuel), Route.Fuel, warn = (g.fuel.bars ?: Int.MAX_VALUE) <= 1),
     GarageTile("logfuel", "Log fuel", "at the pump", Route.FuelUp(), accent = true),
     serviceTile(g.services, g.odometerKm),
@@ -47,7 +49,7 @@ internal fun garageTiles(g: GarageInputs): List<GarageTile> = listOf(
     GarageTile("navigate", "Navigate", navHint(g.nav, g.placesCount), Route.Navigate),
     GarageTile("alerts", "Alerts", if (g.alertCount > 0) "${g.alertCount} new" else "all quiet", Route.Alerts, warn = g.alertCount > 0),
     GarageTile("bike", "Bike", if (g.link == LinkState.Connected) "firmware, serial" else "saved info", Route.Bike),
-    GarageTile("log", "Debug log", if (g.debugLog) "recording" else "${g.logCount} in memory", Route.Log),
+    GarageTile("log", "Debug log", if (g.debugLog) "recording" else "${g.logCount} in memory", Route.Log).takeIf { g.developerMode },
 )
 
 private fun fuelHint(f: FuelStats): String = if (f.rangeKm == null) "log a full tank" else "${Formatters.approx(f.rangeKm.toDouble())} km left"
@@ -57,7 +59,7 @@ private fun serviceTile(items: List<ServiceItem>, odo: Int?): GarageTile {
     val statuses = serviceStatuses(items, odo)
     val overdue = statuses.count { it.state == ServiceState.OVERDUE }
     val next = statuses.first()
-    val hint = if (overdue > 0) "$overdue overdue" else "${next.item.label.substringBefore(' ')} in ${Formatters.odometer(next.kmToNext)} km"
+    val hint = if (overdue > 0) "$overdue overdue" else "next in ${Formatters.odometer(next.kmToNext)} km"
     return GarageTile("service", "Service", hint, Route.Service, warn = overdue > 0)
 }
 

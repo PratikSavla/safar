@@ -7,6 +7,7 @@ import app.safar.ble.WriteOutcome
 import app.safar.ble.gattStatusText
 import app.safar.core.DebugLog
 import app.safar.protocol.GattUuids
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -18,7 +19,8 @@ import java.util.UUID
 
 /**
  * One app-side GATT link to a [FakeBikePeripheral]: what GattClient and its callback bridge do on a phone,
- * including the "Disconnected" log event the bridge writes when the bike drops the link.
+ * including the "Disconnected" log event the bridge writes when the bike drops the link. As in GattClient, a
+ * write waits for the bike's ack, and [markLost] fails the waiting write at once with status -1.
  */
 class SimGattLink(private val bike: FakeBikePeripheral, private val log: DebugLog) : GattPort {
     private val state = MutableStateFlow<GattLink>(GattLink.Connecting)
@@ -33,6 +35,9 @@ class SimGattLink(private val bike: FakeBikePeripheral, private val log: DebugLo
         private set
 
     private val isUp: Boolean get() = state.value == GattLink.Connected
+
+    /** The write waiting for its ack, like GattClient's pending operation. */
+    private var pendingWrite: CompletableDeferred<WriteOutcome>? = null
 
     override suspend fun connect(timeoutMs: Long): Boolean {
         bike.onConnectRequest()
@@ -74,13 +79,22 @@ class SimGattLink(private val bike: FakeBikePeripheral, private val log: DebugLo
 
     override suspend fun write(service: UUID, characteristic: UUID, frame: ByteArray): WriteOutcome {
         if (!isUp || service != GattUuids.SERVICE) return WriteOutcome.Failed("not connected")
-        return bike.onWrite(this, characteristic, frame)
+        val result = CompletableDeferred<WriteOutcome>()
+        pendingWrite = result
+        try {
+            bike.onWrite(this, characteristic, frame) { result.complete(WriteOutcome.Ok) }
+            return result.await()
+        } finally {
+            pendingWrite = null
+        }
     }
 
+    /** As GattClient.markLost: the waiting write gets STATUS_LOCAL, whatever [status] the link ended with. */
     override fun markLost(status: Int, reason: String) {
         if (state.value is GattLink.Disconnected) return
         state.value = GattLink.Disconnected(status, reason)
         bike.detach(this)
+        pendingWrite?.complete(WriteOutcome.Failed("status ${GattClient.STATUS_LOCAL}"))
     }
 
     override fun close() {

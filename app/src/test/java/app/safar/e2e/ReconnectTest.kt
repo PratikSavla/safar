@@ -1,5 +1,6 @@
 package app.safar.e2e
 
+import app.safar.ble.WriteQueue
 import app.safar.core.LinkState
 import app.safar.data.SavedBikeRecord
 import app.safar.protocol.ConnectTiming
@@ -12,7 +13,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** MTU check, link drops and the reconnect back-off against the simulated bike (docs 2.2, 2.4, 2.5, 12.4 R3). */
@@ -81,6 +84,31 @@ class ReconnectTest {
         assertTrue(rig.radio.opened.all { it == BIKE_ADDRESS }, "direct connect to the saved address")
         assertEquals(0, rig.radio.scanner.starts, "no scan while reconnecting")
         assertEquals(emptyList(), rig.txAfter(dropAt), "no write attempted while the link is down")
+    }
+
+    @Test
+    fun aWriteCutOffByADropIsLoggedAsFailedAtTheDrop() = runTest {
+        val rig = BikeRig(this, savedBike = SavedBikeRecord(MOTO_NAME, BIKE_ADDRESS))
+        rig.start()
+        val t0 = rig.awaitConnected()
+        // The first rider frame goes out at t0; drop the link while it waits for its ack.
+        rig.advance(rig.bike.ackDelayMs / 2)
+        val dropAt = rig.time
+        rig.bike.dropLink()
+        rig.advance(0)
+
+        val cut = rig.bike.writes.single()
+        assertEquals(t0, cut.atMillis)
+        assertNull(cut.ackedAtMillis, "the bike never acknowledged it")
+        val logged = rig.recording.tx().single()
+        assertContentEquals(cut.bytes, logged.bytes)
+        assertEquals(CLOCK_BASE + dropAt, logged.atMillis, "logged at the drop, not after the ack delay")
+        assertEquals(false, logged.ok)
+        // markLost sets the link state before it fails the write, so LinkRunner resumes first and cancels the
+        // queue; the serial dispatcher keeps that order on a phone too. Hence "cancelled", not "status -1".
+        assertEquals("write failed: ${WriteQueue.CANCELLED}", logged.note)
+        rig.advance(Timing.STATUS_PERIOD_MS)
+        assertEquals(1, rig.recording.tx().size, "no second outcome for the cut-off frame")
     }
 
     @Test

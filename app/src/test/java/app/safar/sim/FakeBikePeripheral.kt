@@ -1,6 +1,5 @@
 package app.safar.sim
 
-import app.safar.ble.WriteOutcome
 import app.safar.protocol.BIKE_MTU
 import app.safar.protocol.ChecksumMode
 import app.safar.protocol.DeviceInformationUuids
@@ -133,20 +132,24 @@ class FakeBikePeripheral(
         }
     }
 
-    internal suspend fun onWrite(link: SimGattLink, characteristic: UUID, frame: ByteArray): WriteOutcome {
-        if (current !== link) return WriteOutcome.Failed("not connected")
+    /** Records the write and calls [onAck] after [ackDelayMs]; no ack once [link] is gone. */
+    internal fun onWrite(link: SimGattLink, characteristic: UUID, frame: ByteArray, onAck: () -> Unit) {
+        check(current === link) { "write on a link the bike does not hold" }
         require(characteristic == GattUuids.TX_CHARACTERISTIC) { "writes go to FFF1, got $characteristic" }
         inFlight++
         maxWritesInFlight = maxOf(maxWritesInFlight, inFlight)
         val written = WrittenFrame(clock(), frame.copyOf())
         writes += written
-        try {
-            delay(ackDelayMs)
-            written.ackedAtMillis = clock()
-        } finally {
-            inFlight--
+        scope.launch {
+            try {
+                delay(ackDelayMs)
+                if (current !== link) return@launch
+                written.ackedAtMillis = clock()
+                onAck()
+            } finally {
+                inFlight--
+            }
         }
-        return if (current === link) WriteOutcome.Ok else WriteOutcome.Failed("link lost before the ack")
     }
 
     private fun notify(link: SimGattLink, frame: ByteArray) {

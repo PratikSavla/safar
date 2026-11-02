@@ -76,14 +76,15 @@ fun AtlasButton(
     val outer = modifier
         .heightIn(min = Atlas.dimens.touchTarget)
         .clickable(source, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
-    Box(outer, contentAlignment = Alignment.Center) {
+    Box(outer, contentAlignment = Alignment.Center, propagateMinConstraints = true) {
         var face = Modifier
+            .alpha(if (enabled) 1f else 0.4f)
             .graphicsLayer { translationY = if (pressed) 2.dp.toPx() else 0f }
             .heightIn(min = height)
             .background(bg, AtlasShapes.small)
         if (tone == ButtonTone.GHOST) face = face.border(Atlas.dimens.outline, c.ink, AtlasShapes.small)
         Row(
-            face.alpha(if (enabled) 1f else 0.4f).padding(horizontal = if (small) 14.dp else 20.dp),
+            face.padding(horizontal = if (small) 14.dp else 20.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {

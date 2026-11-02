@@ -25,19 +25,23 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.theme.Atlas
+import app.safar.ui.theme.AtlasShapes
 import java.util.Locale
 
 /** One ticket stub: [badge] counts unread alerts, [dot] marks live navigation. */
@@ -126,7 +130,13 @@ private fun Stub(tab: StubTab, on: Boolean, dashedLeft: Boolean, modifier: Modif
 private fun BoxScope.StubCard() {
     val c = Atlas.colors
     val shape = TicketShape(notch = 5.dp, corner = 4.dp, at = 0.62f)
-    Box(Modifier.matchParentSize().padding(horizontal = 2.dp).atlasShadow(shape, c).background(c.card, shape))
+    Box(
+        Modifier.matchParentSize().padding(horizontal = 2.dp)
+            // Shadows use the plain rounded rect: a blurred shadow of the notched path renders as a hard block.
+            .dropShadow(AtlasShapes.small, Shadow(radius = 10.dp, spread = (-4).dp, offset = DpOffset(0.dp, 4.dp), color = c.shadow.copy(alpha = c.shadow.alpha * 0.5f)))
+            .dropShadow(AtlasShapes.small, Shadow(radius = 0.dp, offset = DpOffset(0.dp, 1.dp), color = c.shadowEdge))
+            .background(c.card, shape),
+    )
     Box(Modifier.align(Alignment.TopEnd).offset(x = (-12).dp, y = 6.dp).size(7.dp).background(c.rust, CircleShape))
 }
 

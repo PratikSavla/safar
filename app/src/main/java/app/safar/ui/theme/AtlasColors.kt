@@ -95,7 +95,7 @@ val DarkAtlasColors = AtlasColors(
     amberWash = Color(0x26E7A944),
     contour = Color(120, 170, 220).copy(alpha = 0.085f),
     contourIdx = Color(140, 190, 240).copy(alpha = 0.17f),
-    contourGlow = Color(110, 170, 230).copy(alpha = 0.10f),
+    contourGlow = Color(110, 170, 230).copy(alpha = 0.05f),
     scrim = Color(4, 6, 10).copy(alpha = 0.6f),
     lcd = Color(0xFF26331F),
     lcdInk = Color(0xFFC7E3A4),

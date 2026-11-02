@@ -72,16 +72,7 @@ fun AtlasSlider(
             Modifier
                 .fillMaxWidth()
                 .height(Atlas.dimens.touchTarget)
-                .clearAndSetSemantics {
-                    contentDescription = label
-                    stateDescription = "$current ${unit.orEmpty()}".trim()
-                    progressBarRangeInfo = ProgressBarRangeInfo(current.toFloat(), range.first.toFloat()..range.last.toFloat(), steps = (range.last - range.first - 1).coerceAtLeast(0))
-                    if (enabled) {
-                        setProgress { target -> change(target.roundToInt().coerceIn(range)); true }
-                    } else {
-                        disabled()
-                    }
-                }
+                .sliderSemantics(label, current, unit, range, enabled) { change(it) }
                 .then(if (enabled) Modifier.trackGestures(range) { change(it) } else Modifier),
         ) {
             val thumbR = 13.dp.toPx()
@@ -99,14 +90,33 @@ fun AtlasSlider(
             drawCircle(c.rust, thumbR - 4.dp.toPx(), Offset(x, y))
             drawCircle(c.rust, thumbR + 1.5.dp.toPx(), Offset(x, y), style = Stroke(1.5.dp.toPx()))
         }
-        Row(Modifier.fillMaxWidth()) {
-            val tick = Atlas.type.src.copy(color = c.ink3)
-            BasicText(range.first.toString(), Modifier.weight(1f), style = tick)
-            BasicText(((range.first + range.last) / 2).toString(), Modifier.weight(1f), style = tick.copy(textAlign = TextAlign.Center))
-            BasicText(range.last.toString(), Modifier.weight(1f), style = tick.copy(textAlign = TextAlign.End))
-        }
+        SliderTicks(range)
     }
 }
+
+@Composable
+private fun SliderTicks(range: IntRange) {
+    Row(Modifier.fillMaxWidth()) {
+        val tick = Atlas.type.src.copy(color = Atlas.colors.ink3)
+        BasicText(range.first.toString(), Modifier.weight(1f), style = tick)
+        BasicText(((range.first + range.last) / 2).toString(), Modifier.weight(1f), style = tick.copy(textAlign = TextAlign.Center))
+        BasicText(range.last.toString(), Modifier.weight(1f), style = tick.copy(textAlign = TextAlign.End))
+    }
+}
+
+/** TalkBack: label, spoken value, range and volume-key style adjustment. */
+private fun Modifier.sliderSemantics(label: String, current: Int, unit: String?, range: IntRange, enabled: Boolean, onValue: (Int) -> Unit) =
+    clearAndSetSemantics {
+        contentDescription = label
+        stateDescription = "$current ${unit.orEmpty()}".trim()
+        val steps = (range.last - range.first - 1).coerceAtLeast(0)
+        progressBarRangeInfo = ProgressBarRangeInfo(current.toFloat(), range.first.toFloat()..range.last.toFloat(), steps)
+        if (enabled) {
+            setProgress { target -> onValue(target.roundToInt().coerceIn(range)); true }
+        } else {
+            disabled()
+        }
+    }
 
 private fun Modifier.trackGestures(range: IntRange, onValue: (Int) -> Unit): Modifier = this
     .pointerInput(range) {

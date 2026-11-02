@@ -82,20 +82,29 @@ fun AtlasTextField(
                 cursorBrush = SolidColor(c.rust),
                 interactionSource = source,
                 keyboardOptions = KeyboardOptions(KeyboardCapitalization.Words, keyboardType = keyboardType, imeAction = imeAction, autoCorrectEnabled = false),
-                decorationBox = { inner ->
-                    Box {
-                        if (value.isEmpty() && placeholder != null) BasicText(placeholder, style = textStyle.copy(color = c.ink3.copy(alpha = 0.6f)))
-                        inner()
-                    }
-                },
+                decorationBox = { inner -> Placeholder(if (value.isEmpty()) placeholder else null, textStyle, inner) },
             )
-            when {
-                locked -> AtlasIcon(AtlasIcons.lock, tint = c.amber, size = 20.dp)
-                trailing != null -> trailing()
-                maxLength != null -> BasicText("${value.length}/$maxLength", style = Atlas.type.src.copy(color = c.ink3))
-            }
+            FieldTrailing(locked, trailing, maxLength?.let { "${value.length}/$it" })
         }
         if (lockedReason != null) LockLine(lockedReason)
+    }
+}
+
+@Composable
+private fun Placeholder(placeholder: String?, style: TextStyle, inner: @Composable () -> Unit) {
+    Box {
+        if (placeholder != null) BasicText(placeholder, style = style.copy(color = Atlas.colors.ink3.copy(alpha = 0.6f)))
+        inner()
+    }
+}
+
+/** Lock when locked, else the caller's trailing content, else a length counter. */
+@Composable
+private fun FieldTrailing(locked: Boolean, trailing: (@Composable () -> Unit)?, counter: String?) {
+    when {
+        locked -> AtlasIcon(AtlasIcons.lock, tint = Atlas.colors.amber, size = 20.dp)
+        trailing != null -> trailing()
+        counter != null -> BasicText(counter, style = Atlas.type.src.copy(color = Atlas.colors.ink3))
     }
 }
 

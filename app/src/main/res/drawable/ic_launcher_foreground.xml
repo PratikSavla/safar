@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Atlas mark: a dashed route winding up a contour, ending in a waypoint. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M30,74 C42,74 40,58 54,58 C68,58 66,42 78,40"
+        android:strokeWidth="5"
+        android:strokeColor="#FBF3E8"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:fillColor="#FBF3E8"
+        android:pathData="M78,32 a8,8 0 1,1 -0.01,0 z" />
+    <path
+        android:fillColor="#C8462B"
+        android:pathData="M78,37 a3,3 0 1,1 -0.01,0 z" />
+</vector>

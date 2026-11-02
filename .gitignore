@@ -1,0 +1,38 @@
+# Secrets and local config (docs/12-app-requirements.md 12.7)
+.env
+.env.*
+!.env.example
+local.properties
+*.jks
+*.keystore
+CLAUDE.local.md
+
+# Captures, logs and exports: never commit
+*.log
+*.jsonl
+bugreport*.zip
+btsnoop*
+captures/
+
+# Node (docs/helper, ux)
+node_modules/
+dist/
+
+# Gradle / Android
+.gradle/
+build/
+.kotlin/
+*.apk
+*.aab
+*.iml
+.idea/
+.cxx/
+.externalNativeBuild/
+
+# OS
+.DS_Store
+
+# Reference material kept local only (not part of the app repo)
+docs/
+ux/
+.claude/

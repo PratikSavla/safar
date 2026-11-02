@@ -77,7 +77,7 @@ fun MacrobenchmarkScope.scrollPage() {
     device.waitForIdle()
 }
 
-/** Taps a stub tab: Today, Route, Journal, Alerts or Settings. */
+/** Taps a stub tab: Today, Route, Trips, Alerts or Settings. */
 fun MacrobenchmarkScope.openTab(label: String) {
     val stub = device.wait(Until.findObject(tab(label)), WAIT_MS) ?: error("Tab \"$label\" not found")
     stub.click()

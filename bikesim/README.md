@@ -10,7 +10,9 @@ layout, checksums and UUIDs and shares no code with `:app`.
 
 - **Advertising**: connectable advertising with service `FFF0`; the device name is in the scan response. Android
   advertises the adapter name, so while the simulator is on the phone's Bluetooth name is set to the simulated
-  cluster name (default `SBM01A1B2C3D`). Switching the simulator off restores the old name.
+  cluster name (default `SBM01A1B2C3D`). Switching the simulator off restores the old name. The old name is saved
+  until it is restored: when Bluetooth is off at that moment, or the app was killed while advertising, BikeSim
+  restores it as soon as Bluetooth is on again with BikeSim open.
 - **GATT server**:
   - `0000fff0-…` with `FFF1` (write with response, app to bike) and `FFF2` (notify, bike to app, with CCCD `2902`).
   - Device Information `0x180A` with synthetic values: `2A29` manufacturer, `2A24` model, `2A25` serial,

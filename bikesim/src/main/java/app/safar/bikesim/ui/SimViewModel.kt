@@ -50,6 +50,9 @@ class SimViewModel(app: Application) : AndroidViewModel(app), PeripheralEvents {
         if (was.wanted && (!bluetoothOn || !permissionsOk)) {
             onEvent(if (!bluetoothOn) "Bluetooth turned off" else "Bluetooth permission removed", error = true)
             switchOff()
+        } else if (!was.wanted && bluetoothOn && permissionsOk) {
+            // Bluetooth is back on, or the app starts again after a kill: put back a name a stop could not restore.
+            advertiser.restorePendingName()
         }
     }
 

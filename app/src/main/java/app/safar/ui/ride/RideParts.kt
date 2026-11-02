@@ -41,10 +41,13 @@ import app.safar.ui.art.AtlasIcons
 import app.safar.ui.art.TurnArrow
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.FuelBars
+import app.safar.ui.components.Freshness
 import app.safar.ui.components.Hairline
-import app.safar.ui.components.SourceLine
 import app.safar.ui.components.rememberNow
+import app.safar.ui.components.rememberStale
+import app.safar.ui.copy.Phrases
 import app.safar.ui.format.Formatters
+import app.safar.ui.home.NO_GEAR
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 import app.safar.ui.theme.FrauncesGlance
@@ -66,32 +69,33 @@ private fun RideClock(modifier: Modifier) {
 }
 
 /**
- * Clock, gear in a ring, fuel bars, over a 2 dp ink rule (ride.css `.r-top`). Gear and fuel carry their
- * source and age underneath, and fade to ink-2 when they are the last known frame (docs 12.5 rule 4).
+ * Clock, gear in a ring, fuel bars, over a 2 dp ink rule (ride.css `.r-top`). Gear and fuel fade to ink-2 once
+ * stale or from the last ride, and only then say so underneath; nothing shows while they are fresh.
  */
 @Composable
 internal fun RideTop(ui: RideUi) {
     val c = Atlas.colors
-    val bikeInk = if (ui.bikeLive) c.ink else c.ink2
-    val stale = if (ui.bikeLive) "" else ", last known"
+    val stale = rememberStale(ui.bikeOrigin)
+    val bikeInk = if (stale) c.ink2 else c.ink
+    val spokenGear = if (ui.gear == NO_GEAR) "Gear, no reading yet" else "Gear ${ui.gear}, probably"
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         RideClock(Modifier.weight(1f))
         Box(
-            Modifier.size(66.dp).border(3.dp, bikeInk, CircleShape).clearAndSetSemantics { contentDescription = "Gear ${ui.gear}, probable$stale" },
+            Modifier.size(66.dp).border(3.dp, bikeInk, CircleShape).clearAndSetSemantics { contentDescription = spokenGear },
             contentAlignment = Alignment.Center,
         ) {
             BasicText(ui.gear, style = glance(42.dp, color = bikeInk))
         }
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
             if (ui.fuelBars != null) {
-                FuelBars(ui.fuelBars, ui.fuelMax, Modifier.alpha(if (ui.bikeLive) 1f else STALE_ALPHA), height = 46.dp, barWidth = 13.dp, gap = 5.dp)
+                FuelBars(ui.fuelBars, ui.fuelMax, Modifier.alpha(if (stale) STALE_ALPHA else 1f), height = 46.dp, barWidth = 13.dp, gap = 5.dp)
             } else {
-                BasicText("fuel …", style = Atlas.type.kicker.copy(color = c.ink3))
+                BasicText("FUEL —", Modifier.clearAndSetSemantics { contentDescription = "Fuel, no reading yet" }, style = Atlas.type.kicker.copy(color = c.ink3))
             }
         }
     }
     Box(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
-        SourceLine(ui.bikeSource, ui.readingAt)
+        Freshness(ui.bikeOrigin)
     }
     Hairline(thickness = 2.dp, color = c.ink)
 }
@@ -106,7 +110,7 @@ internal fun RideCall(call: RideCallUi) {
     val fg = if (call.answered) c.paper else c.onRust
     Row(
         Modifier.fillMaxWidth().background(bg, AtlasShapes.small).padding(horizontal = 18.dp, vertical = 16.dp)
-            .clearAndSetSemantics { contentDescription = "Call from ${call.name}, ${call.label}" },
+            .clearAndSetSemantics { contentDescription = "Call from ${call.name}, ${call.label.replace(" · ", ", ")}" },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -123,7 +127,7 @@ internal fun RideCall(call: RideCallUi) {
 internal fun RideTurn(turn: TurnUi) {
     val c = Atlas.colors
     val spoken = when (turn) {
-        TurnUi.Waiting -> "Waiting for Google Maps"
+        TurnUi.Waiting -> Phrases.WAITING_FOR_MAPS
         is TurnUi.Status -> turn.word
         is TurnUi.Turn -> "Next turn in ${turn.value} ${turn.unit}"
     }
@@ -182,7 +186,7 @@ internal fun RideSpeed(ui: RideUi, modifier: Modifier) {
     val unitStyle = Atlas.type.serifItalic.copy(fontSize = Atlas.type.serifItalic.fontSize * 1.6f, color = c.ink2)
     val unit = rememberTextMeasurer().measure("km/h", unitStyle).size
     val density = LocalDensity.current
-    BoxWithConstraints(modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = if (ui.speedKmh == null) "No GPS speed yet" else "Speed ${ui.speedKmh} kilometres per hour" }, contentAlignment = Alignment.Center) {
+    BoxWithConstraints(modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = if (ui.speedKmh == null) Phrases.WAITING_FOR_GPS else "Speed ${ui.speedKmh} kilometres per hour" }, contentAlignment = Alignment.Center) {
         val layout = with(density) { speedLayout(maxWidth, maxHeight, text.length, unit.width.toDp(), unit.height.toDp()) }
         val number = @Composable { BasicText(text, style = glance(layout.numeral, 800, if (ui.overLimit) c.rust else c.ink).copy(letterSpacing = (-0.05).em), maxLines = 1) }
         if (layout.unitBeside) {

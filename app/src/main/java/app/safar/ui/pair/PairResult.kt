@@ -35,6 +35,9 @@ import app.safar.ui.components.Note
 import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.Stamp
+import app.safar.ui.components.DevOnly
+import app.safar.ui.copy.LinkCopy
+import app.safar.ui.copy.Phrases
 import app.safar.ui.theme.Atlas
 import java.util.Locale
 
@@ -44,13 +47,13 @@ private val PageEase = CubicBezierEasing(0.22f, 0.8f, 0.24f, 1f)
 internal fun Connecting(ui: PairUi) {
     PairLink(ui.model?.family ?: VehicleFamily.MOTORCYCLE)
     DisplayTitle(
-        "Connecting", " to the ${ui.model?.name ?: "bike"}…", Atlas.type.displayMedium,
+        "Connecting", " to ${LinkCopy.yourBike(ui.model?.name)}…", Atlas.type.displayMedium,
         Modifier.fillMaxWidth().semantics { heading() },
     )
-    HandshakeSteps(ui.mtuSet)
+    ConnectSteps(ui.mtuSet)
 }
 
-/** "Paired" stamp lands, the bike, and how the cluster greets the rider (pair.js `success`). */
+/** "Paired" stamp lands, the bike, and how its display greets the rider (pair.js `success`). */
 @Composable
 internal fun PairSuccess(ui: PairUi, onDone: () -> Unit) {
     val c = Atlas.colors
@@ -68,22 +71,23 @@ internal fun PairSuccess(ui: PairUi, onDone: () -> Unit) {
         )
         BikeSilhouette(ui.model?.family ?: VehicleFamily.MOTORCYCLE, Modifier.padding(vertical = 8.dp), width = 200.dp, contentDescription = ui.model?.name)
         DisplayTitle(ui.model?.name ?: "Suzuki", null, Atlas.type.displayMedium, Modifier.semantics { heading() })
-        BasicText(listOfNotNull(ui.bikeName, ui.address).joinToString(" · "), style = Atlas.type.src.copy(color = c.ink3, textAlign = TextAlign.Center))
+        DevOnly {
+            BasicText(listOfNotNull(ui.bikeName, ui.address).joinToString(" · "), style = Atlas.type.src.copy(color = c.ink3, textAlign = TextAlign.Center))
+        }
         BasicText(
             buildAnnotatedString {
-                append("No PIN, no code. ")
                 if (greeting.isNotEmpty()) {
-                    append("The cluster now says ")
+                    append("Your bike’s display now says ")
                     withStyle(SpanStyle(fontWeight = FontWeight(600), color = c.ink)) { append("WELCOME $greeting") }
                     append(".")
                 } else {
-                    append("Add your name in Settings and the cluster greets you by it.")
+                    append("Add your name in Settings and your bike will greet you by it.")
                 }
             },
             style = Atlas.type.lede.copy(color = c.ink2, textAlign = TextAlign.Center),
         )
-        Note("Next time, Safar reconnects by itself when you turn the key.")
-        PrimaryButton("Open today’s page", onDone, Modifier.fillMaxWidth().padding(top = 18.dp), icon = AtlasIcons.arrow)
+        Note("Next time, Safar connects by itself when you turn the key.")
+        PrimaryButton("Go to Today", onDone, Modifier.fillMaxWidth().padding(top = 18.dp), icon = AtlasIcons.arrow)
     }
 }
 
@@ -91,11 +95,11 @@ internal fun PairSuccess(ui: PairUi, onDone: () -> Unit) {
 @Composable
 internal fun AlreadyLinked(ui: PairUi, a: PairActions) {
     AtlasCard(Modifier.padding(bottom = 16.dp)) {
-        Kicker("Already linked")
+        Kicker("Already connected")
         BasicText(ui.model?.name ?: "Suzuki", Modifier.padding(vertical = 6.dp), style = Atlas.type.displaySmall.copy(color = Atlas.colors.ink))
-        Note("Scanning again keeps this bike until you pick another one.")
+        Note("Looking again keeps this bike connected until you pick another one.")
         Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SecondaryButton("Scan anyway", a.scan, Modifier.weight(1f))
+            SecondaryButton(Phrases.LOOK_AGAIN, a.scan, Modifier.weight(1f))
             InkButton("Today", a.home, Modifier.weight(1f))
         }
     }

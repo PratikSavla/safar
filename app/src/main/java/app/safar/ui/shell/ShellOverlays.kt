@@ -110,7 +110,8 @@ private fun RingPulse() {
 }
 
 /**
- * "Ride mode · auto" stamp that lands and fades (chrome.css `.ride-flash`). [serial] changes for each flash.
+ * "Ride mode" stamp that lands and fades when auto ride mode opens Ride (chrome.css `.ride-flash`).
+ * [serial] changes for each flash.
  */
 @Composable
 internal fun RideFlash(serial: Int) {
@@ -140,7 +141,7 @@ internal fun RideFlash(serial: Int) {
                 }
                 .background(Atlas.colors.paper, AtlasShapes.stamp),
         ) {
-            Stamp("Ride mode · auto", tilted = false, solid = true)
+            Stamp("Ride mode", tilted = false, solid = true)
         }
     }
 }

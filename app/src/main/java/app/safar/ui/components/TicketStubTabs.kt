@@ -44,11 +44,11 @@ import java.util.Locale
 /** One ticket stub: [badge] counts unread alerts, [dot] marks live navigation. */
 data class StubTab(val key: String, val label: String, val icon: ImageVector, val badge: Int = 0, val dot: Boolean = false)
 
-/** The five Atlas sections in order: Today, Route, Journal, Alerts, Settings. */
+/** The five Atlas sections in order: Today, Route, Trips, Alerts, Settings. The keys keep their prototype names. */
 fun safarTabs(alertCount: Int = 0, navigating: Boolean = false): List<StubTab> = listOf(
     StubTab("today", "Today", AtlasIcons.today),
     StubTab("route", "Route", AtlasIcons.route, dot = navigating),
-    StubTab("journal", "Journal", AtlasIcons.journal),
+    StubTab("journal", "Trips", AtlasIcons.journal),
     StubTab("alerts", "Alerts", AtlasIcons.alerts, badge = alertCount),
     StubTab("settings", "Settings", AtlasIcons.settings),
 )

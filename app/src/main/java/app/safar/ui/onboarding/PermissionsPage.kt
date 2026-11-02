@@ -53,11 +53,14 @@ private data class PermInfo(val id: PermId, val icon: ImageVector, val title: St
 
 private val PERMS by lazy {
     listOf(
-        PermInfo(PermId.NEARBY, AtlasIcons.bt, "Nearby devices", "Find the cluster over Bluetooth and keep the link alive."),
-        PermInfo(PermId.NOTIFICATIONS, AtlasIcons.bell, "Notifications", "A quiet note while Safar keeps the bike linked in the background."),
-        PermInfo(PermId.NOTIFICATION_ACCESS, AtlasIcons.msg, "Notification access", "Read turns from Google Maps, and caller names from Phone and WhatsApp."),
-        PermInfo(PermId.LOCATION, AtlasIcons.pin, "Location", "Trip tracks, real speed from GPS, where you parked."),
-        PermInfo(PermId.PHONE, AtlasIcons.call, "Phone, call log and contacts", "Show the caller’s name on the cluster while it rings."),
+        PermInfo(PermId.NEARBY, AtlasIcons.bt, "Nearby devices", "Find your bike and stay connected to it."),
+        PermInfo(PermId.NOTIFICATIONS, AtlasIcons.bell, "Notifications", "A quiet note while Safar stays connected, and a low-fuel reminder."),
+        PermInfo(
+            PermId.NOTIFICATION_ACCESS, AtlasIcons.msg, "Google Maps and WhatsApp alerts",
+            "Turns from Google Maps, and who’s calling on Phone and WhatsApp. Android calls this “Notification access”.",
+        ),
+        PermInfo(PermId.LOCATION, AtlasIcons.pin, "Location", "Your trip routes, your speed and where you parked."),
+        PermInfo(PermId.PHONE, AtlasIcons.call, "Phone, call log and contacts", "Show who’s calling on your bike’s display."),
     )
 }
 
@@ -99,7 +102,7 @@ internal fun PermissionsList(askedState: MutableState<Set<String>>) {
         }
         Hairline()
     }
-    Note("Notification access opens Android Settings. Everything else is a normal Android prompt. You can change any of these later.")
+    Note("For Google Maps and WhatsApp alerts, Android opens its settings. The rest ask right here. You can change any of these later.")
 }
 
 @Composable

@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.safar.core.LinkState
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.AtlasPage
@@ -31,6 +32,9 @@ import app.safar.ui.components.InkButton
 import app.safar.ui.components.LockLine
 import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.SecondaryButton
+import app.safar.ui.components.byMode
+import app.safar.ui.copy.LinkCopy
+import app.safar.ui.copy.Phrases
 import app.safar.ui.nav.Navigator
 import app.safar.ui.nav.Route
 import app.safar.ui.theme.Atlas
@@ -45,7 +49,7 @@ class PairActions(
     val enableBluetooth: () -> Unit,
 )
 
-/** Pairing (pair.js): scan for Suzuki clusters, pick one, connect, success. No PIN. */
+/** Pairing (pair.js): look for Suzuki bikes, pick one, connect, success. No code to type. */
 @Composable
 fun PairScreen(navigator: Navigator, vm: PairViewModel = viewModel { PairViewModel.fromContainer() }) {
     val inputs by vm.inputs.collectAsStateWithLifecycle()
@@ -69,9 +73,13 @@ fun PairScreen(navigator: Navigator, vm: PairViewModel = viewModel { PairViewMod
 @Composable
 internal fun ColumnScope.PairBody(ui: PairUi, a: PairActions) {
     when (ui.phase) {
-        PairPhase.NEEDS_PERMISSION -> Blocker("Safar needs Nearby devices", "Android only lets an app look for Bluetooth clusters with this permission.", "Allow", a.requestPermission)
-        PairPhase.BLUETOOTH_OFF -> Blocker("Bluetooth is off", "Turn it on to find the cluster. Safar never turns it on by itself.", "Turn on Bluetooth", a.enableBluetooth)
-        PairPhase.UNSUPPORTED -> EmptyState("No Bluetooth LE here.", message = "This phone cannot talk to a Suzuki cluster.")
+        PairPhase.NEEDS_PERMISSION -> Blocker("Allow Nearby devices", "Android asks for this before Safar can look for your bike.", "Allow", a.requestPermission)
+        PairPhase.BLUETOOTH_OFF -> Blocker(
+            LinkCopy.headline(LinkState.BluetoothOff, null, hasSavedBike = false),
+            "${LinkCopy.detail(LinkState.BluetoothOff, null, hasSavedBike = false)} Safar never turns it on without asking.",
+            Phrases.TURN_ON_BLUETOOTH, a.enableBluetooth,
+        )
+        PairPhase.UNSUPPORTED -> EmptyState("This phone can’t connect.", message = "It doesn’t have the Bluetooth your Suzuki needs.")
         PairPhase.CONNECTING -> Connecting(ui)
         PairPhase.SUCCESS -> PairSuccess(ui, a.done)
         PairPhase.ALREADY_LINKED -> AlreadyLinked(ui, a)
@@ -87,12 +95,16 @@ private fun ColumnScope.Scanning(ui: PairUi, a: PairActions) {
         BasicText(ui.scanLine, style = Atlas.type.serifItalic.copy(fontSize = Atlas.type.serifItalic.fontSize * 1.05f, color = c.ink2))
         if (ui.scanning) BasicText("  ${ui.results.size} found", style = Atlas.type.src.copy(color = c.rust))
     }
-    if (ui.failed) LockLine("Could not reach that cluster. Is the ignition on? Tap it to try again.", Modifier.padding(bottom = 10.dp))
+    if (ui.failed) LockLine("Couldn’t reach your bike. Is the ignition on? Tap it to try again.", Modifier.padding(bottom = 10.dp))
     Results(ui, a)
     if (!ui.scanning) {
         val again = ui.results.isNotEmpty()
         val modifier = Modifier.fillMaxWidth()
-        if (again) SecondaryButton("Scan again", a.scan, modifier, icon = AtlasIcons.search) else PrimaryButton("Scan for my bike", a.scan, modifier, icon = AtlasIcons.search)
+        if (again) {
+            SecondaryButton(Phrases.LOOK_AGAIN, a.scan, modifier, icon = AtlasIcons.search)
+        } else {
+            PrimaryButton(Phrases.LOOK_FOR_BIKE, a.scan, modifier, icon = AtlasIcons.search)
+        }
     }
 }
 
@@ -100,7 +112,7 @@ private fun ColumnScope.Scanning(ui: PairUi, a: PairActions) {
 private fun Results(ui: PairUi, a: PairActions) {
     if (ui.results.isEmpty()) {
         if (!ui.scanning) {
-            EmptyState("Nothing heard yet.", Modifier.padding(bottom = 16.dp), message = "Is the ignition on? The cluster only advertises while the key is turned.")
+            EmptyState("No bike found yet.", Modifier.padding(bottom = 16.dp), message = "Is the ignition on? Your bike only shows up while the key is turned.")
         }
         return
     }
@@ -124,8 +136,8 @@ private fun Blocker(title: String, why: String, action: String, onAction: () -> 
 private fun PairNotes() {
     Column(Modifier.fillMaxWidth().padding(top = 22.dp)) {
         DashedRule(Modifier.padding(bottom = 6.dp), thickness = 1.dp, dash = 4.dp, gap = 3.dp)
-        Note(AtlasIcons.lock, "No PIN needed.", " The cluster accepts the link directly; Android will not ask to pair.")
-        Note(AtlasIcons.bike, "Only Suzuki clusters appear:", " 12-character names that start with SA or SB.")
+        Note(AtlasIcons.lock, Phrases.NO_CODE_NEEDED, "")
+        Note(AtlasIcons.bike, "Only Suzuki bikes show up here.", byMode("", " Names have 12 characters and start with SA or SB."))
     }
 }
 

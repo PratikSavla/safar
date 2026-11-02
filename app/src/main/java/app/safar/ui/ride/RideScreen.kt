@@ -105,7 +105,7 @@ private fun RideColumn(ui: RideUi, auto: Boolean, holding: Boolean) {
         RideSpeed(ui, Modifier.weight(1f))
         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
             ui.linkNote?.let { Stamp(it, tone = StampTone.AMBER) }
-            if (auto) Stamp("auto", tone = StampTone.MOSS)
+            if (auto) Stamp("opened by itself", tone = StampTone.MOSS)
         }
         val hint = if (holding) c.rust else c.ink3
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {

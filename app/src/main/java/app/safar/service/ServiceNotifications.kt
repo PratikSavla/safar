@@ -14,18 +14,18 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import app.safar.R
 
-/** The "Bike link" channel and the ongoing notification of [SafarService]. */
+/** The "Connection to your bike" channel and the ongoing notification of [SafarService]. */
 object ServiceNotifications {
     const val CHANNEL_ID = "bike_link"
     const val NOTIFICATION_ID = 1001
-    private const val CHANNEL_NAME = "Bike link"
+    private const val CHANNEL_NAME = "Connection to your bike"
     private const val REQUEST_OPEN = 1
     private const val REQUEST_DISCONNECT = 2
 
     fun ensureChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW).apply {
-            description = "Shows the link to your bike cluster while Safar keeps it connected."
+            description = "A quiet note while Safar stays connected to your bike."
             setShowBadge(false)
         }
         manager.createNotificationChannel(channel)

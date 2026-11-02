@@ -7,6 +7,7 @@ import app.safar.ble.ReconnectPolicy
 import app.safar.core.BikeState
 import app.safar.core.LinkState
 import app.safar.core.NavState
+import app.safar.ui.copy.LinkCopy
 import app.safar.ui.format.Formatters
 
 /**
@@ -42,25 +43,24 @@ fun foregroundServiceTypes(sdk: Int, bluetoothGranted: Boolean, locationGranted:
 /** Title, text and whether "Disconnect" makes sense, for the ongoing notification. */
 data class NotificationContent(val title: String, val text: String, val canDisconnect: Boolean)
 
+/**
+ * In the rider's words ([LinkCopy]): the title is the connection; the text is the next turn and the odometer
+ * while connected, or else what Safar does about the connection.
+ */
 fun notificationContent(state: BikeState, nav: NavState): NotificationContent {
-    val model = state.saved?.model?.name ?: "bike"
-    val title = when (val link = state.link) {
-        LinkState.Connected -> "Connected to $model"
-        is LinkState.Connecting -> "Connecting to $model"
-        is LinkState.Reconnecting -> "Reconnecting to $model · attempt ${link.attempt}"
-        LinkState.BluetoothOff -> "Bluetooth is off"
-        LinkState.Idle, LinkState.Searching -> "Not connected"
+    val title = when (state.link) {
+        LinkState.Connected -> "Connected to ${LinkCopy.yourBike(LinkCopy.modelName(state))}"
+        else -> LinkCopy.headline(state)
     }
     val parts = mutableListOf<String>()
     val snapshot = nav.snapshot
     if (nav.active && snapshot != null) {
         parts += "Next: ${snapshot.instruction} in ${Formatters.navDistance(snapshot.distanceToTurnM)}"
     }
-    val reading = state.cluster ?: state.lastCluster
-    if (reading != null) {
-        val suffix = if (state.cluster == null) " (last seen)" else ""
-        parts += "Odometer ${Formatters.odometer(reading.odometerKm)} km$suffix"
+    val reading = state.cluster
+    if (state.link == LinkState.Connected && reading != null) {
+        parts += "Odometer ${Formatters.odometer(reading.odometerKm)} km"
     }
-    val text = parts.joinToString(" · ").ifEmpty { "Safar keeps the link to your cluster" }
+    val text = parts.joinToString(" · ").ifEmpty { LinkCopy.detail(state) }
     return NotificationContent(title, text, canDisconnect = state.link != LinkState.Idle)
 }

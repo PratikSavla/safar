@@ -73,18 +73,24 @@ internal fun shellChrome(route: Route?, link: LinkState, alerts: AlertsState, na
     )
 }
 
-/** "On call", "Ringing · shown on the cluster" or "Ringing · cluster alert off". */
+/**
+ * "On call", "Ringing · on your bike" (shown on the display), "Ringing · not sent to your bike" (that alert is
+ * switched off) or plain "Ringing" (the bike is not connected).
+ */
 internal fun callBanner(call: ActiveCall, link: LinkState, settings: Settings): CallBanner {
     val status = when {
         call.answered -> "On call"
-        callForwarded(call.source, link, settings) -> "Ringing · shown on the cluster"
-        else -> "Ringing · cluster alert off"
+        callForwarded(call.source, link, settings) -> "Ringing · on your bike"
+        !callAlertOn(call.source, settings) -> "Ringing · not sent to your bike"
+        else -> "Ringing"
     }
     return CallBanner(call.name, call.source, status, ringing = !call.answered)
 }
 
 /** True when this call reaches the cluster: the bike is linked and that alert is switched on. */
-internal fun callForwarded(source: AlertSource, link: LinkState, settings: Settings): Boolean {
-    val on = if (source == AlertSource.WHATSAPP) settings.alertWhatsAppCalls else settings.alertCalls
-    return on && link == LinkState.Connected
-}
+internal fun callForwarded(source: AlertSource, link: LinkState, settings: Settings): Boolean =
+    callAlertOn(source, settings) && link == LinkState.Connected
+
+/** Settings → Alerts: whether calls from [source] go to the bike's display at all. */
+private fun callAlertOn(source: AlertSource, settings: Settings): Boolean =
+    if (source == AlertSource.WHATSAPP) settings.alertWhatsAppCalls else settings.alertCalls

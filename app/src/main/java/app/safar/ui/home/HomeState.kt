@@ -11,12 +11,19 @@ import app.safar.core.VehicleFamily
 import app.safar.data.FuelMethod
 import app.safar.data.FuelStats
 import app.safar.ui.components.StampTone
+import app.safar.ui.components.ValueOrigin
+import app.safar.ui.copy.LinkCopy
 import app.safar.ui.format.Formatters
+import app.safar.ui.format.ValueSource
 import kotlin.math.roundToInt
 
 /** The one large connection state (docs 12.5 rule 1). */
 enum class ConnKind { SEARCHING, CONNECTING, CONNECTED, RECONNECTING, IDLE, BLUETOOTH_OFF }
 
+/**
+ * The connection card in the rider's words ([LinkCopy]). [link], [bikeName], [mtu] and [lastFrameAt] feed the
+ * Developer mode line only.
+ */
 data class ConnUi(
     val kind: ConnKind,
     val title: String,
@@ -30,37 +37,40 @@ data class ConnUi(
     /** Upcoming reconnect attempt (1-based) and when it starts; only while reconnecting. */
     val attempt: Int = 0,
     val nextAttemptAt: Long? = null,
+    val link: LinkState = LinkState.Idle,
+    val mtu: Int? = null,
 )
 
-/** Model name for the paired or connecting bike, if known. */
-internal fun modelName(bike: BikeState): String? = bike.saved?.model?.name
-    ?: (bike.link as? LinkState.Connecting)?.name?.let { BikeCatalog.forBleName(it).name }
-
 internal fun connUi(bike: BikeState): ConnUi {
-    val model = modelName(bike) ?: "your bike"
+    val link = bike.link
     val family = bike.saved?.model?.family
-        ?: (bike.link as? LinkState.Connecting)?.name?.let { BikeCatalog.forBleName(it).family }
+        ?: (link as? LinkState.Connecting)?.name?.let { BikeCatalog.forBleName(it).family }
         ?: VehicleFamily.MOTORCYCLE
-    val base = ConnUi(
-        ConnKind.IDLE, "Not connected", if (bike.saved != null) "$model is saved" else "No bike paired yet", "offline",
-        StampTone.RUST, family, bike.saved?.name, bike.saved?.address, bike.cluster?.receivedAtMillis,
-    )
-    return when (val link = bike.link) {
-        LinkState.Connected -> base.copy(kind = ConnKind.CONNECTED, title = "Connected", subtitle = "to the $model", stamp = "linked", tone = StampTone.MOSS)
-        is LinkState.Connecting -> base.copy(kind = ConnKind.CONNECTING, title = "Connecting", subtitle = "to the $model…", stamp = "handshake", tone = StampTone.SLATE)
-        is LinkState.Reconnecting -> base.copy(
-            kind = ConnKind.RECONNECTING, title = "Reconnecting", subtitle = "to the $model", stamp = "retrying", tone = StampTone.AMBER,
-            attempt = link.attempt, nextAttemptAt = link.nextAttemptAtMillis,
-        )
-        LinkState.Searching -> base.copy(kind = ConnKind.SEARCHING, title = "Searching", subtitle = "for Suzuki clusters nearby", stamp = "scanning", tone = StampTone.SLATE)
-        LinkState.BluetoothOff -> base.copy(kind = ConnKind.BLUETOOTH_OFF, title = "Bluetooth is off", subtitle = "Turn it on to reach $model")
-        LinkState.Idle -> base
+    val (kind, tone) = when (link) {
+        LinkState.Connected -> ConnKind.CONNECTED to StampTone.MOSS
+        is LinkState.Connecting -> ConnKind.CONNECTING to StampTone.SLATE
+        is LinkState.Reconnecting -> ConnKind.RECONNECTING to StampTone.AMBER
+        LinkState.Searching -> ConnKind.SEARCHING to StampTone.SLATE
+        LinkState.BluetoothOff -> ConnKind.BLUETOOTH_OFF to StampTone.RUST
+        LinkState.Idle -> ConnKind.IDLE to StampTone.RUST
     }
+    val reconnect = link as? LinkState.Reconnecting
+    return ConnUi(
+        kind, LinkCopy.headline(bike), LinkCopy.detail(bike), LinkCopy.stamp(link, bike.saved != null), tone, family,
+        bike.saved?.name, bike.saved?.address, bike.cluster?.receivedAtMillis,
+        attempt = reconnect?.attempt ?: 0, nextAttemptAt = reconnect?.nextAttemptAtMillis, link = link, mtu = bike.mtu,
+    )
 }
 
 enum class FuelWarning { ONE_BAR, EMPTY }
 
-/** The ledger grid: every bike value with its source. [live] false = last known before the link dropped. */
+/** Shown in place of the gear before the bike has reported one. */
+internal const val NO_GEAR = "–"
+
+/**
+ * The ledger grid. [live] false = last known before the link dropped. [rangeNote] is the rider's note under the
+ * range (null when the number speaks for itself); [rangeSource] is the Developer mode line.
+ */
 data class LedgerUi(
     val odometerKm: Int,
     val tripAKm: Double,
@@ -71,17 +81,27 @@ data class LedgerUi(
     val readingAt: Long,
     val live: Boolean,
     val rangeText: String,
+    val rangeNote: String?,
     val rangeSource: String,
     val fuelWarning: FuelWarning?,
     val warningText: String?,
 ) {
-    val bikeSource: String get() = if (live) "bike" else "bike · last known"
+    /** Where odometer, trips, fuel and gear come from, for [app.safar.ui.components.Freshness]. */
+    val bikeOrigin: ValueOrigin get() = ValueOrigin(ValueSource.BIKE, readingAt, connected = live)
 }
 
+/** Developer mode: how the range was worked out. */
 internal fun rangeSource(method: FuelMethod): String = when (method) {
     FuelMethod.HISTORY -> "calculated · fuel-ups"
-    FuelMethod.BARS -> "rough · bars"
-    FuelMethod.NONE -> "log a full tank"
+    FuelMethod.BARS -> "rough · fuel bars"
+    FuelMethod.NONE -> "no full-tank fuel-ups yet"
+}
+
+/** The rider's note under the range: nothing for a worked-out range, a hint otherwise. */
+internal fun rangeNote(method: FuelMethod): String? = when (method) {
+    FuelMethod.HISTORY -> null
+    FuelMethod.BARS -> "Rough guess"
+    FuelMethod.NONE -> "Log a full tank"
 }
 
 /** Null until the first cluster frame ever (the ledger shows its empty page). */
@@ -103,17 +123,18 @@ internal fun ledgerUi(bike: BikeState, fuel: FuelStats): LedgerUi? {
     }
     return LedgerUi(
         odometerKm = r.odometerKm, tripAKm = r.tripAKm, tripBKm = r.tripBKm, fuelBars = bars, fuelMax = fuel.barsMax,
-        gear = r.gear?.toString() ?: "–", readingAt = r.receivedAtMillis, live = live,
-        rangeText = range, rangeSource = rangeSource(fuel.method), fuelWarning = warning, warningText = warnText,
+        gear = r.gear?.toString() ?: NO_GEAR, readingAt = r.receivedAtMillis, live = live,
+        rangeText = range, rangeNote = rangeNote(fuel.method), rangeSource = rangeSource(fuel.method),
+        fuelWarning = warning, warningText = warnText,
     )
 }
 
-/** Phone GPS speed: whole km/h, "live" while moving, else the fix age. [fixAt] is null while live (not shown). */
+/** Phone GPS speed: whole km/h, [live] while moving, else the fix time. [fixAt] is null while live (not shown). */
 data class SpeedUi(val kmh: Int?, val live: Boolean, val fixAt: Long?)
 
 internal fun speedUi(ride: RideState): SpeedUi {
     val live = ride.moving && ride.speedKmh != null
-    // While live the cell says "live": leaving the fix time out keeps a new fix at the same speed from re-emitting.
+    // While live the cell shows no age: leaving the fix time out keeps a new fix at the same speed from re-emitting.
     return SpeedUi(ride.speedKmh?.roundToInt(), live, if (live) null else ride.lastFixAtMillis)
 }
 

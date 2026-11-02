@@ -20,7 +20,7 @@ class BaselineProfileGenerator {
     fun generate() = rule.collect(packageName = targetPackage, includeInStartupProfile = true) {
         startToHome()
         scrollPage()
-        for (label in listOf("Route", "Journal", "Alerts", "Settings")) {
+        for (label in listOf("Route", "Trips", "Alerts", "Settings")) {
             openTab(label)
             scrollPage()
         }

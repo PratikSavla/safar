@@ -66,7 +66,7 @@ class ServiceRulesTest {
             snapshot = NavSnapshot(4, true, 300, 0L, 41_600, NavStatusCode.NORMAL, "Turn right onto Main Rd", 0L),
         )
         val connected = notificationContent(BikeState(link = LinkState.Connected, saved = saved, cluster = reading), nav)
-        assertEquals("Connected to V-Strom SX", connected.title)
+        assertEquals("Connected to your V-Strom SX", connected.title)
         assertEquals("Next: Turn right onto Main Rd in 300 m · Odometer 12,345 km", connected.text)
         assertTrue(connected.canDisconnect)
 
@@ -74,11 +74,16 @@ class ServiceRulesTest {
             BikeState(link = LinkState.Reconnecting(3, 0L), saved = saved, lastCluster = reading),
             NavState(),
         )
-        assertEquals("Reconnecting to V-Strom SX · attempt 3", lost.title)
-        assertEquals("Odometer 12,345 km (last seen)", lost.text)
+        assertEquals("Bike is off or out of range", lost.title)
+        assertEquals("We’ll reconnect as soon as it’s back.", lost.text)
+
+        val quiet = notificationContent(BikeState(link = LinkState.Connected, saved = saved, cluster = reading), NavState())
+        assertEquals("Odometer 12,345 km", quiet.text)
+        val first = notificationContent(BikeState(link = LinkState.Connected, saved = saved), NavState())
+        assertEquals("Ready to ride. Turns, calls and the time go to the display.", first.text)
 
         val idle = notificationContent(BikeState(), NavState())
-        assertEquals("Not connected", idle.title)
+        assertEquals("Not set up yet", idle.title)
         assertFalse(idle.canDisconnect)
     }
 }

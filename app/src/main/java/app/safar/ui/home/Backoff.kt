@@ -25,15 +25,17 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import app.safar.core.LinkState
 import app.safar.protocol.Timing
+import app.safar.ui.art.AtlasIcons
+import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.DashedRule
+import app.safar.ui.components.developerMode
 import app.safar.ui.components.rememberNow
+import app.safar.ui.copy.LinkCopy
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 import kotlin.math.ceil
@@ -57,43 +59,57 @@ internal fun waitFraction(attempt: Int, nextAtMillis: Long, nowMillis: Long): Fl
     return ((nextAtMillis - nowMillis).toFloat() / total).coerceIn(0f, 1f)
 }
 
-/** Reconnect back-off (home.css `.backoff`): amber countdown ring, the reason, and the schedule. */
+/**
+ * Reconnect back-off (home.css `.backoff`): the amber countdown ring as a picture and a calm line; the card's
+ * headline already says the bike is away and that Safar reconnects. Developer mode adds the seconds in the
+ * ring, the attempt and the schedule.
+ */
 @Composable
 internal fun Backoff(attempt: Int, nextAtMillis: Long) {
     val c = Atlas.colors
-    val now by rememberNow()
-    val left = secondsLeft(nextAtMillis, now)
+    val dev = developerMode()
     Column(Modifier.fillMaxWidth()) {
         DashedRule(Modifier.padding(bottom = 12.dp), thickness = 1.dp, dash = 4.dp, gap = 3.dp)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            CountdownRing(left, waitFraction(attempt, nextAtMillis, now))
+            CountdownRing(attempt, nextAtMillis, showSeconds = dev)
             Column(Modifier.weight(1f)) {
-                BasicText(
-                    buildAnnotatedString {
-                        append("Bike went quiet (ignition off or out of range). Next try in ")
-                        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append("$left s") }
-                        append(", attempt ")
-                        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append("$attempt") }
-                        append(".")
-                    },
-                    style = Atlas.type.note.copy(color = c.ink2),
-                )
-                Schedule(attempt)
+                if (dev) {
+                    BackoffDetail(attempt, nextAtMillis)
+                    Schedule(attempt)
+                } else {
+                    BasicText("No need to do anything — just turn the key.", style = Atlas.type.note.copy(color = c.ink2))
+                }
             }
         }
     }
 }
 
+/** Developer mode: "back-off · attempt 4 · next try in 12 s", live to the second. */
 @Composable
-private fun CountdownRing(seconds: Int, fraction: Float) {
+private fun BackoffDetail(attempt: Int, nextAtMillis: Long) {
+    val now by rememberNow()
+    val text = LinkCopy.developerDetail(LinkState.Reconnecting(attempt, nextAtMillis), now).orEmpty()
+    BasicText(text, style = Atlas.type.src.copy(color = Atlas.colors.ink2))
+}
+
+/** The ring empties towards the next try. A picture for the rider; the seconds show in Developer mode only. */
+@Composable
+private fun CountdownRing(attempt: Int, nextAtMillis: Long, showSeconds: Boolean) {
     val c = Atlas.colors
-    val sweep by animateFloatAsState(fraction, tween(1000), label = "countdown")
-    Box(Modifier.size(64.dp).clearAndSetSemantics { contentDescription = "Next try in $seconds seconds" }, contentAlignment = Alignment.Center) {
+    val now by rememberNow()
+    val seconds = secondsLeft(nextAtMillis, now)
+    val sweep by animateFloatAsState(waitFraction(attempt, nextAtMillis, now), tween(1000), label = "countdown")
+    val semantics = if (showSeconds) Modifier.clearAndSetSemantics { contentDescription = "Next try in $seconds seconds" } else Modifier.clearAndSetSemantics { }
+    Box(Modifier.size(64.dp).then(semantics), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize().graphicsLayer()) {
             val w = 2.5.dp.toPx()
             drawArc(c.amber, -90f, 360f * sweep, false, topLeft = Offset(w, w), size = Size(size.width - 2 * w, size.height - 2 * w), style = Stroke(w))
         }
-        BasicText("$seconds", style = Atlas.type.numberSmall.copy(color = c.amber, fontWeight = FontWeight(600)))
+        if (showSeconds) {
+            BasicText("$seconds", style = Atlas.type.numberSmall.copy(color = c.amber, fontWeight = FontWeight(600)))
+        } else {
+            AtlasIcon(AtlasIcons.bt, tint = c.amber, size = 24.dp)
+        }
     }
 }
 

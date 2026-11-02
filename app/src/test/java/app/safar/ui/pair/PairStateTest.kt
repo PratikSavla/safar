@@ -56,10 +56,20 @@ class PairStateTest {
         assertTrue(ui.failed)
         assertEquals("V-Strom SX", ui.model?.name)
         assertEquals("alex", ui.riderName)
-        assertEquals("Scan finished.", ui.scanLine)
+        assertEquals("Tap your bike to connect.", ui.scanLine)
+        assertEquals("Looking for your bike…", ui.copy(scanning = true).scanLine)
         val ok = pairUi(PairInputs(BikeState(link = LinkState.Connected, saved = testSaved), "Alex", TEST_ADDRESS), BtAccess.READY)
         assertFalse(ok.failed)
         assertEquals(TEST_BIKE, ok.bikeName)
+    }
+
+    @Test
+    fun proximityTurnsSignalBarsIntoWords() {
+        assertEquals("Very close", proximity(4))
+        assertEquals("Close by", proximity(3))
+        assertEquals("Nearby", proximity(2))
+        assertEquals("Far away", proximity(1))
+        assertEquals("Far away", proximity(0))
     }
 
     @Test

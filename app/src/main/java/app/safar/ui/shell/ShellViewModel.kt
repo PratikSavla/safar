@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** One-off things the shell shows: a toast or the "Ride mode · auto" stamp. */
+/** One-off things the shell shows: a toast or the "Ride mode" stamp. */
 sealed interface ShellEvent {
     data class Toast(val message: String) : ShellEvent
     data object RideFlash : ShellEvent
@@ -95,7 +95,7 @@ class ShellViewModel(
     /** The rider left Ride by hand: auto mode no longer owns it. The screen then navigates back. */
     fun leaveRide(stillMoving: Boolean) {
         setAutoRide(false)
-        if (stillMoving) toast("Ride mode closed · still recording the trip")
+        if (stillMoving) toast("Ride mode closed — still recording your trip")
     }
 
     /** The ViewModels of one stack entry; dropped when the entry leaves the stack. */
@@ -125,7 +125,7 @@ class ShellViewModel(
                 AutoRideAction.LEAVE -> {
                     setAutoRide(false)
                     back()
-                    toast("Ride ended · added to the journal")
+                    toast("Ride saved to your trips")
                 }
                 AutoRideAction.NONE -> Unit
             }

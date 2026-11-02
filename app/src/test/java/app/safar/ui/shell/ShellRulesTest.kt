@@ -75,11 +75,12 @@ class ShellRulesTest {
 
     @Test
     fun callBannerSaysWhetherTheClusterShowsIt() {
-        assertEquals("Ringing · shown on the cluster", callBanner(call, LinkState.Connected, Settings()).status)
-        assertEquals("Ringing · cluster alert off", callBanner(call, LinkState.Connected, Settings(alertCalls = false)).status)
-        assertEquals("Ringing · cluster alert off", callBanner(call, LinkState.Idle, Settings()).status)
+        assertEquals("Ringing · on your bike", callBanner(call, LinkState.Connected, Settings()).status)
+        assertEquals("Ringing · not sent to your bike", callBanner(call, LinkState.Connected, Settings(alertCalls = false)).status)
+        assertEquals("Ringing", callBanner(call, LinkState.Idle, Settings()).status)
         val wa = call.copy(source = AlertSource.WHATSAPP)
-        assertEquals("Ringing · cluster alert off", callBanner(wa, LinkState.Connected, Settings(alertWhatsAppCalls = false)).status)
+        assertEquals("Ringing · not sent to your bike", callBanner(wa, LinkState.Connected, Settings(alertWhatsAppCalls = false)).status)
+        assertEquals("Ringing · on your bike", callBanner(wa, LinkState.Connected, Settings(alertCalls = false)).status)
         val answered = callBanner(call.copy(answered = true), LinkState.Connected, Settings())
         assertEquals("On call", answered.status)
         assertFalse(answered.ringing)

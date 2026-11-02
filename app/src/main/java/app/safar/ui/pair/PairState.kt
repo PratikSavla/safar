@@ -5,6 +5,7 @@ import app.safar.core.BikeModel
 import app.safar.core.BikeState
 import app.safar.core.LinkState
 import app.safar.core.ScannedBike
+import app.safar.ui.copy.Phrases
 
 /** What the pair page shows (pair.js `render`), after the Bluetooth checks the prototype did not need. */
 enum class PairPhase { NEEDS_PERMISSION, BLUETOOTH_OFF, UNSUPPORTED, LISTENING, RESULTS, NOTHING, CONNECTING, SUCCESS, ALREADY_LINKED }
@@ -25,17 +26,25 @@ data class PairUi(
     val address: String?,
     /** The connect to the tapped cluster ran and gave up or is backing off: say so above the list. */
     val failed: Boolean,
-    /** MTU negotiated: the connecting steps move on to the rider name. */
+    /** The link is set up (MTU negotiated): the connecting steps move on to the rider name. */
     val mtuSet: Boolean,
     val riderName: String,
 ) {
     /** Line under the radar (pair.js `radar`). */
     val scanLine: String
         get() = when {
-            scanning -> "Listening for clusters…"
-            results.isNotEmpty() -> "Scan finished."
-            else -> "Turn the ignition on, then scan."
+            scanning -> "${Phrases.LOOKING_FOR_BIKE}…"
+            results.isNotEmpty() -> "Tap your bike to connect."
+            else -> "Keep your phone close to your bike."
         }
+}
+
+/** How close a found bike is, from its signal bars (0..4): helps pick the right one when two show up. */
+fun proximity(bars: Int): String = when {
+    bars >= 4 -> "Very close"
+    bars == 3 -> "Close by"
+    bars == 2 -> "Nearby"
+    else -> "Far away"
 }
 
 /**

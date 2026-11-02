@@ -36,6 +36,8 @@ import app.safar.ui.art.BikeSilhouette
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.CardStyle
+import app.safar.ui.components.DevOnly
+import app.safar.ui.components.developerMode
 import app.safar.ui.components.SignalBars
 import app.safar.ui.components.rememberLoopPhase
 import app.safar.ui.components.rememberOnScreen
@@ -89,33 +91,42 @@ private fun DrawScope.ring(color: Color, center: Offset, r: Float) {
     drawOval(color, Offset(center.x - r * 1.04f, center.y - r * 0.96f), Size(r * 2.08f, r * 1.92f), style = Stroke(1.3.dp.toPx()))
 }
 
-/** One found cluster as a ticket (onboard.css `.tag`): silhouette, model, BLE name, signal. */
+/**
+ * One found bike as a ticket (onboard.css `.tag`): silhouette, model, how close it is, signal. Developer mode
+ * adds the Bluetooth name and the signal in dBm.
+ */
 @Composable
 fun ScanResult(bike: ScannedBike, onPick: () -> Unit) {
     val c = Atlas.colors
-    val family = bike.model.family.name.lowercase(Locale.ROOT)
+    val bars = rssiBars(bike.rssi)
+    val near = proximity(bars)
+    val dev = developerMode()
+    val spoken = if (dev) "${bike.model.name}, ${bike.name}, signal $bars of 4" else "${bike.model.name}, ${near.lowercase(Locale.ROOT)}"
     AtlasCard(style = CardStyle.TICKET, onClick = onPick, onClickLabel = "Connect to ${bike.model.name}") {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 6.dp).clearAndSetSemantics {
-                contentDescription = "${bike.model.name}, ${bike.name}, $family, signal ${rssiBars(bike.rssi)} of 4"
-            },
+            Modifier.fillMaxWidth().padding(horizontal = 6.dp).clearAndSetSemantics { contentDescription = spoken },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             BikeSilhouette(bike.model.family, width = 70.dp)
             Column(Modifier.weight(1f)) {
                 BasicText(bike.model.name, style = Atlas.type.serifTitle.copy(fontSize = Atlas.type.serifTitle.fontSize * 1.04f, color = c.ink), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                BasicText("${bike.name} · $family", style = Atlas.type.src.copy(color = c.ink3), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (dev) {
+                    val family = bike.model.family.name.lowercase(Locale.ROOT)
+                    BasicText("${bike.name} · $family", style = Atlas.type.src.copy(color = c.ink3), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                } else {
+                    BasicText(near, style = Atlas.type.uiSmall.copy(color = c.ink2), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                SignalBars(rssiBars(bike.rssi))
-                BasicText("${bike.rssi} dBm", style = Atlas.type.src.copy(color = c.ink3))
+                SignalBars(bars)
+                DevOnly { BasicText("${bike.rssi} dBm", style = Atlas.type.src.copy(color = c.ink3)) }
             }
         }
     }
 }
 
-/** Phone — marching rust dashes — bike, while the GATT handshake runs (onboard.css `.pair-link`). */
+/** Phone — marching rust dashes — bike, while Safar connects (onboard.css `.pair-link`). */
 @Composable
 fun PairLink(family: VehicleFamily) {
     val c = Atlas.colors
@@ -135,12 +146,20 @@ fun PairLink(family: VehicleFamily) {
     }
 }
 
-/** Handshake steps (onboard.css `.steps`): done ●, current ◐, to do ○. */
+/** Connecting steps in the rider's words; [RIDER_STEPS] index 1 is "Connecting", 2 is the name. */
+private val RIDER_STEPS = listOf("Found your bike", "Connecting", "Sending your name")
+
+/** The same steps as the GATT sequence runs them, for Developer mode. */
+private val DEVELOPER_STEPS = listOf("connectGatt · TRANSPORT_LE", "Services FFF0 / FFF1 / FFF2 by UUID", "MTU 65 · notify on", "Send rider name")
+
+/** Connecting steps (onboard.css `.steps`): done ●, current ◐, to do ○. [mtuSet] moves on to the rider name. */
 @Composable
-fun HandshakeSteps(mtuSet: Boolean) {
+fun ConnectSteps(mtuSet: Boolean) {
     val c = Atlas.colors
-    val steps = listOf("connectGatt · TRANSPORT_LE", "Services FFF0 / FFF1 / FFF2 by UUID", "MTU 65 · notify on", "Send rider name")
-    val current = if (mtuSet) 3 else 1
+    val dev = developerMode()
+    val steps = if (dev) DEVELOPER_STEPS else RIDER_STEPS
+    val current = if (mtuSet) steps.lastIndex else 1
+    val style = if (dev) Atlas.type.src else Atlas.type.ui
     Column(Modifier.fillMaxWidth().padding(top = 26.dp)) {
         steps.forEachIndexed { i, s ->
             val (mark, ink, markInk) = when {
@@ -148,9 +167,17 @@ fun HandshakeSteps(mtuSet: Boolean) {
                 i == current -> Triple("◐", c.ink, c.rust)
                 else -> Triple("○", c.ink3, c.ink3)
             }
-            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val state = when {
+                i < current -> "done"
+                i == current -> "now"
+                else -> "next"
+            }
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 8.dp).clearAndSetSemantics { contentDescription = "$s, $state" },
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 BasicText(mark, style = Atlas.type.src.copy(color = markInk))
-                BasicText(s, style = Atlas.type.src.copy(color = ink))
+                BasicText(s, style = style.copy(color = ink))
             }
         }
     }

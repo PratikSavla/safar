@@ -45,14 +45,17 @@ fun TrackMap(
         if (track.points.isEmpty()) return@Canvas
         val pts = track.points.map { Offset(it.x, it.y) }
         drawInk(pts, c, big)
-        if (big) drawTicks(pts, c)
-        drawEnds(pts.first(), pts.last(), c, big)
         if (big) {
-            drawLabel(measurer, "START", pts.first(), labelStyle)
-            drawLabel(measurer, "END", pts.last(), labelStyle)
+            drawTicks(pts, c)
+            drawLabelledEnds(measurer, track.points, labelStyle, c)
+        } else {
+            drawEnds(pts.first(), pts.last(), c, big = false)
         }
     }
 }
+
+/** The merged label for a ride that ends where it began. */
+private const val START_AND_END = "START · END"
 
 /** Margin between the box edge and the track. */
 fun trackPad(big: Boolean): Dp = if (big) 34.dp else 10.dp
@@ -96,9 +99,26 @@ private fun DrawScope.drawEnds(start: Offset, end: Offset, c: AtlasColors, big: 
     }
 }
 
-private fun DrawScope.drawLabel(measurer: TextMeasurer, text: String, at: Offset, style: TextStyle) {
-    val layout = measurer.measure(text, style)
-    val x = (at.x + 10.dp.toPx()).coerceAtMost(size.width - layout.size.width)
-    val y = (at.y - layout.size.height / 2f).coerceIn(0f, (size.height - layout.size.height).coerceAtLeast(0f))
-    drawText(layout, topLeft = Offset(x, y))
+/** Markers and START / END labels placed by [placeEndLabels], so the two labels never overlap. */
+private fun DrawScope.drawLabelledEnds(measurer: TextMeasurer, track: List<XY>, style: TextStyle, c: AtlasColors) {
+    val startText = measurer.measure("START", style)
+    val endText = measurer.measure("END", style)
+    val mergedText = measurer.measure(START_AND_END, style)
+    val spec = EndLabelSpec(
+        start = startText.size.let { LabelSize(it.width.toFloat(), it.height.toFloat()) },
+        end = endText.size.let { LabelSize(it.width.toFloat(), it.height.toFloat()) },
+        merged = mergedText.size.let { LabelSize(it.width.toFloat(), it.height.toFloat()) },
+        gap = 10.dp.toPx(),
+        mergeWithin = 16.dp.toPx(),
+        markerHalf = 7.dp.toPx(),
+        routeClearance = 3.5.dp.toPx(),
+    )
+    val ends = placeEndLabels(track, spec, size.width, size.height) ?: return
+    drawEnds(Offset(ends.startMarker.x, ends.startMarker.y), Offset(ends.endMarker.x, ends.endMarker.y), c, big = true)
+    if (ends.end == null) {
+        drawText(mergedText, topLeft = Offset(ends.start.x, ends.start.y))
+    } else {
+        drawText(startText, topLeft = Offset(ends.start.x, ends.start.y))
+        drawText(endText, topLeft = Offset(ends.end.x, ends.end.y))
+    }
 }

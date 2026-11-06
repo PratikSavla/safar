@@ -10,7 +10,7 @@ where you parked.
 [![One minute with Safar: ride mode, a Google Maps turn, a call, trips, fuel and service](media/safar-film-poster.jpg)](media/safar-film.mp4)
 
 <p>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/01-today-light.png" width="19%" alt="Today: connected, with the odometer, trip meters, fuel and gear from the bike">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/01-today-light.png" width="19%" alt="Today: connected, with the odometer, trip meters, fuel and engine temperature from the bike">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/04-ride-dark.png" width="19%" alt="Ride mode in the dark theme, with the next Google Maps turn">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/15-ride-call-dark.png" width="19%" alt="Ride mode showing an incoming call on the bike">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/07-trips-light.png" width="19%" alt="Trips: every ride with its route">
@@ -23,7 +23,7 @@ The screenshots and the film come from the app on an Android emulator, connected
 
 ## Features
 
-- **Today**: connection status, the odometer, trip meters, fuel bars and gear from the bike, and a garage of shortcuts.
+- **Today**: connection status, the odometer, trip meters, fuel bars and engine temperature from the bike, and a garage of shortcuts.
 - **Route**: start Google Maps navigation from your saved places. Each turn is shown on the bike's display.
 - **Alerts**: phone calls, missed calls, WhatsApp calls and messages, each with its own switch. The bike only gets the
   caller's name and a count, never the message text.

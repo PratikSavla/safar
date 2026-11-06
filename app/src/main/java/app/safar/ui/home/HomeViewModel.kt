@@ -77,7 +77,7 @@ internal fun homeUi(live: HomeLive, stored: HomeStored, logCount: Int, nowMillis
     val alertCount = live.alerts.missed.count + live.alerts.messages.count
     val garage = GarageInputs(
         fuel, odoNow(bike, stored.services, stored.fuelUps).km, stored.services, stored.parked, stored.trips, stored.placesCount,
-        nav, alertCount, bike.link, live.settings.debugLog, logCount, live.settings.developerMode,
+        nav, alertCount, bike.link, live.settings.debugLog, logCount, live.settings.developerMode, nowMillis,
     )
     return HomeUi(
         riderName = live.settings.riderName.trim(),

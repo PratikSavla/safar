@@ -1,5 +1,7 @@
 package app.safar.data
 
+import java.time.LocalDate
+
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 /** Rider settings (DataStore). Every alert and feature is switchable (UX rule 6). */
@@ -66,16 +68,40 @@ data class TrackPoint(
     val speedKmh: Float,
 )
 
-enum class ServiceIcon { OIL, CHAIN, AIR, BRAKE, TYRE, GENERIC }
+/** Stored by name: append new icons, never rename or reorder the old ones. */
+enum class ServiceIcon {
+    OIL, CHAIN, AIR, BRAKE, TYRE, GENERIC,
+    BIKE, FUEL, CLOCK, BELL, STAR, FLAG,
+    BATTERY, COOLANT, SPARK, LIGHT,
+}
 
+/** Unit of a service time interval. Months are calendar months (31 Jan + 1 month = 28 or 29 Feb). */
+enum class SpanUnit { DAYS, WEEKS, MONTHS }
+
+/** "Every 6 months", "every 2 weeks". [count] is at least 1. */
+data class TimeSpan(val count: Int, val unit: SpanUnit)
+
+/**
+ * A logbook item, due by distance ([everyKm]), by time ([everyTime]) or by both, whichever comes first. At least
+ * one is set. Until the item is first marked done, a pending first service ([firstAtKm] on the odometer,
+ * [firstByDate] on the calendar) replaces the recurring interval of its kind.
+ */
 data class ServiceItem(
     val id: Long = 0,
     val label: String,
-    val everyKm: Int,
+    /** Null when the item is not counted by distance. */
+    val everyKm: Int?,
     val lastDoneOdoKm: Int,
     val lastDoneMillis: Long?,
     val icon: ServiceIcon,
-)
+    /** Null when the item is not counted by time. */
+    val everyTime: TimeSpan? = null,
+    val firstAtKm: Int? = null,
+    val firstByDate: LocalDate? = null,
+) {
+    /** True until the first service is marked done. */
+    val firstPending: Boolean get() = firstAtKm != null || firstByDate != null
+}
 
 enum class PlaceKind { HOME, WORK, FUEL, STAR }
 

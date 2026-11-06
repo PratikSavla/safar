@@ -8,9 +8,12 @@ import app.safar.data.PlaceKind
 import app.safar.data.PlaceSource
 import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
+import app.safar.data.SpanUnit
+import app.safar.data.TimeSpan
 import app.safar.data.TrackPoint
 import app.safar.data.Trip
 import org.junit.Test
+import java.time.LocalDate
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -25,6 +28,11 @@ class MappersTest {
         assertEquals(point, point.toEntity().toModel())
         val item = ServiceItem(5, "Engine oil", 3000, 9800, null, ServiceIcon.OIL)
         assertEquals(item, item.toEntity().toModel())
+        val scheduled = item.copy(everyKm = null, everyTime = TimeSpan(2, SpanUnit.WEEKS), firstByDate = LocalDate.of(2027, 1, 15), icon = ServiceIcon.SPARK)
+        assertEquals(scheduled, scheduled.toEntity().toModel())
+        assertEquals(0, scheduled.toEntity().everyKm, "no distance interval is stored as 0")
+        val first = item.copy(firstAtKm = 10_800, icon = ServiceIcon.LIGHT)
+        assertEquals(first, first.toEntity().toModel())
         val place = Place(6, "Home", "Main Rd", "Main Rd, NH 48", PlaceKind.HOME, PlaceSource.TYPED, 2, 10.5, 70.25)
         assertEquals(place, place.toEntity().toModel())
         val spot = ParkedSpot(10.5, 70.25, 8f, 3_000, "Main Rd")
@@ -43,6 +51,8 @@ class MappersTest {
         assertEquals(PlaceKind.STAR, row.toModel().kind)
         assertEquals(PlaceSource.TYPED, row.toModel().source)
         assertEquals(ServiceIcon.GENERIC, ServiceItemEntity(1, "X", 1, 0, null, "LASER").toModel().icon)
+        val oddUnit = ServiceItemEntity(1, "X", 0, 0, null, "OIL", everyTimeCount = 3, everyTimeUnit = "FORTNIGHTS").toModel()
+        assertEquals(TimeSpan(3, SpanUnit.MONTHS), oddUnit.everyTime)
         assertEquals(OdoSource.MANUAL, FuelUpEntity(1, 1, 1, 1.0, 1.0, true, "GPS", null).toModel().odoSource)
     }
 

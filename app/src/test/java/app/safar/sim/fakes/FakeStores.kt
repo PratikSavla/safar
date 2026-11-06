@@ -49,7 +49,7 @@ class FakeServiceRepository : ServiceRepository {
     }
 
     override suspend fun markDone(id: Long, odoKm: Int, atMillis: Long) = mutable.update { list ->
-        list.map { if (it.id == id) it.copy(lastDoneOdoKm = odoKm, lastDoneMillis = atMillis) else it }
+        list.map { if (it.id == id) it.copy(lastDoneOdoKm = odoKm, lastDoneMillis = atMillis, firstAtKm = null, firstByDate = null) else it }
     }
 
     override suspend fun delete(id: Long) = mutable.update { list -> list.filterNot { it.id == id } }

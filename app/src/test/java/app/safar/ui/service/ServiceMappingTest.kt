@@ -9,12 +9,22 @@ import app.safar.data.OdoSource
 import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
 import app.safar.data.ServiceState
+import app.safar.data.SpanUnit
+import app.safar.data.TimeSpan
 import app.safar.data.serviceStatus
 import org.junit.Test
+import java.time.LocalDate
+import java.time.ZoneOffset
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class ServiceMappingTest {
+    private companion object {
+        val UTC: ZoneOffset = ZoneOffset.UTC
+        val TODAY: LocalDate = LocalDate.of(2026, 11, 6)
+        val NOW = TODAY.atStartOfDay(UTC).toInstant().toEpochMilli()
+    }
+
     private fun reading(odo: Int, at: Long = 5_000) = ClusterReading(0, odo, 0.0, 0.0, 4, 'N', 0, 0, at)
 
     private fun fill(odo: Int, at: Long) = FuelUp(0, at, odo, 10.0, 1_000.0, true, OdoSource.MANUAL)
@@ -30,6 +40,8 @@ class ServiceMappingTest {
         assertEquals(OdoNowUi(12_250, 5_000, false, OdoFrom.LAST_RIDE), odoNow(BikeState(lastCluster = reading(12_250)), items))
         assertEquals(OdoNowUi(11_820, null, false, OdoFrom.SERVICE), odoNow(BikeState(), items))
         assertNull(odoNow(BikeState(), emptyList()).km)
+        val timeOnly = ServiceItem(9, "Battery", null, 0, null, ServiceIcon.BATTERY, everyTime = TimeSpan(6, SpanUnit.MONTHS))
+        assertNull(odoNow(BikeState(), listOf(timeOnly)).km, "a time-only item added without an odometer is not a reading")
         assertNull(odoNote(OdoNowUi(12_301, 5_000, true, OdoFrom.BIKE)))
         assertNull(odoNote(OdoNowUi(12_250, 5_000, false, OdoFrom.LAST_RIDE)))
         assertEquals("From your last service", odoNote(OdoNowUi(11_820, null, false, OdoFrom.SERVICE)))
@@ -45,7 +57,7 @@ class ServiceMappingTest {
         // A later service odometer beats an older fuel-up; a live bike beats both.
         assertEquals(12_300, odoNow(BikeState(), listOf(coolant), listOf(fill(12_000, 1_000))).km)
         assertEquals(12_400, odoNow(BikeState(link = LinkState.Connected, cluster = reading(12_400)), listOf(coolant), fills).km)
-        val s = serviceUiState(listOf(coolant), BikeState(), RideState(), reminders = true, fuelUps = fills)
+        val s = serviceUiState(listOf(coolant), BikeState(), RideState(), reminders = true, fuelUps = fills, nowMillis = NOW, zone = UTC)
         assertEquals("Due in 1,100 km, at 13,400 km", s.rows.single().line)
         assertEquals(0, s.needYou)
     }
@@ -53,12 +65,14 @@ class ServiceMappingTest {
     @Test
     fun `a new item needs a known odometer`() {
         assertEquals("Counted from 12,300 km, your odometer now.", addFromLine(12_300))
+        assertEquals("Counted from today.", addFromLine(null, DueBy.TIME))
+        assertEquals("Counted from 12,300 km, your odometer now, and from today.", addFromLine(12_300, DueBy.BOTH))
         assertEquals("We need your odometer first. Connect your bike or log a fuel-up.", addFromLine(null))
     }
 
     @Test
     fun `rows are most urgent first with words and due lines`() {
-        val s = serviceUiState(items, BikeState(link = LinkState.Connected, cluster = reading(12_301)), RideState(), reminders = true)
+        val s = serviceUiState(items, BikeState(link = LinkState.Connected, cluster = reading(12_301)), RideState(), reminders = true, nowMillis = NOW, zone = UTC)
         assertEquals(listOf("Engine oil", "Chain clean & lube", "Air filter"), s.rows.map { it.status.item.label })
         assertEquals(listOf("overdue", "due soon", "on track"), s.rows.map { it.word })
         assertEquals("Overdue by 101 km", s.rows[0].line)
@@ -72,7 +86,7 @@ class ServiceMappingTest {
 
     @Test
     fun `due line for an item on track`() {
-        val st = serviceStatus(air, 10_000)
+        val st = serviceStatus(air, 10_000, NOW, UTC)
         assertEquals(ServiceState.OK, st.state)
         assertEquals("Due in 5,200 km, at 15,200 km", dueLine(st))
         assertEquals(800f / 6000f, serviceRow(st).drawn, 1e-6f)
@@ -97,7 +111,7 @@ class ServiceMappingTest {
 
     @Test
     fun `typing is locked while moving and labels are cleaned`() {
-        val s = serviceUiState(items, BikeState(), RideState(speedKmh = 30f, moving = true), reminders = false)
+        val s = serviceUiState(items, BikeState(), RideState(speedKmh = 30f, moving = true), reminders = false, nowMillis = NOW, zone = UTC)
         assertEquals("Locked while moving (30 km/h). Stop to edit.", s.lockReason)
         assertEquals(false, s.reminders)
         assertEquals("Coolant check", cleanLabel("  Coolant check "))

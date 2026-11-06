@@ -50,13 +50,13 @@ import app.safar.ui.vm.NoticeToasts
 data class ServiceActions(
     val onBack: () -> Unit = {},
     val onDone: (Long) -> Unit = {},
-    val onInterval: (Long, Int) -> Unit = { _, _ -> },
+    val onSave: (Long, ServiceForm) -> Unit = { _, _ -> },
     val onDelete: (Long) -> Unit = {},
-    val onAdd: (String, Int) -> Unit = { _, _ -> },
+    val onAdd: (ServiceForm) -> Unit = {},
     val onReminders: (Boolean) -> Unit = {},
 )
 
-/** Service reminders by odometer (service.js). */
+/** Service reminders by distance, time or both (service.js). */
 @Composable
 fun ServiceScreen(navigator: Navigator) {
     val vm: ServiceViewModel = viewModel {
@@ -65,7 +65,7 @@ fun ServiceScreen(navigator: Navigator) {
     val state by vm.state.collectAsStateWithLifecycle()
     val toast = rememberToastState()
     NoticeToasts(vm.notices, toast)
-    ServiceContent(state, toast, ServiceActions(navigator::back, vm::markDone, vm::setInterval, vm::delete, vm::add, vm::setReminders))
+    ServiceContent(state, toast, ServiceActions(navigator::back, vm::markDone, vm::save, vm::delete, vm::add, vm::setReminders))
 }
 
 /** Stateless logbook page. */
@@ -77,16 +77,19 @@ fun ServiceContent(state: ServiceUiState, toast: AtlasToastState, actions: Servi
     AtlasPage(
         topo = TopoTransform.Quiet,
         overlay = {
-            IntervalSheet(
-                editItem, { editing = null },
-                onSave = { km -> editItem?.let { actions.onInterval(it.id, km) }; editing = null },
+            ServiceItemSheet(
+                ServiceSheetSpec(editItem != null, editItem, state.odo.km, state.today, state.lockReason), { editing = null },
+                onSave = { form -> editItem?.let { actions.onSave(it.id, form) }; editing = null },
                 onDelete = { editItem?.let { actions.onDelete(it.id) }; editing = null },
             )
-            AddItemSheet(adding, state.odo.km, state.lockReason, { adding = false }) { label, km -> actions.onAdd(label, km); adding = false }
+            ServiceItemSheet(ServiceSheetSpec(adding, null, state.odo.km, state.today, state.lockReason), { adding = false }, onSave = { form ->
+                actions.onAdd(form)
+                adding = false
+            })
             AtlasToastHost(toast, bottomPadding = 40.dp)
         },
     ) {
-        BackTopBar("Service · by odometer", "The logbook", actions.onBack, titleEm = titleTail(state.needYou))
+        BackTopBar("Service · by distance and time", "The logbook", actions.onBack, titleEm = titleTail(state.needYou))
         OdometerNow(state.odo)
         if (state.rows.isEmpty() && !state.loading) {
             EmptyState("No service items yet.", Modifier.padding(top = 18.dp), message = "Pair your bike to get the usual list, or add your own.")
@@ -94,7 +97,7 @@ fun ServiceContent(state: ServiceUiState, toast: AtlasToastState, actions: Servi
         Column {
             state.rows.forEach { row ->
                 val id = row.status.item.id
-                ServiceItemCard(row, onDone = { actions.onDone(id) }, onInterval = { editing = id })
+                ServiceItemCard(row, onDone = { actions.onDone(id) }, onEdit = { editing = id })
             }
         }
         TextAction("Add your own item", { adding = true }, Modifier.padding(top = 14.dp), icon = AtlasIcons.plus)

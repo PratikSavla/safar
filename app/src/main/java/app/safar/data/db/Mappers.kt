@@ -8,8 +8,11 @@ import app.safar.data.PlaceKind
 import app.safar.data.PlaceSource
 import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
+import app.safar.data.SpanUnit
+import app.safar.data.TimeSpan
 import app.safar.data.TrackPoint
 import app.safar.data.Trip
+import java.time.LocalDate
 
 // Entity <-> model mappers. Pure: no Android imports, unit-tested.
 
@@ -44,13 +47,17 @@ fun TrackPointEntity.toModel() = TrackPoint(tripId = tripId, atMillis = atMillis
 fun TrackPoint.toEntity() = TrackPointEntity(tripId = tripId, atMillis = atMillis, lat = lat, lng = lng, speedKmh = speedKmh)
 
 fun ServiceItemEntity.toModel() = ServiceItem(
-    id = id, label = label, everyKm = everyKm, lastDoneOdoKm = lastDoneOdoKm, lastDoneMillis = lastDoneMillis,
+    id = id, label = label, everyKm = everyKm.takeIf { it > 0 }, lastDoneOdoKm = lastDoneOdoKm, lastDoneMillis = lastDoneMillis,
     icon = enumOr(icon, ServiceIcon.GENERIC),
+    everyTime = everyTimeCount?.takeIf { it > 0 }?.let { TimeSpan(it, enumOr(everyTimeUnit.orEmpty(), SpanUnit.MONTHS)) },
+    firstAtKm = firstAtKm, firstByDate = firstByEpochDay?.let(LocalDate::ofEpochDay),
 )
 
+/** A missing distance interval is stored as 0, so version 1 rows (NOT NULL) need no table rebuild. */
 fun ServiceItem.toEntity() = ServiceItemEntity(
-    id = id, label = label, everyKm = everyKm, lastDoneOdoKm = lastDoneOdoKm, lastDoneMillis = lastDoneMillis,
-    icon = icon.name,
+    id = id, label = label, everyKm = everyKm ?: 0, lastDoneOdoKm = lastDoneOdoKm, lastDoneMillis = lastDoneMillis,
+    icon = icon.name, everyTimeCount = everyTime?.count, everyTimeUnit = everyTime?.unit?.name,
+    firstAtKm = firstAtKm, firstByEpochDay = firstByDate?.toEpochDay(),
 )
 
 fun PlaceEntity.toModel() = Place(

@@ -93,6 +93,22 @@ object AtlasIcons {
     val phone by icon("phone") { rect(6.5f, 3f, 11f, 18f, 2f); path("M10.5 18h3") }
     val pin by icon("pin") { path(PIN_OUTLINE); circle(12f, 10f, 2.3f) }
     val wrench by icon("wrench") { path(WRENCH) }
+    val battery by icon("battery") {
+        rect(3.5f, 7.5f, 17f, 11f, 1.5f); path("M7 7.5v-2h3v2M14 7.5v-2h3v2"); path("M7 13h3M8.5 11.5v3M14 13h3")
+    }
+    val coolant by icon("coolant") {
+        path("M12 3.5a1.8 1.8 0 0 0-1.8 1.8v7.4a3.5 3.5 0 1 0 3.6 0V5.3A1.8 1.8 0 0 0 12 3.5z")
+        path("M12 9v6"); circle(12f, 15.7f, 1.2f, filled = true)
+        path("M2.5 20.5c1.4 0 1.4-1 2.8-1s1.4 1 2.8 1M15.9 20.5c1.4 0 1.4-1 2.8-1s1.4 1 2.8 1")
+    }
+    val spark by icon("spark") {
+        path("M12 2.5v3"); rect(10f, 5.5f, 4f, 5f, 0.8f); rect(8.5f, 10.5f, 7f, 3f, 0.5f)
+        path("M10 13.5v4h4v-4M10 15.5h4M12 17.5v1.8M14 17.5v3.5h-2.2")
+    }
+    val light by icon("light") {
+        path("M12 3.5a5.5 5.5 0 0 0-3.2 10c.5.4.7.9.7 1.5V17h5v-2c0-.6.2-1.1.7-1.5A5.5 5.5 0 0 0 12 3.5z")
+        path("M9.5 20h5M10.5 17v-3.5l1.5-1.5 1.5 1.5V17")
+    }
 
     /** Every icon by its prototype name, for catalogs and data-driven lists. */
     val all: Map<String, ImageVector>
@@ -105,7 +121,8 @@ object AtlasIcons {
             "minus" to minus, "drop" to drop, "chain" to chain, "wind" to wind, "disc" to disc, "gauge" to gauge,
             "search" to search, "info" to info, "edit" to edit, "lock" to lock, "play" to play, "stop" to stop,
             "export" to export, "bell" to bell, "maps" to maps, "sun" to sun, "moon" to moon, "phone" to phone,
-            "pin" to pin, "wrench" to wrench,
+            "pin" to pin, "wrench" to wrench, "battery" to battery, "coolant" to coolant, "spark" to spark,
+            "light" to light,
         )
 
     /** Icon by prototype name; unknown names fall back to [info] like icons.js. */

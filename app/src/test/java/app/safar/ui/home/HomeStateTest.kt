@@ -11,6 +11,8 @@ import app.safar.core.VehicleFamily
 import app.safar.data.FuelMethod
 import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
+import app.safar.data.SpanUnit
+import app.safar.data.TimeSpan
 import app.safar.data.Settings
 import app.safar.data.Trip
 import app.safar.data.fuelStats
@@ -128,6 +130,10 @@ class HomeStateTest {
         assertEquals(9, tiles.size)
         assertEquals(null, garageTiles(inputs).firstOrNull { it.key == "log" }, "Debug log is a Developer mode tile")
         assertEquals("next in 155 km", garageTiles(inputs.copy(services = listOf(chain))).first { it.key == "service" }.hint)
+        val day = 86_400_000L
+        val battery = ServiceItem(3, "Battery", null, 12_000, 0L, ServiceIcon.BATTERY, everyTime = TimeSpan(30, SpanUnit.DAYS))
+        val timed = inputs.copy(services = listOf(chain, battery), nowMillis = 25 * day)
+        assertEquals("next in 5 days", garageTiles(timed).first { it.key == "service" }.hint, "by time, the battery is further along")
     }
 
     @Test

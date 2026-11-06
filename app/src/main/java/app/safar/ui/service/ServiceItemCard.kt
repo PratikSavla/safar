@@ -21,7 +21,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import app.safar.data.ServiceIcon
 import app.safar.data.ServiceState
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasButton
@@ -34,18 +33,8 @@ import app.safar.ui.components.StampTone
 import app.safar.ui.components.blinkShown
 import app.safar.ui.components.rememberLoopPhase
 import app.safar.ui.components.rememberOnScreen
-import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
-import kotlin.math.roundToInt
 
-fun ServiceIcon.vector() = when (this) {
-    ServiceIcon.OIL -> AtlasIcons.drop
-    ServiceIcon.CHAIN -> AtlasIcons.chain
-    ServiceIcon.AIR -> AtlasIcons.wind
-    ServiceIcon.BRAKE -> AtlasIcons.disc
-    ServiceIcon.TYRE -> AtlasIcons.gauge
-    ServiceIcon.GENERIC -> AtlasIcons.wrench
-}
 
 @Composable
 private fun stateColor(state: ServiceState): Color = when (state) {
@@ -62,7 +51,7 @@ private fun ServiceState.tone() = when (this) {
 
 /** One logbook item (`.svc`): head, the road from last service to the flag, the due line and actions. */
 @Composable
-internal fun ServiceItemCard(row: ServiceRowUi, onDone: () -> Unit, onInterval: () -> Unit) {
+internal fun ServiceItemCard(row: ServiceRowUi, onDone: () -> Unit, onEdit: () -> Unit) {
     val c = Atlas.colors
     val item = row.status.item
     val state = row.status.state
@@ -72,15 +61,15 @@ internal fun ServiceItemCard(row: ServiceRowUi, onDone: () -> Unit, onInterval: 
             IconBox(item.icon.vector(), tint = if (state == ServiceState.OK) c.ink else accent, outline = if (state == ServiceState.OK) c.rule2 else accent)
             Column(Modifier.weight(1f)) {
                 BasicText(item.label, style = Atlas.type.serifTitle.copy(color = c.ink))
-                BasicText("every ${Formatters.odometer(item.everyKm)} km", style = Atlas.type.src.copy(color = c.ink3))
+                BasicText(row.everyLine, style = Atlas.type.src.copy(color = c.ink3))
             }
             Stamp(row.word, tone = state.tone())
         }
         ServiceRoad(row, accent)
         Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 22.dp, top = 2.dp)) {
             val mono = Atlas.type.src.copy(color = c.ink3, fontSize = Atlas.type.src.fontSize * 0.9f)
-            BasicText("${Formatters.odometer(row.fromKm)} km", Modifier.weight(1f), style = mono)
-            BasicText("${Formatters.odometer(row.toKm)} km", style = mono)
+            BasicText(row.fromLabel, Modifier.weight(1f), style = mono)
+            BasicText(row.toLabel, style = mono)
         }
         BasicText(
             row.line,
@@ -93,7 +82,7 @@ internal fun ServiceItemCard(row: ServiceRowUi, onDone: () -> Unit, onInterval: 
                 tone = if (state == ServiceState.OK) ButtonTone.GHOST else ButtonTone.INK, icon = AtlasIcons.check, small = true,
             )
             AtlasButton(
-                "Interval", onInterval, Modifier.semantics { contentDescription = "Change the ${item.label} interval" },
+                "Edit", onEdit, Modifier.semantics { contentDescription = "Change ${item.label}: interval, first service or icon" },
                 tone = ButtonTone.GHOST, icon = AtlasIcons.edit, small = true,
             )
         }
@@ -108,7 +97,7 @@ private fun ServiceRoad(row: ServiceRowUi, accent: Color) {
     val overdue = row.status.state == ServiceState.OVERDUE
     val onScreen = rememberOnScreen()
     val blink = if (overdue) rememberLoopPhase(1200, "svcBlink", running = onScreen.visible) else null
-    val spoken = "${(row.drawn * 100).roundToInt()} percent of the way from the last service to the next"
+    val spoken = roadSpoken(row)
     Box(Modifier.fillMaxWidth().height(26.dp).padding(start = 4.dp).clearAndSetSemantics { contentDescription = spoken }) {
         Canvas(Modifier.fillMaxWidth().height(26.dp).padding(end = 22.dp).then(if (overdue) onScreen.modifier.graphicsLayer() else Modifier)) {
             val y = 12.dp.toPx() + 1.25.dp.toPx()

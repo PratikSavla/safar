@@ -36,8 +36,8 @@ class VectorBuildTest {
     @Test
     fun `all prototype icons build with the same names`() {
         val names = AtlasIcons.all.keys
-        assertEquals(49, names.size)
-        assertTrue(listOf("today", "route", "journal", "alerts", "settings", "wa", "bt", "export").all { it in names })
+        assertEquals(53, names.size)
+        assertTrue(listOf("today", "route", "journal", "alerts", "settings", "wa", "bt", "export", "battery", "coolant", "spark", "light").all { it in names })
         AtlasIcons.all.forEach { (name, v) -> assertTrue(pathCount(v.root) > 0, name) }
         assertEquals(AtlasIcons.info, AtlasIcons.byName("no-such-icon"))
     }

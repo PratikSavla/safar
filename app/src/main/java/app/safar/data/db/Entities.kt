@@ -64,6 +64,11 @@ data class ServiceItemEntity(
     val lastDoneOdoKm: Int,
     val lastDoneMillis: Long?,
     val icon: String,
+    // Added in version 2. everyKm 0 means "not counted by distance" (see Mappers.kt).
+    val everyTimeCount: Int? = null,
+    val everyTimeUnit: String? = null,
+    val firstAtKm: Int? = null,
+    val firstByEpochDay: Long? = null,
 )
 
 @Entity(tableName = "place")

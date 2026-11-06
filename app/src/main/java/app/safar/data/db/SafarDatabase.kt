@@ -1,6 +1,7 @@
 package app.safar.data.db
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -15,8 +16,12 @@ import androidx.room.RoomDatabase
         PlaceEntity::class,
         ParkedSpotEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
+    autoMigrations = [
+        // Service items by time, and a first service that differs from the recurring one.
+        AutoMigration(from = 1, to = 2),
+    ],
 )
 abstract class SafarDatabase : RoomDatabase() {
     abstract fun fuelUps(): FuelUpDao

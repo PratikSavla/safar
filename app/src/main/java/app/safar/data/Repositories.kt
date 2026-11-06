@@ -56,6 +56,7 @@ interface TripRepository {
 interface ServiceRepository {
     val items: Flow<List<ServiceItem>>
     suspend fun upsert(item: ServiceItem): Long
+    /** Logs a service at [odoKm] and [atMillis], ending any pending first service. */
     suspend fun markDone(id: Long, odoKm: Int, atMillis: Long)
     suspend fun delete(id: Long)
 }

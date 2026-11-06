@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Safar · for Suzuki Bluetooth displays</title>
+<meta name="description" content="Safar is a free, open-source Android app for Suzuki motorcycles and scooters with a Bluetooth display. Turns from Google Maps, calls, WhatsApp and the time on the bike, and a record of your riding. No account, no server.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F3EEE4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161C" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Safar">
+<meta property="og:description" content="An Android app for Suzuki motorcycles and scooters with a Bluetooth display. No account, no server.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://pratiksavla.github.io/safar/screens/01-today-light.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="sections.css">
+<script>
+  (function () {
+    var root = document.documentElement;
+    root.classList.add('js');
+    try {
+      var t = localStorage.getItem('safar-theme');
+      if (t === 'light' || t === 'dark') root.dataset.theme = t;
+    } catch (e) { console.warn('Safar: saved theme could not be read', e); }
+  })();
+</script>
+<script src="main.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <a class="brand" href="#top" aria-label="Safar, back to top">
+    <svg class="mark" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" rx="26"/><path d="M30 74C42 74 40 58 54 58S66 42 78 40"/><circle cx="78" cy="40" r="8"/><circle cx="78" cy="40" r="3"/></svg>
+    <span>Safar</span>
+  </a>
+  <nav aria-label="Sections">
+    <a href="#features">Features</a><a href="#bikes">Bikes</a><a href="#privacy">Privacy</a><a href="#build">Build</a>
+  </nav>
+  <button class="theme" type="button" aria-pressed="false" data-theme-toggle>
+    <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 2.5a7.5 7.5 0 0 1 0 15z"/></svg>
+    <span data-theme-label>Night</span>
+  </button>
+</header>
+
+<main id="main">
+<section class="hero" id="top" aria-labelledby="hero-h">
+  <div class="topo topo-hero" aria-hidden="true"></div>
+  <svg class="route" viewBox="0 0 1200 700" preserveAspectRatio="none" aria-hidden="true">
+    <defs><mask id="route-reveal"><path class="route-draw" d="M600 600C660 540 600 470 680 420S650 300 760 230 820 120 900 90" pathLength="1"/></mask></defs>
+    <path class="route-line" d="M600 600C660 540 600 470 680 420S650 300 760 230 820 120 900 90" mask="url(#route-reveal)"/>
+  </svg>
+  <div class="hero-copy">
+    <p class="kicker">Free and open source · Android 8.0+</p>
+    <h1 id="hero-h">Turns, calls and the time, <em>on your Suzuki’s display.</em></h1>
+    <p class="lede">Safar connects to the bike’s Bluetooth display and sends it turns from Google Maps, who is calling, WhatsApp calls and messages, the time and the phone’s battery. It also keeps a record of your riding: trips with their routes, fuel-ups and mileage, service reminders and where you parked.</p>
+    <div class="actions">
+      <a class="btn rust" href="https://github.com/PratikSavla/safar/releases/latest">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M5.5 8.5 10 13l4.5-4.5M4 16.5h12"/></svg>Download APK</a>
+      <a class="btn ghost" href="https://github.com/PratikSavla/safar">Source on GitHub</a>
+    </div>
+    <p class="aside"><em>Safar</em> is Hindi and Urdu for “journey”. No account, no server, GPL-3.0.</p>
+  </div>
+  <div class="hero-phone">
+    <figure class="phone">
+      <img class="sw-l" src="screens/01-today-light.png" width="1080" height="2400" fetchpriority="high" alt="Safar’s Today screen: connection status, odometer, trip meters, fuel bars and gear from the bike.">
+      <img class="sw-d" src="screens/02-today-dark.png" width="1080" height="2400" loading="lazy" alt="Safar’s Today screen in the dark theme: connection status, odometer, trip meters, fuel bars and gear.">
+    </figure>
+    <span class="stamp" aria-hidden="true">No PIN to pair</span>
+    <span class="pin" aria-hidden="true"></span>
+  </div>
+  <p class="works"><span class="kicker">Works with</span> V-Strom SX <i>·</i> Gixxer <i>·</i> Gixxer 250 <i>·</i> Access 125 <i>·</i> Burgman Street <i>·</i> Avenis</p>
+</section>
+
+<!-- demo:start -->
+<section class="film" id="film" aria-labelledby="film-h" data-film>
+  <div class="film-copy">
+    <p class="kicker">On film</p>
+    <h2 id="film-h">See it running on a phone.</h2>
+    <p>One minute with Safar: ride mode opens by itself, a Google Maps turn comes in, then a call, then trips, fuel and service.</p>
+    <p>Recorded on an Android emulator, with BikeSim standing in for the bike over Bluetooth.</p>
+  </div>
+  <figure class="phone phone-film">
+    <video controls muted playsinline preload="none" poster="screens/04-ride-dark.png" width="1080" height="2400" aria-label="Screen recording of Safar">
+      <source src="media/safar-demo.mp4" type="video/mp4">
+    </video>
+  </figure>
+</section>
+<!-- demo:end -->
+
+<section class="features" id="features" aria-labelledby="features-h">
+  <header class="sec-head">
+    <p class="kicker">The logbook</p>
+    <h2 id="features-h">What Safar does</h2>
+  </header>
+  <ol class="strip">
+    <li class="stage reveal">
+      <div class="stage-copy">
+        <p class="kicker">Today</p>
+        <h3>The bike at a glance</h3>
+        <p>Connection status, the odometer, trip meters, fuel bars and gear from the bike, and a garage of shortcuts.</p>
+        <p class="note">Safar reconnects on its own when you switch the ignition on.</p>
+      </div>
+      <figure class="phone">
+        <img class="sw-l" src="screens/01-today-light.png" width="1080" height="2400" loading="lazy" alt="Today screen with odometer, trip meters, fuel bars and gear.">
+        <img class="sw-d" src="screens/02-today-dark.png" width="1080" height="2400" loading="lazy" alt="Today screen in the dark theme with odometer, trip meters, fuel bars and gear.">
+      </figure>
+    </li>
+    <li class="stage reveal">
+      <div class="stage-copy">
+        <p class="kicker">Ride mode</p>
+        <h3>Big enough to read on the move</h3>
+        <p>A large, glanceable screen that opens by itself when you start moving.</p>
+      </div>
+      <figure class="phone">
+        <img class="sw-l" src="screens/03-ride-light.png" width="1080" height="2400" loading="lazy" alt="Ride mode: a large, glanceable riding screen.">
+        <img class="sw-d" src="screens/04-ride-dark.png" width="1080" height="2400" loading="lazy" alt="Ride mode in the dark theme: a large, glanceable riding screen.">
+      </figure>
+    </li>
+    <li class="stage reveal">
+      <div class="stage-copy">
+        <p class="kicker">Route</p>
+        <h3>Google Maps turns on the bike</h3>
+        <p>Start Google Maps navigation from your saved places. Each turn is shown on the bike’s display.</p>
+        <p class="note">Google Maps is the map. Safar reads its turn notification and passes it on.</p>
+      </div>
+      <figure class="phone">
+        <img src="screens/05-navigate-light.png" width="1080" height="2400" loading="lazy" alt="Route screen with saved places and a button to start in Google Maps.">
+      </figure>
+    </li>
+    <li class="stage reveal">
+      <div class="stage-copy">
+        <p class="kicker">Alerts</p>
+        <h3>Who is calling, not what they wrote</h3>
+        <p>Phone calls, missed calls, WhatsApp calls and messages, each with its own switch. The bike only gets the caller’s name and a count, never the message text.</p>
+      </div>
+      <figure class="phone">
+        <img src="screens/15-ride-call-dark.png" width="1080" height="2400" loading="lazy" alt="Ride mode during a call: the caller’s name, Sam, ringing on the bike, with the next turn 200 m ahead.">
+      </figure>
+    </li>
+    <li class="stage stage-pair reveal">
+      <div class="stage-copy">
+        <p class="kicker">Trips</p>
+        <h3>Every ride, written down</h3>
+        <p>Every ride with its day and start time, distance, speeds and a map of the route.</p>
+      </div>
+      <div class="pair">
+        <figure class="phone">
+          <img src="screens/07-trips-light.png" width="1080" height="2400" loading="lazy" alt="Trips list with each ride’s day, start time, distance and speeds.">
+        </figure>
+        <figure class="phone">
+          <img src="screens/08-trip-detail-dark.png" width="1080" height="2400" loading="lazy" alt="One trip in the dark theme, with its route drawn as a line and its stats.">
+        </figure>
+      </div>
+    </li>
+  </ol>
+
+  <header class="sec-head sec-sub">
+    <p class="kicker">Also in the logbook</p>
+    <h2>Fuel, service, papers</h2>
+  </header>
+  <ul class="atlas">
+    <li class="leaf reveal">
+      <figure class="phone"><img src="screens/09-fuel-light.png" width="1080" height="2400" loading="lazy" alt="Fuel screen with mileage, estimated range and the fill-up log."></figure>
+      <h3>Fuel</h3>
+      <p>Log fill-ups, see your mileage and an estimated range, and get a low-fuel reminder.</p>
+    </li>
+    <li class="leaf reveal">
+      <figure class="phone"><img src="screens/10-service-light.png" width="1080" height="2400" loading="lazy" alt="Service screen with reminders and how far each one is from due."></figure>
+      <h3>Service</h3>
+      <p>Reminders for oil, chain, air filter, brakes and tyres, due by time, distance or both, whichever comes first. The first service can have its own odometer reading or date.</p>
+    </li>
+    <li class="leaf reveal">
+      <figure class="phone"><img src="screens/11-parked-dark.png" width="1080" height="2400" loading="lazy" alt="Parked screen in the dark theme, showing where the phone was when the bike switched off."></figure>
+      <h3>Parked</h3>
+      <p>The place your phone was when the bike switched off.</p>
+    </li>
+    <li class="leaf reveal">
+      <figure class="phone"><img src="screens/12-papers-light.png" width="1080" height="2400" loading="lazy" alt="Papers screen listing the bike’s documents with their expiry dates."></figure>
+      <h3>Papers</h3>
+      <p>Your RC, insurance, PUC, licence and service bills as PDFs or photos, with an optional expiry date. Safar reminds you 30 and 7 days before a paper runs out, and on the day.</p>
+    </li>
+    <li class="leaf reveal">
+      <figure class="phone"><img src="screens/14-widget-light.png" width="1080" height="2400" loading="lazy" alt="Home screen with the Safar widget showing connection, odometer, Trip A, range and the next turn."></figure>
+      <h3>Widget</h3>
+      <p>The connection, odometer, Trip A, range and the next turn on your home screen.</p>
+    </li>
+    <li class="leaf leaf-text reveal">
+      <h3>And in Settings</h3>
+      <ul class="ticks">
+        <li>Export all your data to one <code>.zip</code> file, import it, or delete it.</li>
+        <li>Review every permission under <b>Settings → All permissions</b>.</li>
+        <li>Light and dark themes.</li>
+      </ul>
+    </li>
+  </ul>
+</section>
+
+<section class="bikes" id="bikes" aria-labelledby="bikes-h">
+  <div class="bikes-copy">
+    <p class="kicker">Bikes</p>
+    <h2 id="bikes-h">Suzukis with a Bluetooth display</h2>
+    <p>Safar recognises the display by its Bluetooth name. You don’t need a PIN to pair, and Safar reconnects on its own when you switch the ignition on.</p>
+    <dl class="needs">
+      <dt>Phone</dt><dd>Android 8.0 (API 26) or newer, with Bluetooth LE</dd>
+      <dt>Navigation</dt><dd>Google Maps</dd>
+      <dt>Permissions</dt><dd>Nearby devices, Notifications, Notification access, Location and Phone. Safar explains each one when you set it up.</dd>
+    </dl>
+  </div>
+  <div class="ticket reveal">
+    <p class="kicker ticket-head">Supported displays</p>
+    <ul class="leaders">
+      <li><span>V-Strom SX</span><i></i><small>motorcycle</small></li>
+      <li><span>Gixxer / Gixxer SF</span><i></i><small>motorcycle</small></li>
+      <li><span>Gixxer 250 / Gixxer SF 250</span><i></i><small>motorcycle</small></li>
+      <li><span>Access 125</span><i></i><small>scooter</small></li>
+      <li><span>Burgman Street / Street EX</span><i></i><small>scooter</small></li>
+      <li><span>Avenis</span><i></i><small>scooter</small></li>
+    </ul>
+  </div>
+</section>
+
+<section class="privacy" id="privacy" aria-labelledby="privacy-h">
+  <div class="topo topo-night" aria-hidden="true"></div>
+  <div class="privacy-in">
+    <p class="kicker">Privacy</p>
+    <h2 id="privacy-h">Your data stays on your phone</h2>
+    <div class="zeros">
+      <p><b>0</b><span>accounts</span></p>
+      <p><b>0</b><span>servers</span></p>
+      <p><b>1</b><span>way online: Google Maps, after you start a route</span></p>
+    </div>
+    <div class="privacy-text">
+      <p>Everything is stored on the phone: a Room database for trips, fuel, service, places and papers, DataStore for settings, and the papers’ files in the app’s own storage.</p>
+      <p>The bike gets a caller’s name and a count. It never gets the text of a message.</p>
+    </div>
+    <span class="stamp stamp-light" aria-hidden="true">No account · No server</span>
+  </div>
+</section>
+
+<section class="workshop" id="build" aria-labelledby="build-h">
+  <h2 id="build-h" class="visually-hidden">Try it and build it</h2>
+  <article class="card reveal">
+    <svg class="sim-art" viewBox="0 0 220 90" aria-hidden="true">
+      <rect x="8" y="8" width="44" height="76" rx="8"/><rect x="168" y="8" width="44" height="76" rx="8"/>
+      <path class="link" d="M58 38C90 14 130 14 162 38M58 54C90 78 130 78 162 54"/>
+      <text x="30" y="50">S</text><text x="190" y="50">B</text>
+    </svg>
+    <p class="kicker">BikeSim</p>
+    <h3>Try it without the bike</h3>
+    <p>BikeSim advertises as a Suzuki display, accepts Safar’s frames and sends cluster readings every few seconds. Run it on a second phone, or run both apps on two emulators linked by virtual Bluetooth.</p>
+    <a class="more" href="https://github.com/PratikSavla/safar/blob/main/bikesim/README.md">How to run BikeSim</a>
+  </article>
+  <article class="card reveal">
+    <p class="kicker">Source</p>
+    <h3>Build it yourself</h3>
+    <p>You need JDK 25 for the Gradle daemon. The wrapper downloads Gradle 9.8.</p>
+    <pre><code><span aria-hidden="true">$ </span>./gradlew :app:assembleDebug</code></pre>
+    <p class="note">To install a release build, sign it with your own keystore. The README explains how.</p>
+    <a class="more" href="https://github.com/PratikSavla/safar#build">Build instructions</a>
+  </article>
+</section>
+
+<section class="finale" aria-labelledby="finale-h">
+  <h2 id="finale-h">Ready to ride?</h2>
+  <p>Get the APK from the latest GitHub release. Android 8.0 or newer, with Bluetooth LE.</p>
+  <div class="actions">
+    <a class="btn rust" href="https://github.com/PratikSavla/safar/releases/latest">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M5.5 8.5 10 13l4.5-4.5M4 16.5h12"/></svg>Download APK</a>
+    <a class="btn ghost" href="https://github.com/PratikSavla/safar">Source on GitHub</a>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="foot-in">
+    <p class="foot-brand"><svg class="mark" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" rx="26"/><path d="M30 74C42 74 40 58 54 58S66 42 78 40"/><circle cx="78" cy="40" r="8"/><circle cx="78" cy="40" r="3"/></svg>Safar</p>
+    <p>Copyright © 2026 Pratik Savla. Safar is free software under the <a href="https://github.com/PratikSavla/safar/blob/main/LICENSE">GNU General Public License, version 3</a>. It comes without any warranty.</p>
+    <p>The fonts (Fraunces, IBM Plex Mono and Instrument Sans) are under the SIL Open Font License 1.1. This site uses no cookies and no analytics.</p>
+    <p class="tm">Safar is an independent project. It is not affiliated with, endorsed by or sponsored by Suzuki Motor Corporation or any of its subsidiaries. Suzuki, V-Strom, Gixxer, Access, Burgman and Avenis are trademarks of their owners and are used here only to name the bikes Safar works with. Google Maps is a trademark of Google LLC, and WhatsApp is a trademark of WhatsApp LLC.</p>
+  </div>
+</footer>
+</body>
+</html>

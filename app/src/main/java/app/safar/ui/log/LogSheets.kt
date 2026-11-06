@@ -100,7 +100,7 @@ private fun HexKey(showUnknown: Boolean) {
         }
         if (showUnknown) {
             BasicText(
-                "byte 25 · unknown",
+                "byte 23 · unknown",
                 Modifier.border(2.dp, c.amber, AtlasShapes.tiny).padding(horizontal = 6.dp, vertical = 2.dp),
                 style = Atlas.type.src.copy(fontSize = 10.sp, color = c.ink),
             )

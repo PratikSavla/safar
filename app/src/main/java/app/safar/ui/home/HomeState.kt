@@ -3,6 +3,7 @@ package app.safar.ui.home
 import app.safar.core.AlertCounter
 import app.safar.core.BikeCatalog
 import app.safar.core.BikeState
+import app.safar.core.ClusterReading
 import app.safar.core.LinkState
 import app.safar.core.NavState
 import app.safar.core.NavStatusCode
@@ -65,8 +66,15 @@ internal fun connUi(bike: BikeState): ConnUi {
 
 enum class FuelWarning { ONE_BAR, EMPTY }
 
-/** Shown in place of the gear before the bike has reported one. */
-internal const val NO_GEAR = "–"
+/** Shown in place of the engine temperature before the bike has reported one. */
+internal const val NO_TEMP = "–"
+
+/** Engine temperature as the ledger and ride screen show it: whole °C, or [NO_TEMP]. */
+internal fun engineTempText(r: ClusterReading?): String = r?.engineTempC?.toString() ?: NO_TEMP
+
+/** What TalkBack says for the engine temperature. */
+internal fun engineTempSpoken(text: String): String =
+    if (text == NO_TEMP) "Engine temperature, no reading yet" else "Engine temperature $text degrees Celsius"
 
 /**
  * The ledger grid. [live] false = last known before the link dropped. [rangeNote] is the rider's note under the
@@ -78,7 +86,7 @@ data class LedgerUi(
     val tripBKm: Double,
     val fuelBars: Int?,
     val fuelMax: Int,
-    val gear: String,
+    val engineTemp: String,
     val readingAt: Long,
     val live: Boolean,
     val rangeText: String,
@@ -87,7 +95,7 @@ data class LedgerUi(
     val fuelWarning: FuelWarning?,
     val warningText: String?,
 ) {
-    /** Where odometer, trips, fuel and gear come from, for [app.safar.ui.components.Freshness]. */
+    /** Where odometer, trips, fuel and engine temperature come from, for [app.safar.ui.components.Freshness]. */
     val bikeOrigin: ValueOrigin get() = ValueOrigin(ValueSource.BIKE, readingAt, connected = live)
 }
 
@@ -117,7 +125,7 @@ internal fun ledgerUi(bike: BikeState, fuel: FuelStats): LedgerUi? {
     }
     return LedgerUi(
         odometerKm = r.odometerKm, tripAKm = r.tripAKm, tripBKm = r.tripBKm, fuelBars = bars, fuelMax = fuel.barsMax,
-        gear = r.gear?.toString() ?: NO_GEAR, readingAt = r.receivedAtMillis, live = live,
+        engineTemp = engineTempText(r), readingAt = r.receivedAtMillis, live = live,
         rangeText = range, rangeNote = rangeNote(fuel), rangeSource = rangeSource(fuel.method),
         fuelWarning = warning, warningText = warnText,
     )

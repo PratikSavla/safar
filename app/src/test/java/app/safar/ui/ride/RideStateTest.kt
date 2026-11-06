@@ -21,7 +21,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RideStateTest {
-    private val bike = BikeState(link = LinkState.Connected, saved = testSaved, cluster = testReading(bars = 3, gear = '4'))
+    private val bike = BikeState(link = LinkState.Connected, saved = testSaved, cluster = testReading(bars = 3, tempC = 84))
 
     private fun snap(status: NavStatusCode, icon: Int = 2, m: Int = 850) = NavSnapshot(icon, true, m, 0, 11_200, status, "Main Rd", 1)
 
@@ -36,7 +36,7 @@ class RideStateTest {
     @Test
     fun bikeValuesComeFromTheCluster() {
         val ui = rideUi(bike, RideState(), NavState(), AlertsState(), Settings())
-        assertEquals("4", ui.gear)
+        assertEquals("84", ui.engineTemp)
         assertEquals(3, ui.fuelBars)
         assertEquals(6, ui.fuelMax)
         assertNull(ui.linkNote)
@@ -53,11 +53,11 @@ class RideStateTest {
         assertTrue(live.bikeLive)
         assertEquals(ValueOrigin(ValueSource.BIKE, 1_000L, connected = true), live.bikeOrigin)
         assertEquals(1_000L, live.readingAt)
-        val dropped = BikeState(link = LinkState.Reconnecting(1, 0), saved = testSaved, lastCluster = testReading(at = 500L, gear = '2'))
+        val dropped = BikeState(link = LinkState.Reconnecting(1, 0), saved = testSaved, lastCluster = testReading(at = 500L, tempC = 61))
         val stale = rideUi(dropped, RideState(), NavState(), AlertsState(), Settings())
         assertFalse(stale.bikeLive)
         assertEquals(ValueOrigin(ValueSource.BIKE, 500L, connected = false), stale.bikeOrigin)
-        assertEquals("2", stale.gear)
+        assertEquals("61", stale.engineTemp)
         assertEquals(500L, stale.readingAt)
         val none = rideUi(BikeState(), RideState(), NavState(), AlertsState(), Settings())
         assertNull(none.readingAt)

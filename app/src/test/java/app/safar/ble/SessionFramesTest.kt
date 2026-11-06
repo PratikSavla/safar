@@ -50,6 +50,7 @@ class SessionFramesTest {
         assertEquals('N', r.gear)
         assertEquals('N'.code, r.raw23)
         assertEquals(0x1D, r.raw25)
+        assertEquals(29, r.engineTempC)
         assertEquals(42L, r.receivedAtMillis)
     }
 

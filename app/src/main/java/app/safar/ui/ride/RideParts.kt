@@ -47,7 +47,8 @@ import app.safar.ui.components.rememberNow
 import app.safar.ui.components.rememberStale
 import app.safar.ui.copy.Phrases
 import app.safar.ui.format.Formatters
-import app.safar.ui.home.NO_GEAR
+import app.safar.ui.home.NO_TEMP
+import app.safar.ui.home.engineTempSpoken
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 import app.safar.ui.theme.FrauncesGlance
@@ -69,24 +70,17 @@ private fun RideClock(modifier: Modifier) {
 }
 
 /**
- * Clock, gear in a ring, fuel bars, over a 2 dp ink rule (ride.css `.r-top`). Gear and fuel fade to ink-2 once
- * stale or from the last ride, and only then say so underneath; nothing shows while they are fresh.
+ * Clock, engine temperature in a ring, fuel bars, over a 2 dp ink rule (ride.css `.r-top`). Temperature and fuel
+ * fade to ink-2 once stale or from the last ride, and only then say so underneath; nothing shows while fresh.
  */
 @Composable
 internal fun RideTop(ui: RideUi) {
     val c = Atlas.colors
     val stale = rememberStale(ui.bikeOrigin)
     val bikeInk = if (stale) c.ink2 else c.ink
-    // No stamp here, so TalkBack says just the gear, as the screen does.
-    val spokenGear = if (ui.gear == NO_GEAR) "Gear, no reading yet" else "Gear ${ui.gear}"
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         RideClock(Modifier.weight(1f))
-        Box(
-            Modifier.size(66.dp).border(3.dp, bikeInk, CircleShape).clearAndSetSemantics { contentDescription = spokenGear },
-            contentAlignment = Alignment.Center,
-        ) {
-            BasicText(ui.gear, style = glance(42.dp, color = bikeInk))
-        }
+        EngineTempRing(ui.engineTemp, bikeInk)
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
             if (ui.fuelBars != null) {
                 FuelBars(ui.fuelBars, ui.fuelMax, Modifier.alpha(if (stale) STALE_ALPHA else 1f), height = 46.dp, barWidth = 13.dp, gap = 5.dp)
@@ -102,6 +96,19 @@ internal fun RideTop(ui: RideUi) {
 }
 
 private const val STALE_ALPHA = 0.55f
+
+/** Engine temperature in the 66 dp ring: the number, and "°C" under it once there is a reading. */
+@Composable
+private fun EngineTempRing(temp: String, ink: Color) {
+    Column(
+        Modifier.size(66.dp).border(3.dp, ink, CircleShape).clearAndSetSemantics { contentDescription = engineTempSpoken(temp) },
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        BasicText(temp, style = glance(if (temp.length > 2) 22.dp else 28.dp, color = ink), maxLines = 1)
+        if (temp != NO_TEMP) BasicText("°C", Modifier.padding(top = 1.dp), style = glance(11.dp, 600, ink))
+    }
+}
 
 /** Caller in big type: rust while ringing, ink once answered (ride.css `.r-call`). */
 @Composable

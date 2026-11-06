@@ -61,7 +61,7 @@ private fun roleOf(i: Int, value: Int, type: Char?): ByteRole = when {
     i == 1 -> ByteRole.TYPE
     i == CHECKSUM_INDEX -> ByteRole.CHECKSUM
     i == FRAME_LENGTH - 1 && value == END_BYTE -> ByteRole.END
-    type == CLUSTER_TYPE && i == 25 -> ByteRole.UNKNOWN
+    type == CLUSTER_TYPE && i == 23 -> ByteRole.UNKNOWN
     value == FILLER_BYTE -> ByteRole.PAD
     else -> ByteRole.DATA
 }
@@ -95,7 +95,7 @@ private fun clusterFields(f: ByteArray, mode: ChecksumMode): List<Pair<String, S
         "Trip B" to "${d.tripBKm} km",
         "Fuel bars" to d.fuelBars.toString(),
         "Byte 23 · gear?" to "0x${hex(gear)} '${printable(gear)}'",
-        "Byte 25 · unknown" to "0x${hex(f.u(25))}",
+        "Engine temp" to (d.engineTempC?.let { "$it °C" } ?: "no reading") + " · byte 25 0x${hex(f.u(25))}",
     )
 }
 

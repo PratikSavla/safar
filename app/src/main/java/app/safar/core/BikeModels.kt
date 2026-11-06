@@ -1,5 +1,7 @@
 package app.safar.core
 
+import app.safar.protocol.engineTempC as engineTempFromByte
+
 /** Scooter or motorcycle: decides fuel bar count, speed alert range and artwork (docs 7.2). */
 enum class VehicleFamily { SCOOTER, MOTORCYCLE }
 
@@ -45,7 +47,8 @@ sealed interface LinkState {
 
 /**
  * One decoded cluster frame '7' (docs 3.1). [fuelBars] is null for the first frame after a connection,
- * which the app discards (docs 3.3). [gear] is byte 23 as a char ('N' in neutral); probable, not confirmed.
+ * which the app discards (docs 3.3). [gear] is byte 23 as a char ('N' in neutral); probable, not confirmed,
+ * and not shown. [raw25] is the engine temperature, see [engineTempC].
  */
 data class ClusterReading(
     val speedKmh: Int,
@@ -57,7 +60,10 @@ data class ClusterReading(
     val raw23: Int,
     val raw25: Int,
     val receivedAtMillis: Long,
-)
+) {
+    /** Engine temperature in °C (byte 25), null when the cluster sends no reading. */
+    val engineTempC: Int? get() = engineTempFromByte(raw25)
+}
 
 /** Device Information service 0x180A (docs 12.4 E1). Any field may be missing on a given cluster. */
 data class DeviceInfo(

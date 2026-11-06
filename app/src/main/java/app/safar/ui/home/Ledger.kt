@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -42,8 +41,6 @@ import app.safar.ui.components.Hairline
 import app.safar.ui.components.Kicker
 import app.safar.ui.components.LedgerSize
 import app.safar.ui.components.LedgerValue
-import app.safar.ui.components.Stamp
-import app.safar.ui.components.StampTone
 import app.safar.ui.components.ValueOrigin
 import app.safar.ui.components.rememberStale
 import app.safar.ui.format.Formatters
@@ -115,7 +112,7 @@ private fun cells(l: LedgerUi, bikeInk: Color, speed: () -> SpeedUi): List<@Comp
     { SpeedCell(speed) },
     { FuelCell(l, bikeInk) },
     { RangeCell(l) },
-    { GearCell(l, bikeInk) },
+    { EngineTempCell(l, bikeInk) },
 )
 
 /** Phone GPS speed: the only cell that reads the 1 Hz fix. Nothing under it while moving. */
@@ -164,24 +161,12 @@ private fun RangeCell(l: LedgerUi) {
     }
 }
 
-/**
- * The gear is a best guess from the bike: the "guess" stamp says so, and TalkBack says the same. The stamp
- * drops below the letter when the cell is short of width (large font scale).
- */
+/** Engine temperature from the bike (cluster byte 25), whole °C; TalkBack says "degrees Celsius". */
 @Composable
-private fun GearCell(l: LedgerUi, bikeInk: Color) {
-    val spoken = if (l.gear == NO_GEAR) "Gear, no reading yet" else "Gear ${l.gear}, best guess"
-    Column(Modifier.clearAndSetSemantics { contentDescription = spoken }) {
-        Kicker("Gear")
-        FlowRow(
-            Modifier.padding(top = 4.dp, bottom = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-            itemVerticalAlignment = Alignment.Bottom,
-        ) {
-            BasicText(l.gear, style = Atlas.type.numberSmall.copy(color = bikeInk), maxLines = 1)
-            if (l.gear != NO_GEAR) Stamp("guess", tone = StampTone.INK)
-        }
+private fun EngineTempCell(l: LedgerUi, bikeInk: Color) {
+    val unit = if (l.engineTemp == NO_TEMP) null else "°C"
+    Box(Modifier.clearAndSetSemantics { contentDescription = engineTempSpoken(l.engineTemp) }) {
+        LedgerValue(l.engineTemp, null, unit = unit, label = "Engine", size = LedgerSize.SMALL, valueColor = bikeInk)
     }
 }
 

@@ -50,7 +50,7 @@ import app.safar.ui.theme.SafarTheme
 /** How long the rider holds to leave (ride.js `HOLD_MS`). */
 internal const val HOLD_MS = 900L
 
-/** Ride mode (ride.js): huge numerals, next turn, fuel, gear, clock, call. Leave with a long-press anywhere. */
+/** Ride mode (ride.js): huge numerals, next turn, fuel, engine temperature, clock, call. Leave with a long-press anywhere. */
 @Composable
 fun RideScreen(navigator: Navigator, vm: RideViewModel = viewModel { RideViewModel.fromContainer() }) {
     val ui by vm.ui.collectAsStateWithLifecycle()

@@ -21,9 +21,9 @@ const val TEST_ADDRESS = "00:11:22:33:44:55"
 
 val testSaved = SavedBike(TEST_BIKE, TEST_ADDRESS, BikeCatalog.forBleName(TEST_BIKE))
 
-fun testReading(at: Long = 1_000L, bars: Int? = 4, gear: Char? = 'N') = ClusterReading(
+fun testReading(at: Long = 1_000L, bars: Int? = 4, gear: Char? = 'N', tempC: Int = 30) = ClusterReading(
     speedKmh = 0, odometerKm = 12_345, tripAKm = 142.6, tripBKm = 1_204.3, fuelBars = bars, gear = gear,
-    raw23 = 0, raw25 = 0, receivedAtMillis = at,
+    raw23 = 0, raw25 = tempC, receivedAtMillis = at,
 )
 
 class FakeSettings(initial: Settings = Settings()) : SettingsStore {

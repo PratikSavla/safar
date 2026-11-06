@@ -13,7 +13,7 @@ import app.safar.ui.copy.LinkCopy
 import app.safar.ui.format.Formatters
 import app.safar.ui.format.ValueSource
 import app.safar.ui.home.DEFAULT_TURN_CODE
-import app.safar.ui.home.NO_GEAR
+import app.safar.ui.home.engineTempText
 import app.safar.ui.home.navStatusWord
 import app.safar.ui.shell.callForwarded
 import kotlin.math.roundToInt
@@ -36,19 +36,19 @@ data class RideCallUi(val name: String, val source: AlertSource, val label: Stri
 data class RideUi(
     val speedKmh: Int?,
     val overLimit: Boolean,
-    val gear: String,
+    val engineTemp: String,
     val fuelBars: Int?,
     val fuelMax: Int,
-    /** Gear and fuel come from a live cluster frame; false = the last frame before the link dropped. */
+    /** Engine temperature and fuel come from a live cluster frame; false = the last frame before the link dropped. */
     val bikeLive: Boolean,
-    /** When the cluster frame behind gear and fuel arrived; null before the first one. */
+    /** When the cluster frame behind engine temperature and fuel arrived; null before the first one. */
     val readingAt: Long?,
     val turn: TurnUi?,
     val call: RideCallUi?,
     /** "waiting for your bike" / "bike not connected" stamp, or null while connected. */
     val linkNote: String?,
     val moving: Boolean,
-    /** Where gear and fuel come from, for [app.safar.ui.components.Freshness] under them. */
+    /** Where engine temperature and fuel come from, for [app.safar.ui.components.Freshness] under them. */
     val bikeOrigin: ValueOrigin = ValueOrigin(ValueSource.BIKE, readingAt, connected = bikeLive),
 )
 
@@ -63,7 +63,7 @@ internal fun rideUi(bike: BikeState, ride: RideState, nav: NavState, alerts: Ale
     return RideUi(
         speedKmh = speed,
         overLimit = settings.speedAlertOn && speed != null && speed > settings.speedAlertKmh,
-        gear = reading?.gear?.toString() ?: NO_GEAR,
+        engineTemp = engineTempText(reading),
         fuelBars = reading?.fuelBars,
         fuelMax = bike.saved?.model?.fuelBars ?: DEFAULT_FUEL_BARS,
         bikeLive = live,

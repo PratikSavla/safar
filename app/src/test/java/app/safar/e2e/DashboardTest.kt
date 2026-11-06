@@ -120,6 +120,7 @@ class DashboardTest {
 
         val reading = rig.manager.state.value.cluster
         assertEquals(Triple(62, 5, 'D'), Triple(reading?.speedKmh, reading?.fuelBars, reading?.gear))
+        assertEquals(30, reading?.engineTempC, "byte 25 is the engine temperature in °C")
         rig.bike.inject(riding.encode(ChecksumMode.SUM))
         rig.advance(10)
         assertEquals(LogKind.RX, rig.recording.frames.last().kind)

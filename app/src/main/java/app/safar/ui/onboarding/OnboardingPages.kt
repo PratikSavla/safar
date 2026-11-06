@@ -76,7 +76,7 @@ internal fun CoverPage() {
     ObTitle("1 of 3 · welcome", "Safar", "turns and calls on your Suzuki’s display.")
     RouteArt()
     listOf(
-        "Reads" to "Odometer, trip meters, fuel and gear from your bike.",
+        "Reads" to "Odometer, trip meters, fuel and engine temperature from your bike.",
         "Shows" to "Google Maps turns, who’s calling, WhatsApp alerts, the time and your name on your bike’s display.",
         "Keeps" to "Your rides, fuel history, service dates and where you parked. On this phone and in its backup.",
     ).forEach { (k, v) ->

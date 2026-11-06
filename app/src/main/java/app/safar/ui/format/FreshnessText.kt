@@ -18,7 +18,7 @@ const val NEVER_STALE: Long = Long.MAX_VALUE
  * sees before the first reading while the source is connected, or null to show nothing.
  */
 enum class ValueSource(val label: String, val staleAfterMillis: Long, val waiting: String?) {
-    /** Cluster frames: odometer, trips, fuel bars, gear. */
+    /** Cluster frames: odometer, trips, fuel bars, engine temperature. */
     BIKE("bike", BIKE_STALE_AFTER_MS, "Waiting for the bike"),
 
     /** The phone's own location: speed, parked spot, track. */

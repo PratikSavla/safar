@@ -64,13 +64,21 @@ class HomeStateTest {
         assertTrue(l.live)
         assertEquals(ValueOrigin(ValueSource.BIKE, 5_000, connected = true), l.bikeOrigin)
         assertEquals(12_345, l.odometerKm)
-        assertEquals("N", l.gear)
+        assertEquals("30", l.engineTemp)
         val gone = BikeState(saved = testSaved, lastCluster = testReading(at = 2_000))
         val g = ledgerUi(gone, stats(gone))!! // test: a last-known reading is present
         assertFalse(g.live)
         assertEquals(ValueOrigin(ValueSource.BIKE, 2_000, connected = false), g.bikeOrigin)
         assertEquals(2_000L, g.readingAt)
         assertNull(ledgerUi(BikeState(), stats(BikeState())))
+    }
+
+    @Test
+    fun engineTemperatureShowsADashWithoutAReading() {
+        val noTemp = BikeState(link = LinkState.Connected, saved = testSaved, cluster = testReading(tempC = 0xFF))
+        assertEquals(NO_TEMP, ledgerUi(noTemp, stats(noTemp))?.engineTemp)
+        assertEquals("Engine temperature, no reading yet", engineTempSpoken(NO_TEMP))
+        assertEquals("Engine temperature 92 degrees Celsius", engineTempSpoken("92"))
     }
 
     @Test

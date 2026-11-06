@@ -97,7 +97,7 @@ internal fun LedgerSection() {
     Row(Modifier.fillMaxWidth().padding(top = 9.dp)) {
         LedgerValue(Formatters.km1(142.64), "bike", Modifier.weight(1f), unit = "km", label = "Trip A", age = "3 s ago", size = LedgerSize.SMALL)
         LedgerValue("≈312", "calculated", Modifier.weight(1f), unit = "km", label = "Range", size = LedgerSize.SMALL)
-        LedgerValue("3", "bike", Modifier.weight(1f), label = "Gear", age = "probable", size = LedgerSize.SMALL, stale = true)
+        LedgerValue("84", "bike", Modifier.weight(1f), unit = "°C", label = "Engine", age = "5 s", size = LedgerSize.SMALL, stale = true)
     }
     Gap(14.dp)
     Row(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.Bottom) {

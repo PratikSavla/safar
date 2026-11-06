@@ -8,13 +8,16 @@ import app.safar.protocol.Timing
  * no timers. A lost link or a failed connect waits 2 s, 5 s, 10 s, then every 30 s, and connects directly to
  * the same address (no scan). After [findAfter] failed connects in a row it runs one scan for the bike by
  * name ([Action.Find]), at most once per [findIntervalMs] on [clock], because an address may rotate: a bike
- * found there is connected at once, else the back-off goes on. A user disconnect stops it. Bluetooth off
- * stops it and remembers the address; Bluetooth on resumes it.
+ * found there is connected at once, else the back-off goes on. Reconnects stop for good once [windowMs] has
+ * passed since the link was lost or the first connect failed: no connect or scan starts later than that, and
+ * the policy goes [State.Idle] with [Action.GiveUp]. A user disconnect stops it. Bluetooth off stops it and
+ * remembers the address; Bluetooth on resumes it with a fresh window.
  */
 class ReconnectPolicy(
     private val clock: () -> Long = { 0L },
     private val findAfter: Int = ConnectTiming.FIND_AFTER_FAILURES,
     private val findIntervalMs: Long = ConnectTiming.FIND_MIN_INTERVAL_MS,
+    private val windowMs: Long = ConnectTiming.RECONNECT_WINDOW_MS,
     /** Last, so `ReconnectPolicy { attempt -> ... }` sets it. */
     private val delayFor: (attempt: Int) -> Long = Timing::reconnectDelayMs,
 ) {
@@ -51,6 +54,9 @@ class ReconnectPolicy(
 
         /** Stop the running [Find] scan; no result is expected any more. */
         data object StopFind : Action
+
+        /** Reconnects to [address] stopped [afterMs] after the link was lost; the policy is now Idle. */
+        data class GiveUp(val address: String, val afterMs: Long) : Action
     }
 
     var state: State = State.Idle
@@ -59,6 +65,9 @@ class ReconnectPolicy(
     /** Failed connects in a row since the last success, scan or new connect. */
     private var failures = 0
     private var lastFindAt: Long? = null
+
+    /** When the link was lost or the first connect failed; null while connected or not reconnecting. */
+    private var lostAt: Long? = null
 
     /** Address the policy is working on, in any state but Idle. */
     val address: String?
@@ -87,6 +96,7 @@ class ReconnectPolicy(
         val close = s is State.Connecting || s is State.Connected
         val stop = stopFind()
         failures = 0
+        lostAt = null
         state = State.Connecting(address, 0)
         return listOfNotNull(Action.CancelTimer, stop, Action.CloseLink.takeIf { close }, Action.Connect(address, 0))
     }
@@ -95,6 +105,7 @@ class ReconnectPolicy(
     fun onLinkReady(): List<Action> {
         val s = state as? State.Connecting ?: return emptyList()
         failures = 0
+        lostAt = null
         state = State.Connected(s.address)
         return emptyList()
     }
@@ -107,7 +118,8 @@ class ReconnectPolicy(
             else -> return emptyList()
         }
         failures = if (state is State.Connecting) failures + 1 else 0
-        if (failures >= findAfter && findAllowed()) {
+        if (lostAt == null) lostAt = clock()
+        if (failures >= findAfter && findAllowed() && !windowOver(0)) {
             failures = 0
             lastFindAt = clock()
             state = State.Searching(address, attempt)
@@ -122,17 +134,30 @@ class ReconnectPolicy(
      */
     fun onFindDone(found: String?): List<Action> {
         val s = state as? State.Searching ?: return emptyList()
-        if (found == null || found == s.address) return listOf(backOff(s.address, s.attempt))
+        if (found == null || found == s.address || windowOver(0)) return listOf(backOff(s.address, s.attempt))
         state = State.Connecting(found, s.attempt)
         return listOf(Action.Connect(found, s.attempt))
     }
 
     private fun findAllowed(): Boolean = lastFindAt.let { it == null || clock() - it >= findIntervalMs }
 
+    /** True when a connect or scan starting [inMs] from now would start after the reconnect window. */
+    private fun windowOver(inMs: Long): Boolean = lostAt.let { it != null && clock() + inMs - it > windowMs }
+
+    /** Waits before reconnect [attempt], or gives up when that reconnect would start after the window. */
     private fun backOff(address: String, attempt: Int): Action {
         val delay = delayFor(attempt)
+        if (windowOver(delay)) return giveUp(address)
         state = State.Waiting(address, attempt, delay)
         return Action.StartTimer(delay)
+    }
+
+    private fun giveUp(address: String): Action {
+        val afterMs = clock() - (lostAt ?: clock())
+        failures = 0
+        lostAt = null
+        state = State.Idle
+        return Action.GiveUp(address, afterMs)
     }
 
     fun onTimer(): List<Action> {
@@ -145,6 +170,7 @@ class ReconnectPolicy(
     fun disconnect(): List<Action> {
         val stop = stopFind()
         failures = 0
+        lostAt = null
         state = if (state is State.BluetoothOff) State.BluetoothOff(null) else State.Idle
         return listOfNotNull(Action.CancelTimer, stop, Action.CloseLink)
     }
@@ -153,6 +179,7 @@ class ReconnectPolicy(
         if (state is State.BluetoothOff) return emptyList()
         val stop = stopFind()
         failures = 0
+        lostAt = null
         state = State.BluetoothOff(address)
         return listOfNotNull(Action.CancelTimer, stop, Action.CloseLink)
     }

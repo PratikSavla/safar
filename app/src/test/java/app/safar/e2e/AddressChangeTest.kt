@@ -92,10 +92,11 @@ class AddressChangeTest {
         val logged = rig.recording.named("Search by name needs permission").single()
         assertEquals(mapOf("permission" to "BLUETOOTH_SCAN"), logged.detail)
         assertTrue(logged.error)
-        assertTrue(rig.link is LinkState.Reconnecting || rig.link is LinkState.Connecting, "${rig.link}")
         assertTrue(rig.radio.opened.all { it == BIKE_ADDRESS }, "only direct connects")
-        // Drop, then attempts at 2, 27, 57, 107, 157, 207 and 257 s: the back-off goes on.
-        assertEquals(8, rig.radio.opened.size, "${rig.radio.opened}")
+        // First connect, then attempts at 2, 27, 57 and 107 s after the drop. Attempt 4 fails at 127 s and
+        // attempt 5 would start at 157 s, past the 2 minute window: Safar gives up.
+        assertEquals(5, rig.radio.opened.size, "${rig.radio.opened}")
+        assertEquals(LinkState.Idle, rig.link)
     }
 
     @Test

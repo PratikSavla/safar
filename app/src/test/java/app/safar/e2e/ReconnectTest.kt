@@ -20,7 +20,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** MTU check, link drops and the reconnect back-off against the simulated bike (docs 2.2, 2.4, 2.5, 12.4 R3). */
+/**
+ * MTU check, link drops, the reconnect back-off and its 2 minute limit against the simulated bike
+ * (docs 2.2, 2.4, 2.5, 12.4 R3).
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReconnectTest {
     private fun TestScope.connectedRig(): BikeRig {
@@ -55,7 +58,7 @@ class ReconnectTest {
     }
 
     @Test
-    fun dropBacksOffTwoFiveTenThenThirtySecondsToTheSavedAddressWithASearchEveryTwoFailures() = runTest {
+    fun dropBacksOffTwoFiveTenThirtySecondsWithASearchThenGivesUpAfterTwoMinutes() = runTest {
         val rig = connectedRig()
         val dropAt = rig.time
         rig.bike.powerOff()
@@ -67,12 +70,12 @@ class ReconnectTest {
         assertEquals(mapOf("reason" to "supervision timeout"), rig.recording.named("Link ended").single().detail)
 
         // Each attempt to the switched-off bike ends with the 20 s connect timeout, then the next back-off.
-        // Attempts 2 and 4 are the second failure in a row, a minute or more after the last search: an 8 s
-        // search by name runs (and finds nothing) before the back-off.
+        // Attempt 2 is the second failure in a row: an 8 s search by name runs (and finds nothing) first.
+        // Attempts start 2, 27, 65 and 115 s after the drop.
         val timeout = ConnectTiming.CONNECT_TIMEOUT_MS
         var at = dropAt
         val expectedRequests = mutableListOf<Long>()
-        Timing.RECONNECT_BACKOFF_MS.plus(30_000L).forEachIndexed { index, backoff ->
+        Timing.RECONNECT_BACKOFF_MS.forEachIndexed { index, backoff ->
             at += backoff
             expectedRequests += at
             rig.advance(at - rig.time - 1)
@@ -81,19 +84,27 @@ class ReconnectTest {
             assertEquals(LinkState.Connecting(MOTO_NAME), rig.link, "attempt ${index + 1}")
             at += timeout
             rig.advance(timeout)
-            if (index == 1 || index == 3) {
-                assertEquals(LinkState.Connecting(MOTO_NAME), rig.link, "searching after attempt ${index + 1}")
+            if (index == 1) {
+                assertEquals(LinkState.Connecting(MOTO_NAME), rig.link, "searching after attempt 2")
                 at += ConnectTiming.FIND_SCAN_MS
                 rig.advance(ConnectTiming.FIND_SCAN_MS)
             }
-            val next = Timing.reconnectDelayMs(index + 2)
-            assertEquals(LinkState.Reconnecting(index + 2, CLOCK_BASE + at + next), rig.link)
+            if (index < 3) {
+                val next = Timing.reconnectDelayMs(index + 2)
+                assertEquals(LinkState.Reconnecting(index + 2, CLOCK_BASE + at + next), rig.link)
+            }
         }
-        assertEquals(listOf(0L) + expectedRequests, rig.bike.connectRequests)
+        // Attempt 4 failed 135 s after the drop; attempt 5 would start at 165 s, past the 2 minute window.
+        assertEquals(LinkState.Idle, rig.link)
+        val gaveUp = rig.recording.named("Reconnect gave up").single()
+        assertEquals(mapOf("address" to BIKE_ADDRESS, "afterS" to "135"), gaveUp.detail)
+        assertEquals(false, rig.manager.serviceWanted.value, "the service stops with the reconnects")
+        rig.advance(300_000)
+        assertEquals(listOf(0L) + expectedRequests, rig.bike.connectRequests, "no connect after giving up")
         assertTrue(rig.radio.opened.all { it == BIKE_ADDRESS }, "direct connect to the saved address")
         assertEquals(0, rig.radio.scanner.starts, "the rider's scan is not used")
-        assertEquals(2, rig.radio.findScanner.starts, "one search per two failures, at most one a minute")
-        assertEquals(2, rig.recording.named("Bike not found by name").size)
+        assertEquals(1, rig.radio.findScanner.starts, "no search after the window")
+        assertEquals(1, rig.recording.named("Bike not found by name").size)
         assertEquals(emptyList(), rig.txAfter(dropAt), "no write attempted while the link is down")
     }
 

@@ -194,6 +194,11 @@ class BikeManager(
                 Action.CloseLink -> closeLink()
                 is Action.Find -> finder.find(nameFor(action.address)) { apply(policy.onFindDone(it)) }
                 Action.StopFind -> finder.cancel()
+                is Action.GiveUp -> log.event(
+                    "Reconnect gave up",
+                    mapOf("address" to action.address, "afterS" to "${action.afterMs / 1000}"),
+                    error = true,
+                )
             }
         }
         publishLink()

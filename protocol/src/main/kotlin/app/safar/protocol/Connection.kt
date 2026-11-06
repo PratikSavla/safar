@@ -32,6 +32,12 @@ object ConnectTiming {
 
     /** At most one fallback scan per this interval, to save battery. */
     const val FIND_MIN_INTERVAL_MS = 60_000L
+
+    /**
+     * Safar's own limit, not in the original app: reconnects stop once this long has passed since the link was
+     * lost (or the first connect failed). No connect or scan starts after it; the rider taps Connect again.
+     */
+    const val RECONNECT_WINDOW_MS = 120_000L
 }
 
 /** Bluetooth SIG 16-bit UUID in the base UUID. */

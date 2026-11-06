@@ -5,6 +5,22 @@ display and sends it turns from Google Maps, who is calling, WhatsApp calls and 
 battery. It also keeps a record of your riding: trips with their routes, fuel-ups and mileage, service reminders and
 where you parked.
 
+**Website: [pratiksavla.github.io/safar](https://pratiksavla.github.io/safar/)** · [Download the APK](https://github.com/PratikSavla/safar/releases/latest)
+
+[![One minute with Safar: ride mode, a Google Maps turn, a call, trips, fuel and service](media/safar-film-poster.jpg)](media/safar-film.mp4)
+
+<p>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/01-today-light.png" width="19%" alt="Today: connected, with the odometer, trip meters, fuel and gear from the bike">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/04-ride-dark.png" width="19%" alt="Ride mode in the dark theme, with the next Google Maps turn">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/15-ride-call-dark.png" width="19%" alt="Ride mode showing an incoming call on the bike">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/07-trips-light.png" width="19%" alt="Trips: every ride with its route">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/09-fuel-light.png" width="19%" alt="Fuel: range, mileage and cost">
+</p>
+
+The screenshots and the film come from the app on an Android emulator, connected over virtual Bluetooth to
+[BikeSim](bikesim/README.md), with made-up riding history. More are in
+[`fastlane/metadata/android/en-US/images/phoneScreenshots`](fastlane/metadata/android/en-US/images/phoneScreenshots).
+
 ## Features
 
 - **Today**: connection status, the odometer, trip meters, fuel bars and gear from the bike, and a garage of shortcuts.
@@ -12,9 +28,10 @@ where you parked.
 - **Alerts**: phone calls, missed calls, WhatsApp calls and messages, each with its own switch. The bike only gets the
   caller's name and a count, never the message text.
 - **Ride mode**: a large, glanceable screen that opens by itself when you start moving.
-- **Trips**: every ride with its distance, speeds and a map of the route.
+- **Trips**: every ride with its day and start time, distance, speeds and a map of the route.
 - **Fuel**: log fill-ups, see your mileage and an estimated range, and get a low-fuel reminder.
-- **Service**: reminders by distance for oil, chain, air filter, brakes and tyres.
+- **Service**: reminders for oil, chain, air filter, brakes and tyres, due every so many kilometres, days, weeks or
+  months, or both, whichever comes first. A first service can have its own odometer reading or date.
 - **Parked**: the place your phone was when the bike switched off.
 - **Papers**: your RC, insurance, PUC, licence and service bills as PDFs or photos, with an optional expiry date. Safar
   reminds you 30 and 7 days before a paper runs out, and on the day.
@@ -103,6 +120,24 @@ emulator connected:
 BikeSim advertises as a Suzuki display, accepts Safar's frames and sends cluster readings every few seconds. Run it
 on a second phone, or run both apps on two emulators linked by virtual Bluetooth. The unit tests also run the
 Bluetooth session against a fake GATT that sends synthetic bike frames.
+
+## Screenshots and website
+
+`scripts/media/make-demo-backup.ts` writes a Safar export with made-up rides, fuel-ups, service items, places and
+papers, dated relative to now. Import it in **Settings → Import from a file** on a test phone or emulator to fill the
+screens:
+
+```bash
+node scripts/media/make-demo-backup.ts /tmp/safar-demo
+```
+
+The website in `site/` is plain HTML and CSS. `scripts/media/build-site.sh` puts it together in `_site/` with the
+screenshots, the app's fonts and the film; GitHub Actions publishes it to GitHub Pages on every push to `main` that
+changes it.
+
+```bash
+bash scripts/media/build-site.sh --strict && python3 -m http.server 5180 --directory _site
+```
 
 ## License
 

@@ -1,5 +1,6 @@
 package app.safar.ui.trips
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,8 +43,9 @@ enum class TripSheet { NONE, RENAME, DELETE }
 /** One journal entry: ink track, distance, time, speeds, odometer run and fuel bars used (trips.js `trip`). */
 @Composable
 fun TripScreen(navigator: Navigator, tripId: Long) {
+    val is24h = DateFormat.is24HourFormat(LocalContext.current)
     val vm: TripViewModel = viewModel(key = "trip-$tripId") {
-        TripViewModel(tripId, AppContainer.trips, AppContainer.ride.state, AppContainer.bike.state)
+        TripViewModel(tripId, AppContainer.trips, AppContainer.ride.state, AppContainer.bike.state, is24h = is24h)
     }
     val state by vm.state.collectAsStateWithLifecycle()
     val ride by vm.ride.collectAsStateWithLifecycle()

@@ -30,6 +30,7 @@ object Formatters {
     private val shortDate = DateTimeFormatter.ofPattern("d MMM", Locale.UK)
     private val clock24 = DateTimeFormatter.ofPattern("HH:mm", Locale.UK)
     private val clock12 = DateTimeFormatter.ofPattern("h:mm a", Locale.UK)
+    private val clock12Compact = DateTimeFormatter.ofPattern("h:mma", Locale.UK)
 
     /**
      * Age of a reading: "now", "3 s ago", "2 min ago", "1 h ago", "yesterday", "3 days ago", then "12 Mar".
@@ -86,6 +87,12 @@ object Formatters {
     fun clock(atMillis: Long, zone: ZoneId = ZoneId.systemDefault(), is24h: Boolean = true): String {
         val t = Instant.ofEpochMilli(atMillis).atZone(zone)
         return (if (is24h) clock24 else clock12).format(t).uppercase(Locale.UK)
+    }
+
+    /** Clock time without the space, for a label next to a date: "17:00", or "5:00PM" when [is24h] is false. */
+    fun clockCompact(atMillis: Long, zone: ZoneId = ZoneId.systemDefault(), is24h: Boolean = true): String {
+        val t = Instant.ofEpochMilli(atMillis).atZone(zone)
+        return (if (is24h) clock24 else clock12Compact).format(t).uppercase(Locale.UK)
     }
 
     /** ETA as the cluster gets it ("0412PM") shown for people: "04:12 PM". Anything else passes through. */

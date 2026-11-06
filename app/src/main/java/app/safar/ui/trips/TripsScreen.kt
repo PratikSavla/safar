@@ -1,5 +1,6 @@
 package app.safar.ui.trips
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -11,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,8 +37,9 @@ private const val PAGE = 30
 /** Journal tab: rides as postcards with their ink tracks, week and 30-day totals (trips.js). */
 @Composable
 fun TripsScreen(navigator: Navigator, bottomBar: (@Composable () -> Unit)? = null) {
+    val is24h = DateFormat.is24HourFormat(LocalContext.current)
     val vm: TripsViewModel = viewModel {
-        TripsViewModel(AppContainer.trips, AppContainer.ride.state, AppContainer.bike.state)
+        TripsViewModel(AppContainer.trips, AppContainer.ride.state, AppContainer.bike.state, is24h = is24h)
     }
     val state by vm.state.collectAsStateWithLifecycle()
     TripsContent(

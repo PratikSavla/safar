@@ -44,12 +44,22 @@ class TripsViewModelTest {
         runCurrent()
         val first = seen.last()
         assertEquals(listOf(2L, 1L), first.rows.map { it.id })
+        assertEquals(listOf("FRI 09 JAN 12:00AM", "THU 08 JAN 12:00AM"), first.rows.map { it.day })
         for (s in 1..3) ride.value = RideState(speedKmh = 20f + s, moving = true, recordingTripId = 3, lastFixAtMillis = s * 1_000L)
         runCurrent()
         val last = seen.last()
         assertEquals(23f, last.live?.speedKmh)
         // Same list instance: the postcards' parameters are unchanged, so they skip recomposition.
         assertSame(first.rows, last.rows)
+    }
+
+    @Test
+    fun aTwentyFourHourPhoneShowsTwentyFourHourStartTimes() = runTest {
+        val vm24 = TripsViewModel(trips, ride, bike, now = { 10 * day }, zone = ZoneOffset.UTC, is24h = true)
+        val seen = mutableListOf<TripsUiState>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm24.state.toList(seen) }
+        runCurrent()
+        assertEquals(listOf("FRI 09 JAN 00:00", "THU 08 JAN 00:00"), seen.last().rows.map { it.day })
     }
 
     @Test

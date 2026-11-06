@@ -60,8 +60,8 @@ class TripsMappingTest {
 
     @Test
     fun `a postcard and the live ride speak in sentences`() {
-        val row = TripRowUi(4, 4, "SUN 01 NOV", "Evening ride", 42.3, 64, 88f, "Sunday 1 November")
-        assertEquals("Evening ride, Sunday 1 November. 42.3 km in 1 hour 4 minutes, top speed 88 km/h.", postcardSpoken(row))
+        val row = TripRowUi(4, 4, "SUN 01 NOV 6:00PM", "Evening ride", 42.3, 64, 88f, "Sunday 1 November, 6:00 PM")
+        assertEquals("Evening ride, Sunday 1 November, 6:00 PM. 42.3 km in 1 hour 4 minutes, top speed 88 km/h.", postcardSpoken(row))
         assertEquals("42 km/h now · top 61 km/h", liveLine(LiveRideUi(42f, 61f, now)))
         assertEquals("top 61 km/h", liveLine(LiveRideUi(null, 61f, null)))
     }
@@ -74,11 +74,25 @@ class TripsMappingTest {
 
     @Test
     fun `rows keep newest first and number from the oldest`() {
-        val rows = tripRows(trips, now, zone)
+        val rows = tripRows(trips, now, zone, is24h = false)
         assertEquals(listOf(4, 3, 2, 1), rows.map { it.number })
-        assertEquals("SUN 01 NOV", rows[0].day)
-        assertEquals("Sunday 1 November", rows[0].spokenDay)
+        assertEquals("SUN 01 NOV 6:00PM", rows[0].day)
+        assertEquals("Sunday 1 November, 6:00 PM", rows[0].spokenDay)
         assertEquals("№004", entryNumber(rows[0].number))
+        val rows24 = tripRows(trips, now, zone, is24h = true)
+        assertEquals("SUN 01 NOV 18:00", rows24[0].day)
+        assertEquals("Sunday 1 November, 18:00", rows24[0].spokenDay)
+    }
+
+    @Test
+    fun `a ride's label carries its start time in the phone's clock format`() {
+        val friday = LocalDateTime.of(2026, 11, 6, 17, 0).atZone(zone).toInstant().toEpochMilli()
+        assertEquals("FRI 06 NOV 5:00PM", dayTimeLabel(friday, zone, is24h = false))
+        assertEquals("FRI 06 NOV 17:00", dayTimeLabel(friday, zone, is24h = true))
+        assertEquals("Friday 6 November, 5:00 PM", spokenDay(friday, zone, is24h = false))
+        assertEquals("Friday 6 November, 17:00", spokenDay(friday, zone, is24h = true))
+        val row = tripRows(listOf(trips[0].copy(startMillis = friday)), now, zone, is24h = false).single()
+        assertTrue("Friday 6 November, 5:00 PM" in postcardSpoken(row))
     }
 
     @Test
@@ -86,7 +100,7 @@ class TripsMappingTest {
         assertNull(liveRide(RideState()))
         val live = liveRide(RideState(speedKmh = 42f, topSpeedKmh = 61f, moving = true, recordingTripId = 9, lastFixAtMillis = now))
         assertEquals(LiveRideUi(42f, 61f, now, tripId = 9), live)
-        val state = tripsUiState(trips, RideState(), "V-Strom SX", now, zone)
+        val state = tripsUiState(trips, RideState(), "V-Strom SX", now, zone, is24h = false)
         assertEquals("V-Strom SX", state.bikeName)
         assertEquals(4, state.rows.size)
         assertTrue(!state.loading)
@@ -109,12 +123,14 @@ class TripsMappingTest {
             TrackPoint(2, 20_000, 19.5000, 74.8000, 40f), // impossible jump, dropped
             TrackPoint(2, 30_000, 18.5020, 73.8000, 40f),
         )
-        val d = tripDetail(trips[2], trips, track, 6, recordingTripId = null, nowMillis = now, zone = zone)
+        val d = tripDetail(trips[2], trips, track, 6, recordingTripId = null, nowMillis = now, zone = zone, is24h = false)
         assertEquals(2, d.number)
+        assertEquals("WED 21 OCT 6:00PM", d.day)
+        assertEquals("WED 21 OCT 18:00", tripDetail(trips[2], trips, track, 6, null, now, zone, is24h = true).day)
         assertEquals("bike odometer", d.distanceSource)
         assertEquals(3, d.trackLat.size)
         assertEquals(4, d.fixes)
-        val gpsOnly = tripDetail(trips[2].copy(odoEndKm = null), trips, emptyList(), 6, null, now, zone)
+        val gpsOnly = tripDetail(trips[2].copy(odoEndKm = null), trips, emptyList(), 6, null, now, zone, is24h = false)
         assertEquals("phone GPS", gpsOnly.distanceSource)
     }
 
@@ -123,7 +139,7 @@ class TripsMappingTest {
         val open = trip(9, 0, 0.0, 0, 0f, end = false).copy(avgSpeedKmh = 0f, odoStartKm = null, odoEndKm = null)
         // About 111 m north every 6 s: 66.7 km/h, 10 legs.
         val track = List(11) { i -> TrackPoint(9, 6_000L * i, 18.5 + i * 0.001, 73.8, 66f + i % 2) }
-        val d = tripDetail(open, listOf(open) + trips, track, 6, recordingTripId = 9, nowMillis = now, zone = zone)
+        val d = tripDetail(open, listOf(open) + trips, track, 6, recordingTripId = 9, nowMillis = now, zone = zone, is24h = false)
         assertEquals(1.11, d.km, 0.01)
         assertEquals(67f, d.topKmh)
         assertEquals(66.7f, d.avgKmh, 0.2f)
@@ -134,7 +150,7 @@ class TripsMappingTest {
     @Test
     fun `an open trip stays out of the entries and totals`() {
         val open = trip(9, 0, 0.0, 0, 0f, end = false).copy(startMillis = now - 10 * min)
-        val state = tripsUiState(listOf(open) + trips, RideState(recordingTripId = 9, topSpeedKmh = 67f), null, now, zone)
+        val state = tripsUiState(listOf(open) + trips, RideState(recordingTripId = 9, topSpeedKmh = 67f), null, now, zone, is24h = false)
         assertEquals(listOf(4, 3, 2, 1), state.rows.map { it.number })
         assertEquals(TripTotals(62.3, 94, 2, 88f), state.week)
         assertEquals(9L, state.live?.tripId)

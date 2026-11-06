@@ -23,10 +23,12 @@ class TripsViewModel(
     bike: StateFlow<BikeState>,
     private val now: () -> Long = System::currentTimeMillis,
     private val zone: ZoneId = ZoneId.systemDefault(),
+    /** The phone's clock setting: start times read "17:00" instead of "5:00PM". */
+    private val is24h: Boolean = false,
 ) : ViewModel() {
     /** Rows and totals: rebuilt when the trip list or the bike's name changes, not on every GPS fix. */
     private val entries = combine(trips.trips.distinctUntilChanged(), bike.map { it.saved?.model?.name }.distinctUntilChanged()) { list, name ->
-        tripsUiState(list, RideState(), name, now(), zone)
+        tripsUiState(list, RideState(), name, now(), zone, is24h)
     }
 
     /** The live card follows the ride at 1 Hz; `copy` keeps the same rows list, so the postcards skip. */

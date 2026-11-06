@@ -81,6 +81,16 @@ class FormattersTest {
     }
 
     @Test
+    fun `clockCompact drops the space before AM and PM`() {
+        val t = LocalDateTime.of(2026, 11, 6, 17, 0).atZone(zone).toInstant().toEpochMilli()
+        assertEquals("5:00PM", Formatters.clockCompact(t, zone, is24h = false))
+        assertEquals("17:00", Formatters.clockCompact(t, zone, is24h = true))
+        val morning = LocalDateTime.of(2026, 11, 6, 0, 7).atZone(zone).toInstant().toEpochMilli()
+        assertEquals("12:07AM", Formatters.clockCompact(morning, zone, is24h = false))
+        assertEquals("00:07", Formatters.clockCompact(morning, zone))
+    }
+
+    @Test
     fun `clusterEta adds a colon and space`() {
         assertEquals("04:12 PM", Formatters.clusterEta("0412PM"))
         assertEquals("…", Formatters.clusterEta(null))

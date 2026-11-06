@@ -35,7 +35,7 @@ data class TripRowUi(
     val km: Double,
     val minutes: Long,
     val topKmh: Float,
-    /** [day] for TalkBack: "Monday 2 November". */
+    /** [day] for TalkBack: "Monday 2 November, 5:00 PM". */
     val spokenDay: String = day,
 )
 
@@ -92,25 +92,30 @@ fun ridesText(count: Int): String = if (count == 1) "1 ride" else "$count rides"
 fun totalsNote(t: TripTotals): String =
     if (t.rides == 0) "No rides" else "${ridesText(t.rides)} · ${durationText(t.minutes)} · top ${t.topKmh.roundToInt()} km/h"
 
-/** What TalkBack reads for a postcard: "Evening ride, Monday 2 November. 42.3 km in 1 hour 4 minutes, top speed 88 km/h." */
+/** What TalkBack reads for a postcard: "Evening ride, Monday 2 November, 5:00 PM. 42.3 km in 1 hour 4 minutes, top speed 88 km/h." */
 fun postcardSpoken(row: TripRowUi): String =
     "${row.title}, ${row.spokenDay}. ${Formatters.km1(row.km)} km in ${spokenDuration(row.minutes)}, top speed ${row.topKmh.roundToInt()} km/h."
 
-/** "Monday 2 November", for TalkBack. */
-fun spokenDay(atMillis: Long, zone: ZoneId): String = spokenDayFormat.format(Instant.ofEpochMilli(atMillis).atZone(zone))
+/** "Monday 2 November, 5:00 PM" (or "17:00" when [is24h]), for TalkBack. */
+fun spokenDay(atMillis: Long, zone: ZoneId, is24h: Boolean): String =
+    "${spokenDayFormat.format(Instant.ofEpochMilli(atMillis).atZone(zone))}, ${Formatters.clock(atMillis, zone, is24h)}"
 
 /** "SAT 12 OCT" (trips.js `day`). */
 fun dayLabel(atMillis: Long, zone: ZoneId): String =
     dayFormat.format(Instant.ofEpochMilli(atMillis).atZone(zone)).uppercase(Locale.UK).replace(".", "")
 
+/** "SAT 12 OCT 5:00PM", or "SAT 12 OCT 17:00" when [is24h]: a ride's day and start time. */
+fun dayTimeLabel(atMillis: Long, zone: ZoneId, is24h: Boolean): String =
+    "${dayLabel(atMillis, zone)} ${Formatters.clockCompact(atMillis, zone, is24h)}"
+
 /** "№007". */
 fun entryNumber(number: Int): String = "№" + number.toString().padStart(3, '0')
 
 /** [trips] arrive newest first; numbers count up from the oldest. */
-fun tripRows(trips: List<Trip>, nowMillis: Long, zone: ZoneId): List<TripRowUi> = trips.mapIndexed { i, t ->
+fun tripRows(trips: List<Trip>, nowMillis: Long, zone: ZoneId, is24h: Boolean): List<TripRowUi> = trips.mapIndexed { i, t ->
     TripRowUi(
-        t.id, trips.size - i, dayLabel(t.startMillis, zone), t.title, t.distanceKm, tripMinutes(t, nowMillis), t.topSpeedKmh,
-        spokenDay(t.startMillis, zone),
+        t.id, trips.size - i, dayTimeLabel(t.startMillis, zone, is24h), t.title, t.distanceKm, tripMinutes(t, nowMillis), t.topSpeedKmh,
+        spokenDay(t.startMillis, zone, is24h),
     )
 }
 
@@ -129,14 +134,14 @@ fun liveRide(ride: RideState): LiveRideUi? =
  */
 fun finishedTrips(trips: List<Trip>): List<Trip> = trips.filter { it.endMillis != null }
 
-fun tripsUiState(trips: List<Trip>, ride: RideState, bikeName: String?, nowMillis: Long, zone: ZoneId): TripsUiState {
+fun tripsUiState(trips: List<Trip>, ride: RideState, bikeName: String?, nowMillis: Long, zone: ZoneId, is24h: Boolean): TripsUiState {
     val done = finishedTrips(trips)
     return TripsUiState(
         loading = false,
         bikeName = bikeName,
         week = tripTotals(done, nowMillis, days = 7),
         month = tripTotals(done, nowMillis, days = 30),
-        rows = tripRows(done, nowMillis, zone),
+        rows = tripRows(done, nowMillis, zone, is24h),
         live = liveRide(ride),
     )
 }

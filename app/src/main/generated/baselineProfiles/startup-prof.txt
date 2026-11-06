@@ -21056,9 +21056,9 @@ SPLapp/safar/ui/trips/TripsMappingKt;->finishedTrips(Ljava/util/List;)Ljava/util
 PLapp/safar/ui/trips/TripsMappingKt;->liveRide(Lapp/safar/core/RideState;)Lapp/safar/ui/trips/LiveRideUi;
 PLapp/safar/ui/trips/TripsMappingKt;->ridesText(I)Ljava/lang/String;
 PLapp/safar/ui/trips/TripsMappingKt;->totalsNote(Lapp/safar/ui/trips/TripTotals;)Ljava/lang/String;
-PLapp/safar/ui/trips/TripsMappingKt;->tripRows(Ljava/util/List;JLjava/time/ZoneId;)Ljava/util/List;
+PLapp/safar/ui/trips/TripsMappingKt;->tripRows(Ljava/util/List;JLjava/time/ZoneId;Z)Ljava/util/List;
 PLapp/safar/ui/trips/TripsMappingKt;->tripTotals(Ljava/util/List;JI)Lapp/safar/ui/trips/TripTotals;
-PLapp/safar/ui/trips/TripsMappingKt;->tripsUiState(Ljava/util/List;Lapp/safar/core/RideState;Ljava/lang/String;JLjava/time/ZoneId;)Lapp/safar/ui/trips/TripsUiState;
+PLapp/safar/ui/trips/TripsMappingKt;->tripsUiState(Ljava/util/List;Lapp/safar/core/RideState;Ljava/lang/String;JLjava/time/ZoneId;Z)Lapp/safar/ui/trips/TripsUiState;
 PLapp/safar/ui/trips/TripsPartsKt;->Footnote(Ljava/lang/String;Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
 PLapp/safar/ui/trips/TripsPartsKt;->TotalsRow(Lapp/safar/ui/trips/TripTotals;Lapp/safar/ui/trips/TripTotals;Landroidx/compose/runtime/Composer;I)V
 PLapp/safar/ui/trips/TripsPartsKt;->totalsCell(Ljava/lang/String;Lapp/safar/ui/trips/TripTotals;)Lapp/safar/ui/components/StatCell;

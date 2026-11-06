@@ -25,15 +25,15 @@ object TripsPreviewData {
         week = TripTotals(186.4, 255, 4, 104f),
         month = TripTotals(712.9, 1010, 13, 112f),
         rows = listOf(
-            TripRowUi(3, 3, "MON 02 NOV", "Evening ride", 42.3, 64, 88f),
-            TripRowUi(2, 2, "SAT 31 OCT", "Morning ride on NH 48", 128.6, 142, 104f),
-            TripRowUi(1, 1, "THU 29 OCT", "Main Rd errands", 8.1, 26, 52f),
+            TripRowUi(3, 3, "MON 02 NOV 5:40PM", "Evening ride", 42.3, 64, 88f),
+            TripRowUi(2, 2, "SAT 31 OCT 6:15AM", "Morning ride on NH 48", 128.6, 142, 104f),
+            TripRowUi(1, 1, "THU 29 OCT 11:05AM", "Main Rd errands", 8.1, 26, 52f),
         ),
         live = LiveRideUi(42f, 61f, T0),
     )
 
     val detail = TripDetailUi(
-        id = 2, number = 2, day = "SAT 31 OCT", title = "Morning ride on NH 48", km = 128.6,
+        id = 2, number = 2, day = "SAT 31 OCT 6:15AM", title = "Morning ride on NH 48", km = 128.6,
         distanceSource = "bike odometer", minutes = 142, avgKmh = 54f, topKmh = 104f,
         odoStart = 12_036, odoEnd = 12_164,
         fuel = TripFuelUi(5, 3, 6, "2 bars used", "About 64 km per bar"),

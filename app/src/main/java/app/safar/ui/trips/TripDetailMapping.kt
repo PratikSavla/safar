@@ -73,6 +73,7 @@ fun tripDetail(
     recordingTripId: Long?,
     nowMillis: Long,
     zone: ZoneId,
+    is24h: Boolean,
 ): TripDetailUi {
     // An open trip's row holds zeros until it ends: count it from the track saved so far.
     val trip = if (trip.endMillis == null) trip.withTrackStats(track) else trip
@@ -81,7 +82,7 @@ fun tripDetail(
     return TripDetailUi(
         id = trip.id,
         number = if (index < 0) trips.size + 1 else trips.size - index,
-        day = dayLabel(trip.startMillis, zone),
+        day = dayTimeLabel(trip.startMillis, zone, is24h),
         title = trip.title,
         km = trip.distanceKm,
         distanceSource = if (trip.odoStartKm != null && trip.odoEndKm != null) "bike odometer" else "phone GPS",

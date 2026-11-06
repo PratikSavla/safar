@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -18,16 +19,18 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TripViewModelTest {
-    private class FakeTrips : TripRepository {
+    private class FakeTrips(private val saved: Trip? = null) : TripRepository {
         val deleted = mutableListOf<Long>()
-        override val trips: Flow<List<Trip>> = flowOf(emptyList())
-        override fun trip(id: Long): Flow<Trip?> = flowOf(null)
+        override val trips: Flow<List<Trip>> = flowOf(listOfNotNull(saved))
+        override fun trip(id: Long): Flow<Trip?> = flowOf(saved)
         override fun track(tripId: Long): Flow<List<TrackPoint>> = flowOf(emptyList())
         override suspend fun start(trip: Trip): Long = error("not used")
         override suspend fun update(trip: Trip) = Unit
@@ -59,5 +62,20 @@ class TripViewModelTest {
         advanceUntilIdle()
         assertEquals(listOf(7L), repo.deleted)
         assertTrue(vm.deleted.value)
+    }
+
+    @Test
+    fun `the page's day label carries the start time in the phone's clock format`() = runTest(dispatcher) {
+        val start = LocalDateTime.of(2026, 11, 6, 17, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
+        val trip = Trip(7, "Evening ride", start, start + 3_600_000, 42.0, 80f, 40f, 100, 142, 5, 4)
+        val ride = MutableStateFlow(RideState())
+        val bike = MutableStateFlow(BikeState())
+
+        fun dayOn(is24h: Boolean) = TripViewModel(7, FakeTrips(trip), ride, bike, zone = ZoneOffset.UTC, is24h = is24h)
+
+        val twelve = dayOn(is24h = false).state.first { it is TripDetailState.Ready } as TripDetailState.Ready
+        assertEquals("FRI 06 NOV 5:00PM", twelve.trip.day)
+        val twentyFour = dayOn(is24h = true).state.first { it is TripDetailState.Ready } as TripDetailState.Ready
+        assertEquals("FRI 06 NOV 17:00", twentyFour.trip.day)
     }
 }

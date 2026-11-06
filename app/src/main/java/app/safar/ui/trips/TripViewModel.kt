@@ -32,6 +32,8 @@ class TripViewModel(
     bike: StateFlow<BikeState>,
     private val now: () -> Long = System::currentTimeMillis,
     private val zone: ZoneId = ZoneId.systemDefault(),
+    /** The phone's clock setting: the start time reads "17:00" instead of "5:00PM". */
+    private val is24h: Boolean = false,
 ) : ViewModel() {
     /** Written by the state flow on [Dispatchers.Default], read by [rename] on the main thread. */
     @Volatile
@@ -43,7 +45,7 @@ class TripViewModel(
             TripDetailState.Missing
         } else {
             val bars = b.saved?.model?.fuelBars ?: DEFAULT_BARS
-            TripDetailState.Ready(tripDetail(trip, list, track, bars, r.recordingTripId, now(), zone))
+            TripDetailState.Ready(tripDetail(trip, list, track, bars, r.recordingTripId, now(), zone, is24h))
         }
     }.flowOn(Dispatchers.Default) // tripDetail filters the whole track
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TripDetailState.Loading)

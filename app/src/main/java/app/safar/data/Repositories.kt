@@ -1,5 +1,6 @@
 package app.safar.data
 
+import app.safar.core.ClusterReading
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,11 +22,25 @@ interface SavedBikeStore {
      */
     val loaded: StateFlow<Boolean> get() = ALWAYS_LOADED
 
+    /**
+     * The saved bike's last cluster reading, kept across app restarts and updates ("last seen on bike").
+     * Holds the stored value once [loaded] is true. Null when no reading was kept; dropped with the bike
+     * ([clear]) or when a bike of another name is saved. Stores that keep no readings stay null.
+     */
+    val lastReading: StateFlow<ClusterReading?> get() = NO_READING
+
+    /** Saves the bike [record]. A record with another name than the stored one drops [lastReading]. */
     suspend fun save(record: SavedBikeRecord)
+
+    /** Keeps [reading] as [lastReading]. Ignored while no bike is saved. */
+    suspend fun saveReading(reading: ClusterReading) {}
+
+    /** Deletes the saved bike and its [lastReading]. */
     suspend fun clear()
 }
 
 private val ALWAYS_LOADED: StateFlow<Boolean> = MutableStateFlow(true).asStateFlow()
+private val NO_READING: StateFlow<ClusterReading?> = MutableStateFlow<ClusterReading?>(null).asStateFlow()
 
 data class SavedBikeRecord(val name: String, val address: String)
 

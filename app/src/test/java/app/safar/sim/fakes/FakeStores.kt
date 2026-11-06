@@ -1,5 +1,6 @@
 package app.safar.sim.fakes
 
+import app.safar.core.ClusterReading
 import app.safar.data.SavedBikeRecord
 import app.safar.data.SavedBikeStore
 import app.safar.data.ServiceItem
@@ -20,19 +21,37 @@ class FakeSettingsStore(initial: Settings = Settings()) : SettingsStore {
     fun set(transform: (Settings) -> Settings) = mutable.update(transform)
 }
 
-/** In-memory [SavedBikeStore] that counts saves. */
+/** In-memory [SavedBikeStore] that counts saves and records every stored reading, like the DataStore one. */
 class FakeSavedBikeStore(initial: SavedBikeRecord? = null) : SavedBikeStore {
     private val mutable = MutableStateFlow(initial)
+    private val reading = MutableStateFlow<ClusterReading?>(null)
     override val saved: StateFlow<SavedBikeRecord?> = mutable
+    override val lastReading: StateFlow<ClusterReading?> = reading
     val saves = mutableListOf<SavedBikeRecord>()
+
+    /** Every reading stored while a bike was saved, oldest first. */
+    val readings = mutableListOf<ClusterReading>()
+
+    /** A reading kept by an earlier run of the app; set it before the manager starts. */
+    fun keep(stored: ClusterReading) {
+        reading.value = stored
+    }
 
     override suspend fun save(record: SavedBikeRecord) {
         saves += record
+        if (mutable.value?.name != record.name) reading.value = null
         mutable.value = record
+    }
+
+    override suspend fun saveReading(reading: ClusterReading) {
+        if (mutable.value == null) return
+        readings += reading
+        this.reading.value = reading
     }
 
     override suspend fun clear() {
         mutable.value = null
+        reading.value = null
     }
 }
 

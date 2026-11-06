@@ -56,6 +56,7 @@ class BikeManager(
     private val finder = BikeFinder(radio, log, scope)
     private val records = BikeRecords(log, savedStore, serviceItems, now)
     private val runner = LinkRunner(radio, log, now)
+    private val keeper = ReadingKeeper(savedStore, log, scope)
     private val bluetooth = radio.bluetooth
 
     private val _state = MutableStateFlow(BikeState())
@@ -87,6 +88,7 @@ class BikeManager(
         scope.launch {
             if (!bluetooth.isOn) onBluetooth(false)
             savedStore.loaded.first { it }
+            restoreReading()
             savedStore.saved.collect(::onSaved)
         }
         scope.launch { scanner.results.collect { list -> _state.update { it.copy(scan = list) } } }
@@ -96,6 +98,13 @@ class BikeManager(
                 publishLink()
             }
         }
+    }
+
+    /** Shows the reading stored by an earlier run as "last seen on bike" until the bike sends a new one. */
+    private fun restoreReading() {
+        val stored = keeper.stored() ?: return
+        _state.update { if (it.lastCluster == null) it.copy(lastCluster = stored) else it }
+        log.event("Last reading restored", mapOf("odometerKm" to "${stored.odometerKm}"))
     }
 
     private fun onSaved(record: SavedBikeRecord?) {
@@ -147,6 +156,7 @@ class BikeManager(
         scope.launch {
             autoConnectDone = true
             log.event("Forget bike")
+            keeper.forget()
             apply(policy.disconnect())
             _state.update { it.copy(saved = null, lastCluster = null, deviceInfo = null, mtu = null) }
             try {
@@ -221,6 +231,7 @@ class BikeManager(
         linkJob?.cancel()
         linkJob = null
         session = null
+        keeper.flush()
         _state.update { it.copy(cluster = null) }
     }
 
@@ -242,6 +253,7 @@ class BikeManager(
             val reason = runner.run(target, inputs, Listener(gen, target))
             if (gen != generation) return@launch
             session = null
+            keeper.flush()
             _state.update { it.copy(cluster = null) }
             log.event("Link ended", mapOf("reason" to reason))
             apply(policy.onLinkLost())
@@ -263,6 +275,7 @@ class BikeManager(
             _state.update {
                 it.copy(cluster = reading, lastCluster = reading, framesReceived = it.framesReceived + 1)
             }
+            keeper.onReading(reading)
             if (seedPending) {
                 // Survives a link that drops before its first reading; a failed seed is tried on the next one.
                 seedPending = false

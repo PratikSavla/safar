@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import app.safar.core.ClusterReading
 import app.safar.data.OneTimeFlags
 import app.safar.data.SavedBikeRecord
 import app.safar.data.SavedBikeStore
@@ -100,7 +101,10 @@ class DataStoreOneTimeFlags(private val dataStore: DataStore<Preferences>) : One
     override suspend fun set(name: String) = dataStore.editLogged("flag $name") { it[booleanPreferencesKey(name)] = true }
 }
 
-/** [SavedBikeStore] on its own Preferences DataStore. Null until a bike is saved, or when either key is missing. */
+/**
+ * [SavedBikeStore] on its own Preferences DataStore. [saved] is null until a bike is saved, or when either key
+ * is missing; [lastReading] lives in the same file, so [clear] drops it with the bike.
+ */
 class DataStoreSavedBikeStore(
     private val dataStore: DataStore<Preferences>,
     scope: CoroutineScope,
@@ -109,25 +113,35 @@ class DataStoreSavedBikeStore(
     private val addressKey = stringPreferencesKey("address")
 
     private val savedState = MutableStateFlow<SavedBikeRecord?>(null)
+    private val readingState = MutableStateFlow<ClusterReading?>(null)
     private val loadedState = MutableStateFlow(false)
     override val saved: StateFlow<SavedBikeRecord?> = savedState.asStateFlow()
+    override val lastReading: StateFlow<ClusterReading?> = readingState.asStateFlow()
     override val loaded: StateFlow<Boolean> = loadedState.asStateFlow()
 
     init {
-        // Not stateIn: [loaded] must turn true only after [saved] holds the value read from disk.
+        // Not stateIn: [loaded] must turn true only after [saved] and [lastReading] hold the values read from disk.
         scope.launch {
             dataStore.data.retryOnIoError("saved bike").collect { prefs ->
                 val name = prefs[nameKey]
                 val address = prefs[addressKey]
                 savedState.value = if (name != null && address != null) SavedBikeRecord(name, address) else null
+                readingState.value = readReading(prefs)
                 loadedState.value = true
             }
         }
     }
 
     override suspend fun save(record: SavedBikeRecord) = dataStore.editLogged("saved bike") {
+        // Another bike's reading must not show as this one's "last seen on bike".
+        if (it[nameKey] != record.name) removeReading(it)
         it[nameKey] = record.name
         it[addressKey] = record.address
+    }
+
+    override suspend fun saveReading(reading: ClusterReading) = dataStore.editLogged("last reading") {
+        // A write that lands after the bike was forgotten must not bring its reading back.
+        if (it[nameKey] != null) writeReading(it, reading)
     }
 
     override suspend fun clear() = dataStore.editLogged("saved bike") { it.clear() }

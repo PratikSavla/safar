@@ -28,7 +28,7 @@ object HomePreviewData {
 
     fun reading(at: Long = NOW - 3_000) = ClusterReading(
         speedKmh = 0, odometerKm = 12_345, tripAKm = 142.6, tripBKm = 1_204.3, fuelBars = 4, gear = 'N',
-        raw23 = 'N'.code, raw25 = 0, receivedAtMillis = at,
+        raw23 = 'N'.code, raw25 = 84, receivedAtMillis = at,
     )
 
     val fuelUps = listOf(

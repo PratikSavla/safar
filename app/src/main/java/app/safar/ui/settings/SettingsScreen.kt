@@ -77,7 +77,7 @@ fun SettingsScreen(navigator: Navigator, modifier: Modifier = Modifier, bottomBa
             },
         )
     }
-    SettingsContent(state, access, actions, modifier, bottomBar)
+    SettingsContent(state, access, actions, modifier, bottomBar, rememberDataControls(navigator))
 }
 
 @Composable
@@ -87,8 +87,9 @@ internal fun SettingsContent(
     actions: SettingsActions,
     modifier: Modifier = Modifier,
     bottomBar: (@Composable () -> Unit)? = null,
+    data: DataControls? = null,
 ) {
-    AtlasPage(modifier, topo = TopoTransform.Quiet, bottomBar = bottomBar) {
+    AtlasPage(modifier, topo = TopoTransform.Quiet, bottomBar = bottomBar, overlay = { data?.let { DataSheets(it) } }) {
         Masthead("Settings", "Margins", kickerAside = "saved on this phone", titleEm = " & notes.")
         SectionHeader("Rider")
         RiderBlock(state, actions.onName)
@@ -114,6 +115,8 @@ internal fun SettingsContent(
         LinkRow("Bike information", AtlasIcons.bike, { actions.onOpen(Route.Bike) }, subtitle = "Model, serial number and software version", divider = false)
         SectionHeader("Backup")
         BackupBlock(actions.onBackup)
+        SectionHeader("Your data")
+        data?.let { DataRows(it) { actions.onOpen(Route.Documents) } }
         SectionHeader("About")
         AboutCard(actions.onVersionTap)
         DeveloperModeRow(state.settings.developerMode, actions.onDeveloperMode)
@@ -145,6 +148,12 @@ private fun RidingSection(s: Settings, onSettings: (String, (Settings) -> Settin
         s.serviceReminders,
         { v -> onSettings("service reminders") { it.copy(serviceReminders = v) } },
         subtitle = SwitchCopy.SERVICE_REMINDERS,
+    )
+    SwitchRow(
+        "Paper reminders",
+        s.documentReminders,
+        { v -> onSettings("paper reminders") { it.copy(documentReminders = v) } },
+        subtitle = "A notification before your PUC, insurance or licence runs out",
         divider = false,
     )
 }

@@ -83,8 +83,10 @@ class ShellViewModel(
     override fun resetTo(route: Route) = update(_stack.value.resetTo(route))
 
     /** Text shared from Google Maps (ACTION_SEND): opens "save a place" once the start page is known. */
-    fun openShared(text: String) {
-        val route = Route.Place(sharedText = text)
+    fun openShared(text: String) = open(Route.Place(sharedText = text))
+
+    /** Opens [route] from outside the app (a notification), once the start page is known. */
+    fun open(route: Route) {
         if (_stack.value.entries.isEmpty()) start.then(route) else go(route)
     }
 

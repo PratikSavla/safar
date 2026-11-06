@@ -1,5 +1,7 @@
 package app.safar.data.db
 
+import app.safar.data.BikeDocument
+import app.safar.data.DocKind
 import app.safar.data.FuelUp
 import app.safar.data.OdoSource
 import app.safar.data.ParkedSpot
@@ -73,6 +75,16 @@ fun Place.toEntity() = PlaceEntity(
 fun ParkedSpotEntity.toModel() = ParkedSpot(lat = lat, lng = lng, accuracyM = accuracyM, atMillis = atMillis, label = label)
 
 fun ParkedSpot.toEntity() = ParkedSpotEntity(lat = lat, lng = lng, accuracyM = accuracyM, atMillis = atMillis, label = label)
+
+fun DocumentEntity.toModel() = BikeDocument(
+    id = id, title = title, kind = enumOr(kind, DocKind.OTHER), fileName = fileName, mimeType = mimeType,
+    sizeBytes = sizeBytes, addedMillis = addedMillis, expiryEpochDay = expiryEpochDay, note = note, remindedStage = remindedStage,
+)
+
+fun BikeDocument.toEntity() = DocumentEntity(
+    id = id, title = title, kind = kind.name, fileName = fileName, mimeType = mimeType, sizeBytes = sizeBytes,
+    addedMillis = addedMillis, expiryEpochDay = expiryEpochDay, note = note, remindedStage = remindedStage,
+)
 
 /**
  * Swaps place [id] with its neighbour in [direction] (-1 up, +1 down) in [ordered] and renumbers 0..n-1, so

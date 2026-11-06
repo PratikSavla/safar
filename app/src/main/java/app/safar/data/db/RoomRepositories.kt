@@ -1,5 +1,7 @@
 package app.safar.data.db
 
+import app.safar.data.BikeDocument
+import app.safar.data.DocumentRepository
 import app.safar.data.FuelRepository
 import app.safar.data.FuelUp
 import app.safar.data.ParkedRepository
@@ -77,4 +79,13 @@ class RoomParkedRepository(private val dao: ParkedSpotDao) : ParkedRepository {
     override val parked: Flow<ParkedSpot?> = dao.observe().map { it?.toModel() }
     override suspend fun save(spot: ParkedSpot) = dao.upsert(spot.toEntity())
     override suspend fun clear() = dao.clear()
+}
+
+class RoomDocumentRepository(private val dao: DocumentDao) : DocumentRepository {
+    override val documents: Flow<List<BikeDocument>> = dao.observeAll().map { rows -> rows.map { it.toModel() } }
+    override suspend fun get(id: Long): BikeDocument? = dao.byId(id)?.toModel()
+    override suspend fun add(document: BikeDocument): Long = dao.insert(document.toEntity().copy(id = 0))
+    override suspend fun update(document: BikeDocument) = dao.update(document.toEntity())
+    override suspend fun setRemindedStage(id: Long, stage: Int) = dao.setRemindedStage(id, stage)
+    override suspend fun delete(id: Long) = dao.delete(id)
 }

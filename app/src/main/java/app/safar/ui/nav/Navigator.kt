@@ -20,6 +20,10 @@ sealed interface Route {
     data class FuelUp(val fuelUpId: Long? = null) : Route
     data object Service : Route
     data object Parked : Route
+    /** Bike papers: RC, insurance, PUC, licence, bills. */
+    data object Documents : Route
+    /** Add or edit a paper. [docId] null = new. */
+    data class Document(val docId: Long? = null) : Route
     data object Bike : Route
     data object Log : Route
     /** Debug: send each turn icon code to the cluster (assignment task 4). */

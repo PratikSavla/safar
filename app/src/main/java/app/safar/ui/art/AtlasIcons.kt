@@ -109,6 +109,8 @@ object AtlasIcons {
         path("M12 3.5a5.5 5.5 0 0 0-3.2 10c.5.4.7.9.7 1.5V17h5v-2c0-.6.2-1.1.7-1.5A5.5 5.5 0 0 0 12 3.5z")
         path("M9.5 20h5M10.5 17v-3.5l1.5-1.5 1.5 1.5V17")
     }
+    val download by icon("download") { path("M12 4v11M7.5 10.5 12 15l4.5-4.5M5 14v5.5h14V14") }
+    val papers by icon("papers") { path("M6.5 3.5h7.5l4 4v13h-11.5z"); path("M14 3.5v4h4"); path("M9.5 12h6M9.5 15.5h6") }
 
     /** Every icon by its prototype name, for catalogs and data-driven lists. */
     val all: Map<String, ImageVector>
@@ -123,6 +125,7 @@ object AtlasIcons {
             "export" to export, "bell" to bell, "maps" to maps, "sun" to sun, "moon" to moon, "phone" to phone,
             "pin" to pin, "wrench" to wrench, "battery" to battery, "coolant" to coolant, "spark" to spark,
             "light" to light,
+            "papers" to papers, "download" to download,
         )
 
     /** Icon by prototype name; unknown names fall back to [info] like icons.js. */

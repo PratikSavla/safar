@@ -4,6 +4,7 @@ import android.app.Application
 import app.safar.ble.BleModule
 import app.safar.data.DataModule
 import app.safar.phone.PhoneModule
+import app.safar.service.DocumentReminders
 import app.safar.ui.widget.WidgetUpdater
 
 class SafarApp : Application() {
@@ -16,5 +17,7 @@ class SafarApp : Application() {
         PhoneModule.install(this)
         // widget
         WidgetUpdater.start(this)
+        // papers: the daily expiry check (PUC, insurance)
+        DocumentReminders.schedule(this)
     }
 }

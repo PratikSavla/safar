@@ -21,6 +21,8 @@ data class Settings(
     val autoRideMode: Boolean = true,
     val serviceReminders: Boolean = true,
     val lowFuelAlert: Boolean = true,
+    /** Notifications before a saved paper (PUC, insurance) expires. */
+    val documentReminders: Boolean = true,
     /** Rider override of the tank size; null = model spec. */
     val tankLitres: Double? = null,
     val currencySymbol: String = "₹",
@@ -128,4 +130,25 @@ data class ParkedSpot(
     val accuracyM: Float,
     val atMillis: Long,
     val label: String? = null,
+)
+
+/** What a saved bike paper is. Stored by name. */
+enum class DocKind { RC, INSURANCE, PUC, LICENCE, SERVICE_BILL, OTHER }
+
+/**
+ * A bike paper kept on this phone: a PDF or an image in `filesDir/documents/[fileName]`. The file is never part
+ * of Android backup. [expiryEpochDay] is a local date (days since 1970-01-01); [remindedStage] is the last
+ * expiry reminder sent for that date (see `reminderStage`), 0 = none yet.
+ */
+data class BikeDocument(
+    val id: Long = 0,
+    val title: String,
+    val kind: DocKind,
+    val fileName: String,
+    val mimeType: String,
+    val sizeBytes: Long,
+    val addedMillis: Long,
+    val expiryEpochDay: Long? = null,
+    val note: String? = null,
+    val remindedStage: Int = 0,
 )

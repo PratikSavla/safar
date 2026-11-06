@@ -16,9 +16,13 @@ where you parked.
 - **Fuel**: log fill-ups, see your mileage and an estimated range, and get a low-fuel reminder.
 - **Service**: reminders by distance for oil, chain, air filter, brakes and tyres.
 - **Parked**: the place your phone was when the bike switched off.
+- **Papers**: your RC, insurance, PUC, licence and service bills as PDFs or photos, with an optional expiry date. Safar
+  reminds you 30 and 7 days before a paper runs out, and on the day.
 - **Widget**: the connection, odometer, Trip A, range and the next turn on your home screen.
 - **Backup**: rides, fuel log, places and settings are saved with Android's own backup and device transfer. You turn
-  it on or off in your phone's settings, under Backup.
+  it on or off in your phone's settings, under Backup. Papers stay on the phone and are not part of that backup.
+- **Your data**: in Settings, export everything (rides with their routes, fuel, service, places, papers and settings)
+  to one `.zip` file, import such a file to replace what's on the phone, or delete everything and start fresh.
 
 ## Bikes
 
@@ -42,8 +46,17 @@ You don't need a PIN to pair. Safar reconnects on its own when you switch the ig
 
 ## Your data
 
-Everything is stored on the phone: a Room database for trips, fuel, service and places, and DataStore for settings.
-Safar has no account and no server. It only goes online through Google Maps, after you start a route there.
+Everything is stored on the phone: a Room database for trips, fuel, service, places and papers, DataStore for
+settings, and the papers' files in the app's own storage. Safar has no account and no server. It only goes online through Google Maps, after you start a route there.
+
+An export is a `.zip` file you can open on any computer:
+
+- `manifest.json`: the format (`safar-backup`), its version, the app version, when it was made and what it holds.
+- `data.json`: trips with their GPS tracks, fuel-ups, service items, places, the parked spot, papers, settings and
+  the paired bike, as plain JSON.
+- `documents/`: each paper's file, unchanged.
+
+Import reads and checks the whole file before it changes anything, and leaves the phone's paired bike as it is.
 
 ## Developer mode
 

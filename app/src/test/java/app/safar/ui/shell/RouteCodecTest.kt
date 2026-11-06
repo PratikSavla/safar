@@ -11,6 +11,7 @@ class RouteCodecTest {
         Route.Service, Route.Parked, Route.Bike, Route.Log, Route.IconTest, Route.Settings, Route.Permissions,
         Route.Place(), Route.Place(placeId = 4), Route.Place(sharedText = ""), Route.Place(sharedText = "Main Rd|NH 48|0"),
         Route.Place(placeId = 2, sharedText = "1Main Rd"), Route.Trip(12), Route.FuelUp(), Route.FuelUp(9),
+        Route.Documents, Route.Document(), Route.Document(3),
     )
 
     @Test

@@ -4,7 +4,9 @@
   Backed up: rides, fuel, service, places and the parked spot (Room safar.db with its journal files), settings
   and the saved bike (DataStore), and the learned Google Maps icon table. Nothing else is: listing includes
   leaves every other file out, so debug log sessions (filesDir/logs), exports (cacheDir, never backed up),
-  widget state and shared preferences stay on the phone. Keep this list in step with backup_rules.xml.
+  widget state and shared preferences stay on the phone. Bike papers (files/documents) are left out on purpose:
+  they stay on this phone, and Settings > Export everything keeps a copy. Keep this list in step with
+  backup_rules.xml.
   Cloud backup runs only when it is end-to-end encrypted (a screen lock is set).
 -->
 <data-extraction-rules>

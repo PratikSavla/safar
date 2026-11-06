@@ -8,6 +8,8 @@ import app.safar.core.NavState
 import app.safar.core.NavStatusCode
 import app.safar.core.RideState
 import app.safar.core.VehicleFamily
+import app.safar.data.BikeDocument
+import app.safar.data.DocKind
 import app.safar.data.FuelMethod
 import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
@@ -22,11 +24,11 @@ import app.safar.ui.components.ValueOrigin
 import app.safar.ui.format.ValueSource
 import app.safar.ui.testReading
 import app.safar.ui.testSaved
-import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.junit.Test
 
 class HomeStateTest {
     @Test
@@ -127,13 +129,28 @@ class HomeStateTest {
         assertEquals("40 in memory", tiles.getValue("log").hint)
         assertEquals("model, serial", tiles.getValue("bike").hint)
         assertEquals("Route", tiles.getValue("navigate").name)
-        assertEquals(9, tiles.size)
+        assertEquals("keep your RC", tiles.getValue("papers").hint)
+        assertEquals(10, tiles.size)
         assertEquals(null, garageTiles(inputs).firstOrNull { it.key == "log" }, "Debug log is a Developer mode tile")
         assertEquals("next in 155 km", garageTiles(inputs.copy(services = listOf(chain))).first { it.key == "service" }.hint)
         val day = 86_400_000L
         val battery = ServiceItem(3, "Battery", null, 12_000, 0L, ServiceIcon.BATTERY, everyTime = TimeSpan(30, SpanUnit.DAYS))
         val timed = inputs.copy(services = listOf(chain, battery), nowMillis = 25 * day)
         assertEquals("next in 5 days", garageTiles(timed).first { it.key == "service" }.hint, "by time, the battery is further along")
+    }
+
+    @Test
+    fun thePapersTileWarnsAboutTheSoonestExpiry() {
+        val inputs = GarageInputs(stats(BikeState()), null, emptyList(), null, emptyList(), 0, null, 0, LinkState.Idle, false, 0, todayEpochDay = 100)
+        fun paper(id: Long, kind: DocKind, expiry: Long?) = BikeDocument(id, kind.name, kind, "a.pdf", "application/pdf", 1, 0, expiry)
+        val calm = garageTiles(inputs.copy(papers = listOf(paper(1, DocKind.RC, null), paper(2, DocKind.PUC, 200)))).first { it.key == "papers" }
+        assertEquals("2 saved", calm.hint)
+        assertFalse(calm.warn)
+        val soon = garageTiles(inputs.copy(papers = listOf(paper(1, DocKind.INSURANCE, 120), paper(2, DocKind.PUC, 106)))).first { it.key == "papers" }
+        assertEquals("PUC in 6 days", soon.hint)
+        assertTrue(soon.warn)
+        val gone = garageTiles(inputs.copy(papers = listOf(paper(1, DocKind.INSURANCE, 99)))).first { it.key == "papers" }
+        assertEquals("Insurance expired", gone.hint)
     }
 
     @Test

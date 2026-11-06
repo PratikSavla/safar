@@ -84,7 +84,7 @@
             android:name=".service.SafarService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice|location" />
-        <!-- Debug log export (app.safar.log): shares cache/exports/*.jsonl with the share sheet. -->
+        <!-- Debug log export (app.safar.log) and bike papers (files/documents) for other apps to show. -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"

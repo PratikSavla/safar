@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Debug log exports (app.safar.log) shared through the share sheet. Only this cache folder is exposed. -->
+<!--
+  Files Safar hands to other apps through its FileProvider: debug log exports (app.safar.log) for the share
+  sheet, and bike papers (filesDir/documents) for a PDF or image viewer, one file at a time with read access.
+-->
 <paths>
     <cache-path name="exports" path="exports/" />
+    <files-path name="documents" path="documents/" />
 </paths>

@@ -1,5 +1,7 @@
 package app.safar.data.db
 
+import app.safar.data.BikeDocument
+import app.safar.data.DocKind
 import app.safar.data.FuelUp
 import app.safar.data.OdoSource
 import app.safar.data.ParkedSpot
@@ -18,6 +20,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class MappersTest {
+    @Test
+    fun roundTripsAPaperAndReadsAnUnknownKindAsOther() {
+        val doc = BikeDocument(7, "PUC", DocKind.PUC, "a.pdf", "application/pdf", 1_024, 5_000, 20_400, "Centre 12", 2)
+        assertEquals(doc, doc.toEntity().toModel())
+        assertEquals(DocKind.OTHER, doc.toEntity().copy(kind = "PERMIT").toModel().kind)
+    }
+
     @Test
     fun roundTripsEveryModel() {
         val fuel = FuelUp(3, 1_000, 12164, 6.7, 712.0, true, OdoSource.EDITED, 1)

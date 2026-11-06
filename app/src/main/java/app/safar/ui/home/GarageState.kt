@@ -1,6 +1,8 @@
 package app.safar.ui.home
 
 import app.safar.core.LinkState
+import app.safar.data.BikeDocument
+import app.safar.data.DocKind
 import app.safar.data.FuelStats
 import app.safar.data.ParkedSpot
 import app.safar.data.ServiceItem
@@ -8,6 +10,9 @@ import app.safar.data.ServiceLead
 import app.safar.data.ServiceState
 import app.safar.data.ServiceStatus
 import app.safar.data.Trip
+import app.safar.data.daysLeft
+import app.safar.data.label
+import app.safar.data.mostUrgent
 import app.safar.data.serviceStatuses
 import app.safar.ui.format.Formatters
 import app.safar.ui.nav.Route
@@ -42,9 +47,13 @@ data class GarageInputs(
     val developerMode: Boolean = false,
     /** Now, for service items due by time. */
     val nowMillis: Long = 0L,
+    /** Bike papers, for the Papers tile. */
+    val papers: List<BikeDocument> = emptyList(),
+    /** Today as a local date (days since 1970-01-01), for expiry warnings. */
+    val todayEpochDay: Long = 0,
 )
 
-/** Fuel, Log fuel, Service / Parked, Trips, Route / Alerts, Bike, and Debug log in Developer mode (home.js `garage`). */
+/** Fuel, Log fuel, Service / Parked, Trips, Route / Alerts, Bike, Papers, and Debug log in Developer mode (home.js `garage`). */
 internal fun garageTiles(g: GarageInputs): List<GarageTile> = listOfNotNull(
     GarageTile("fuel", "Fuel", fuelHint(g.fuel), Route.Fuel, warn = (g.fuel.bars ?: Int.MAX_VALUE) <= 1),
     GarageTile("logfuel", "Log fuel", "at the pump", Route.FuelUp(), accent = true),
@@ -54,8 +63,31 @@ internal fun garageTiles(g: GarageInputs): List<GarageTile> = listOfNotNull(
     GarageTile("navigate", "Route", navHint(g.nav, g.placesCount), Route.Navigate),
     GarageTile("alerts", "Alerts", if (g.alertCount > 0) "${g.alertCount} new" else "all quiet", Route.Alerts, warn = g.alertCount > 0),
     GarageTile("bike", "Bike", if (g.link == LinkState.Connected) "model, serial" else "saved info", Route.Bike),
+    papersTile(g.papers, g.todayEpochDay),
     GarageTile("log", "Debug log", if (g.debugLog) "recording" else "${g.logCount} in memory", Route.Log).takeIf { g.developerMode },
 )
+
+/** "3 saved", or the paper that needs attention first ("PUC in 6 days", "Insurance expired"). */
+private fun papersTile(docs: List<BikeDocument>, today: Long): GarageTile {
+    val urgent = mostUrgent(docs, today)
+    val hint = when {
+        docs.isEmpty() -> "keep your RC"
+        urgent != null -> urgentHint(urgent, today)
+        else -> "${docs.size} saved"
+    }
+    return GarageTile("papers", "Papers", hint, Route.Documents, warn = urgent != null)
+}
+
+private fun urgentHint(doc: BikeDocument, today: Long): String {
+    val left = daysLeft(today, doc.expiryEpochDay ?: return "${doc.kind.label()} expired")
+    val name = doc.kind.takeIf { it != DocKind.OTHER }?.label() ?: doc.title
+    return when {
+        left < 0 -> "$name expired"
+        left == 0L -> "$name due today"
+        left == 1L -> "$name tomorrow"
+        else -> "$name in $left days"
+    }
+}
 
 private fun fuelHint(f: FuelStats): String = if (f.rangeKm == null) "log a full tank" else "${Formatters.approx(f.rangeKm.toDouble())} km left"
 

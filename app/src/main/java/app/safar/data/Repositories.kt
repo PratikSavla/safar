@@ -76,3 +76,14 @@ interface ParkedRepository {
     suspend fun save(spot: ParkedSpot)
     suspend fun clear()
 }
+
+/** Bike papers. Rows only: the files are [DocumentFiles]'. */
+interface DocumentRepository {
+    /** Soonest expiry first, then papers without an expiry, newest first. */
+    val documents: Flow<List<BikeDocument>>
+    suspend fun get(id: Long): BikeDocument?
+    suspend fun add(document: BikeDocument): Long
+    suspend fun update(document: BikeDocument)
+    suspend fun setRemindedStage(id: Long, stage: Int)
+    suspend fun delete(id: Long)
+}

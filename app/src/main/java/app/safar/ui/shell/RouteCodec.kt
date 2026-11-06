@@ -13,13 +13,14 @@ internal object RouteCodec {
     private val plain: Map<String, Route> = listOf(
         Route.Onboarding, Route.Pair, Route.Home, Route.Ride, Route.Navigate, Route.Alerts, Route.Trips,
         Route.Fuel, Route.Service, Route.Parked, Route.Bike, Route.Log, Route.IconTest, Route.Settings,
-        Route.Permissions,
+        Route.Permissions, Route.Documents,
     ).associateBy { nameOf(it) }
 
     fun encode(route: Route): String = when (route) {
         is Route.Place -> listOf("place", route.placeId?.toString().orEmpty(), textField(route.sharedText)).joinToString(SEP.toString())
         is Route.Trip -> "trip$SEP${route.tripId}"
         is Route.FuelUp -> "fuelup$SEP${route.fuelUpId?.toString().orEmpty()}"
+        is Route.Document -> "document$SEP${route.docId?.toString().orEmpty()}"
         else -> nameOf(route)
     }
 
@@ -30,6 +31,7 @@ internal object RouteCodec {
             "place" -> if (parts.size == 3) Route.Place(parts[1].toLongOrNull(), readText(parts[2])) else null
             "trip" -> parts.getOrNull(1)?.toLongOrNull()?.let { Route.Trip(it) }
             "fuelup" -> if (parts.size >= 2) Route.FuelUp(parts[1].toLongOrNull()) else null
+            "document" -> if (parts.size >= 2) Route.Document(parts[1].toLongOrNull()) else null
             else -> plain[parts[0]]
         }
     }
@@ -54,8 +56,10 @@ internal object RouteCodec {
         Route.IconTest -> "icontest"
         Route.Settings -> "settings"
         Route.Permissions -> "permissions"
+        Route.Documents -> "documents"
         is Route.Place -> "place"
         is Route.Trip -> "trip"
         is Route.FuelUp -> "fuelup"
+        is Route.Document -> "document"
     }
 }

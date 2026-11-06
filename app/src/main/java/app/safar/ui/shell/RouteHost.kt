@@ -3,6 +3,8 @@ package app.safar.ui.shell
 import androidx.compose.runtime.Composable
 import app.safar.ui.alerts.AlertsScreen
 import app.safar.ui.bike.BikeScreen
+import app.safar.ui.documents.DocumentScreen
+import app.safar.ui.documents.DocumentsScreen
 import app.safar.ui.fuel.FuelScreen
 import app.safar.ui.fuel.FuelUpScreen
 import app.safar.ui.home.HomeScreen
@@ -39,6 +41,8 @@ fun RouteHost(route: Route, navigator: Navigator) {
         is Route.FuelUp -> FuelUpScreen(navigator, route.fuelUpId)
         Route.Service -> ServiceScreen(navigator)
         Route.Parked -> ParkedScreen(navigator)
+        Route.Documents -> DocumentsScreen(navigator)
+        is Route.Document -> DocumentScreen(navigator, route.docId)
         Route.Bike -> BikeScreen(navigator)
         Route.Log -> LogScreen(navigator)
         Route.IconTest -> IconTestScreen(navigator)

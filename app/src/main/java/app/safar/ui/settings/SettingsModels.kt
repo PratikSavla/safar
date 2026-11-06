@@ -73,4 +73,5 @@ const val TRADEMARK_NOTE =
 
 /** The Backup note in Settings. Android's own backup carries Safar's data; the rider switches it in Settings. */
 const val BACKUP_NOTE =
-    "Your rides, fuel log, places and settings are saved with your phone’s backup. Turn it on or off in your phone’s settings, under Backup."
+    "Your rides, fuel log, places and settings are saved with your phone’s backup. Turn it on or off in your phone’s settings, under Backup. " +
+        "Your papers stay on this phone only; Export everything below keeps a copy of them too."

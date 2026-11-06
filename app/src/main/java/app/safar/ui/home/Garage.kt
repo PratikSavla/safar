@@ -52,6 +52,7 @@ private val TILE_ICONS: Map<String, ImageVector> by lazy {
     mapOf(
         "fuel" to AtlasIcons.fuel, "logfuel" to AtlasIcons.plus, "service" to AtlasIcons.wrench, "parked" to AtlasIcons.parked,
         "trips" to AtlasIcons.journal, "navigate" to AtlasIcons.route, "alerts" to AtlasIcons.alerts, "bike" to AtlasIcons.bike, "log" to AtlasIcons.log,
+        "papers" to AtlasIcons.papers,
     )
 }
 

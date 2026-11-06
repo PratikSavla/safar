@@ -15,12 +15,15 @@ import androidx.room.RoomDatabase
         ServiceItemEntity::class,
         PlaceEntity::class,
         ParkedSpotEntity::class,
+        DocumentEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
     autoMigrations = [
         // Service items by time, and a first service that differs from the recurring one.
         AutoMigration(from = 1, to = 2),
+        // The document table (bike papers).
+        AutoMigration(from = 2, to = 3),
     ],
 )
 abstract class SafarDatabase : RoomDatabase() {
@@ -29,6 +32,8 @@ abstract class SafarDatabase : RoomDatabase() {
     abstract fun serviceItems(): ServiceItemDao
     abstract fun places(): PlaceDao
     abstract fun parkedSpot(): ParkedSpotDao
+    abstract fun documents(): DocumentDao
+    abstract fun backup(): BackupDao
 
     companion object {
         private const val NAME = "safar.db"

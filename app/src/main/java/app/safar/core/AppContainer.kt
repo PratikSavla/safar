@@ -1,5 +1,7 @@
 package app.safar.core
 
+import app.safar.data.DocumentFiles
+import app.safar.data.DocumentRepository
 import app.safar.data.FuelRepository
 import app.safar.data.ParkedRepository
 import app.safar.data.PlaceRepository
@@ -7,6 +9,7 @@ import app.safar.data.SavedBikeStore
 import app.safar.data.ServiceRepository
 import app.safar.data.SettingsStore
 import app.safar.data.TripRepository
+import app.safar.data.backup.UserData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +29,10 @@ object AppContainer {
     lateinit var service: ServiceRepository
     lateinit var places: PlaceRepository
     lateinit var parked: ParkedRepository
+    lateinit var documents: DocumentRepository
+    lateinit var documentFiles: DocumentFiles
+    /** Export, import and "Delete everything". */
+    lateinit var userData: UserData
 
     lateinit var log: DebugLog
     lateinit var bike: BikeController

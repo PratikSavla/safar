@@ -13,6 +13,7 @@ import app.safar.core.NavState
 import app.safar.core.NavigationBridge
 import app.safar.core.RideState
 import app.safar.core.RideTracker
+import app.safar.data.BikeDocument
 import app.safar.data.FuelRepository
 import app.safar.data.FuelUp
 import app.safar.data.ParkedRepository
@@ -30,10 +31,14 @@ import app.safar.ui.service.odoNow
 import app.safar.ui.shell.ShellDeps
 import app.safar.ui.trips.finishedTrips
 import app.safar.ui.vm.throttleLatest
+import java.time.Instant
+import java.time.ZoneId
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -69,7 +74,14 @@ data class HomeStored(
     val placesCount: Int,
 )
 
-internal fun homeUi(live: HomeLive, stored: HomeStored, logCount: Int, nowMillis: Long): HomeUi {
+internal fun homeUi(
+    live: HomeLive,
+    stored: HomeStored,
+    logCount: Int,
+    nowMillis: Long,
+    papers: List<BikeDocument> = emptyList(),
+    zone: ZoneId = ZoneId.systemDefault(),
+): HomeUi {
     val bike = live.bike
     val reading = bike.cluster ?: bike.lastCluster
     val fuel = fuelStats(stored.fuelUps, live.settings, bike.saved?.model, reading, nowMillis)
@@ -78,6 +90,7 @@ internal fun homeUi(live: HomeLive, stored: HomeStored, logCount: Int, nowMillis
     val garage = GarageInputs(
         fuel, odoNow(bike, stored.services, stored.fuelUps).km, stored.services, stored.parked, stored.trips, stored.placesCount,
         nav, alertCount, bike.link, live.settings.debugLog, logCount, live.settings.developerMode, nowMillis,
+        papers, Instant.ofEpochMilli(nowMillis).atZone(zone).toLocalDate().toEpochDay(),
     )
     return HomeUi(
         riderName = live.settings.riderName.trim(),
@@ -106,6 +119,7 @@ class HomeViewModel(
     places: PlaceRepository,
     log: DebugLog,
     private val clock: () -> Long = System::currentTimeMillis,
+    papers: Flow<List<BikeDocument>> = flowOf(emptyList()),
 ) : ViewModel() {
     private val live = combine(bike.state, navigation.state, alerts.state, settings.settings, ::HomeLive)
     private val stored = combine(
@@ -121,7 +135,7 @@ class HomeViewModel(
     private val logCount = log.records.map { it.size }.distinctUntilChanged().throttleLatest(LOG_COUNT_PERIOD_MS)
 
     /** Recomputed when an input changes; a result equal to the last one is not emitted (StateFlow equality). */
-    val ui: StateFlow<HomeUi?> = combine(live, stored, logCount) { l, s, n -> homeUi(l, s, n, clock()) }
+    val ui: StateFlow<HomeUi?> = combine(live, stored, logCount, papers.distinctUntilChanged()) { l, s, n, p -> homeUi(l, s, n, clock(), p) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
     /** Phone GPS speed for the ledger's speed cell, kept out of [ui] so a 1 Hz fix does not rebuild the page. */
@@ -145,6 +159,7 @@ class HomeViewModel(
         fun fromContainer() = HomeViewModel(
             ShellDeps.bike, ShellDeps.ride, ShellDeps.navigation, ShellDeps.alerts, AppContainer.settings,
             AppContainer.fuel, AppContainer.service, AppContainer.parked, AppContainer.trips, AppContainer.places, ShellDeps.log,
+            papers = AppContainer.documents.documents,
         )
     }
 }

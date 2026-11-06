@@ -101,8 +101,11 @@ private val STATUS_FADE = 10.dp
 @Composable
 internal fun BottomClearance(tabs: Boolean) {
     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-    Spacer(Modifier.height(if (tabs) 104.dp else 40.dp))
+    Spacer(Modifier.height(if (tabs) TabBarClearance else 40.dp))
 }
+
+/** Room the shell's ticket-stub tabs take over a tab page's bottom; a sheet on a tab page ends with it. */
+val TabBarClearance = 104.dp
 
 /**
  * Inner page header (`.top`): back arrow (48 dp), kicker and serif title with an optional italic tail.

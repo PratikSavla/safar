@@ -98,3 +98,18 @@ data class ParkedSpotEntity(
         const val SINGLE_ID = 1
     }
 }
+
+/** A bike paper. The file itself lives in `filesDir/documents/`, outside the database and outside backup. */
+@Entity(tableName = "document")
+data class DocumentEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val kind: String,
+    val fileName: String,
+    val mimeType: String,
+    val sizeBytes: Long,
+    val addedMillis: Long,
+    val expiryEpochDay: Long?,
+    val note: String?,
+    val remindedStage: Int,
+)

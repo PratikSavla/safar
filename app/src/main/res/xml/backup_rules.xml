@@ -3,7 +3,8 @@
   API 26-30 Auto Backup: the same files as data_extraction_rules.xml (keep both in step). Every path is listed
   twice so it goes to an end-to-end encrypted cloud backup (clientSideEncryption) or to a device-to-device
   transfer, never to an unencrypted cloud backup. API 26-27 ignore requireFlags and back up whenever the rider
-  has backup on. Files not listed (debug logs, widget state, shared preferences) are left out.
+  has backup on. Files not listed (debug logs, widget state, shared preferences, and the bike papers in
+  files/documents, on purpose) are left out.
 -->
 <full-backup-content xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedAttribute">
     <include domain="database" path="safar.db" requireFlags="clientSideEncryption" />

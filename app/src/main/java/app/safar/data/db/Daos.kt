@@ -151,3 +151,28 @@ interface ParkedSpotDao {
     @Query("DELETE FROM parked_spot")
     suspend fun clear()
 }
+
+@Dao
+interface DocumentDao {
+    /** Soonest expiry first; papers without one after, newest added first. */
+    @Query("SELECT * FROM document ORDER BY expiryEpochDay IS NULL, expiryEpochDay, addedMillis DESC, id DESC")
+    fun observeAll(): Flow<List<DocumentEntity>>
+
+    @Query("SELECT * FROM document ORDER BY id")
+    suspend fun all(): List<DocumentEntity>
+
+    @Query("SELECT * FROM document WHERE id = :id")
+    suspend fun byId(id: Long): DocumentEntity?
+
+    @Insert
+    suspend fun insert(row: DocumentEntity): Long
+
+    @Update
+    suspend fun update(row: DocumentEntity)
+
+    @Query("UPDATE document SET remindedStage = :stage WHERE id = :id")
+    suspend fun setRemindedStage(id: Long, stage: Int)
+
+    @Query("DELETE FROM document WHERE id = :id")
+    suspend fun delete(id: Long)
+}

@@ -30,6 +30,7 @@ class CaptureTest {
         )
         assertEquals('N', data.unknown.b23.toChar())
         assertEquals(0x1D, data.unknown.b25)
+        assertEquals(29, data.engineTempC)
     }
 
     @Test

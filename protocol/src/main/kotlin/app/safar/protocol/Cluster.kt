@@ -7,7 +7,22 @@ package app.safar.protocol
 
 const val CLUSTER_TYPE = '7'
 
-/** Raw bytes the original app does not use (positions 23, 25, 26, 27). Kept for research. */
+/** Position of the engine temperature byte in the cluster frame. */
+const val ENGINE_TEMP_INDEX = 25
+
+/** Engine temperature byte value that means "no reading" (the 0xFF filler). */
+const val NO_ENGINE_TEMP = 0xFF
+
+/**
+ * Engine temperature in °C from cluster byte 25: one raw binary byte, whole degrees (a V-Strom SX sent 29, then
+ * 30, from a cold engine). Null for [NO_ENGINE_TEMP] or a value outside 0..254.
+ */
+fun engineTempC(raw: Int): Int? = raw.takeIf { it in 0 until NO_ENGINE_TEMP }
+
+/**
+ * Raw bytes the original app does not use (positions 23, 25, 26, 27). [b25] is the engine temperature
+ * (see [engineTempC]); the others are kept for research.
+ */
 data class ClusterRawBytes(val b23: Int = 0, val b25: Int = 0, val b26: Int = 0, val b27: Int = 0)
 
 data class ClusterData(
@@ -23,7 +38,10 @@ data class ClusterData(
     val fuelBars: Int,
     /** Bytes 23, 25, 26, 27. [encodeCluster] ignores this field. */
     val unknown: ClusterRawBytes = ClusterRawBytes(),
-)
+) {
+    /** Engine temperature in °C from byte 25, null when the cluster sends no reading. */
+    val engineTempC: Int? get() = engineTempC(unknown.b25)
+}
 
 private val ASCII_DIGITS = Regex("^[0-9]+$")
 

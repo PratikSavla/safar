@@ -22,6 +22,14 @@ class ClusterTest {
     }
 
     @Test
+    fun `byte 25 is the engine temperature in whole degrees`() {
+        val body = "7" + "000" + "000462" + "002362" + "004623" + "N3" + "\u0000\u0000\u0000"
+        val hot = buildFrame(body, ChecksumMode.SUM, mapOf(ENGINE_TEMP_INDEX to 92, 26 to 0xFF, 27 to 0xFF))
+        assertEquals(92, decodeCluster(hot, ChecksumMode.SUM).engineTempC)
+        assertEquals(listOf(0, 30, 254, null, null), listOf(0, 30, 254, NO_ENGINE_TEMP, -1).map { engineTempC(it) })
+    }
+
+    @Test
     fun `other message types are rejected`() {
         val frame = buildFrame("3" + "0".repeat(26), ChecksumMode.SUM)
         val error = assertFailsWith<FrameException> { decodeCluster(frame, ChecksumMode.SUM) }

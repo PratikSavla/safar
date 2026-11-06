@@ -90,7 +90,7 @@ class SimViewModel(app: Application) : AndroidViewModel(app), PeripheralEvents {
 
     fun setFuel(bars: Int) = _state.update { s -> s.withCluster { it.copy(fuelBars = bars.coerceIn(0, MAX_FUEL_BARS)) } }
 
-    fun setRaw25(value: Int) = _state.update { s -> s.withCluster { it.copy(raw25 = value.coerceIn(0, 0xFF)) } }
+    fun setEngineTemp(value: Int) = _state.update { s -> s.withCluster { it.copy(engineTempC = value.coerceIn(0, 0xFF)) } }
 
     fun setAutoDrain(on: Boolean) = _state.update { it.copy(autoDrain = on) }
 

@@ -19,11 +19,11 @@ class ClusterFramesTest {
         tripBKm = 56.7,
         fuelBars = 5,
         gear = Gear.THIRD,
-        raw25 = 0x1E,
+        engineTempC = 0x1E,
     )
 
     @Test
-    fun `frame matches the docs layout with gear, raw byte 25 and FF filler`() {
+    fun `frame matches the docs layout with gear, engine temperature and FF filler`() {
         val frame = ClusterFrames.build(cluster, ChecksumMode.SUM)
         assertEquals(
             "a5 37 30 38 37 30 31 32 33 34 35 30 30 31 32 33 34 30 30 30 35 36 37 33 35 1e ff ff e5 7f",
@@ -104,7 +104,7 @@ class ClusterFramesTest {
     @Test
     fun `out of range values are rejected`() {
         assertFailsWith<FrameException> { SimCluster(fuelBars = 7) }
-        assertFailsWith<FrameException> { SimCluster(raw25 = 256) }
+        assertFailsWith<FrameException> { SimCluster(engineTempC = 256) }
         assertFailsWith<FrameException> { SimCluster(speedKmh = -1) }
     }
 }

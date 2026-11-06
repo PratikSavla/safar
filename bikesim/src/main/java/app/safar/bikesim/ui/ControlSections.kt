@@ -18,7 +18,6 @@ import app.safar.bikesim.sim.Gear
 import app.safar.bikesim.sim.MAX_FUEL_BARS
 import app.safar.bikesim.sim.MAX_SIM_SPEED_KMH
 import app.safar.bikesim.sim.NAME_PRESETS
-import app.safar.protocol.hex
 import java.util.Locale
 
 @Composable
@@ -79,17 +78,17 @@ fun ClusterSection(s: SimUiState, vm: SimViewModel) {
         Toggle("Drain fuel while riding (1 bar per 5 km)", s.autoDrain, vm::setAutoDrain)
         Txt("Gear (byte 23)", Type.body, color = LocalPalette.current.muted)
         Choices(Gear.entries, c.gear, { it.label }, vm::setGear)
-        Raw25Row(c.raw25, vm::setRaw25)
+        EngineTempRow(c.engineTempC, vm::setEngineTemp)
     }
 }
 
 @Composable
-private fun Raw25Row(value: Int, onChange: (Int) -> Unit) {
+private fun EngineTempRow(value: Int, onChange: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Txt("Byte 25", Type.body, Modifier.weight(1f), color = LocalPalette.current.muted)
+        Txt("Engine °C (byte 25)", Type.body, Modifier.weight(1f), color = LocalPalette.current.muted)
         SimButton("-10", { onChange(value - 10) })
         SimButton("-1", { onChange(value - 1) })
-        Txt("0x${hex(value)} ($value)", Type.mono)
+        Txt(if (value == 0xFF) "none (0xFF)" else "$value °C", Type.mono)
         SimButton("+1", { onChange(value + 1) })
         SimButton("+10", { onChange(value + 10) })
     }

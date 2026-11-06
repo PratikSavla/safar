@@ -3,6 +3,7 @@ package app.safar.bikesim.sim
 import app.safar.protocol.CHECKSUM_INDEX
 import app.safar.protocol.CLUSTER_TYPE
 import app.safar.protocol.ChecksumMode
+import app.safar.protocol.ENGINE_TEMP_INDEX
 import app.safar.protocol.FILLER_BYTE
 import app.safar.protocol.FRAME_LENGTH
 import app.safar.protocol.buildFrame
@@ -12,10 +13,9 @@ import kotlin.math.floor
 
 /**
  * Cluster frames ('7') as the bike sends them (docs 3.1). Unlike `encodeCluster` in :protocol, byte 23 carries
- * the gear, byte 25 a settable raw value and bytes 26-27 the 0xFF filler of a real V-Strom SX capture.
+ * the gear, byte 25 the engine temperature and bytes 26-27 the 0xFF filler of a real V-Strom SX capture.
  */
 object ClusterFrames {
-    private const val RAW25_INDEX = 25
     private const val SPEED_START = 2
     private const val ODOMETER_END = 11
     private const val BAD_DIGIT = '?'
@@ -30,7 +30,7 @@ object ClusterFrames {
             cluster.gear.code +
             cluster.fuelBars.toString() +
             "\u0000\u0000\u0000" // bytes 25..27, set below
-        val overrides = mapOf(RAW25_INDEX to cluster.raw25, 26 to FILLER_BYTE, 27 to FILLER_BYTE)
+        val overrides = mapOf(ENGINE_TEMP_INDEX to cluster.engineTempC, 26 to FILLER_BYTE, 27 to FILLER_BYTE)
         return buildFrame(body, mode, overrides)
     }
 

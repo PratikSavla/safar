@@ -22,7 +22,7 @@ layout, checksums and UUIDs and shares no code with `:app`.
     another link becomes the central only when it enables notify or no central is connected, and it never turns
     the central's notify off. Frames go to every device that enabled notify.
 - **Cluster frames**: after the central enables notify on `FFF2`, BikeSim sends a cluster frame (`'7'`) every 5 s.
-  Byte 23 carries the gear, byte 25 a settable raw value and bytes 26-27 `FF FF`. The checksum mode follows the
+  Byte 23 carries the gear, byte 25 the engine temperature in °C and bytes 26-27 `FF FF`. The checksum mode follows the
   name: character [1] `A` gives the inverted checksum, anything else the sum checksum.
 
 ## Run it next to Safar
@@ -57,7 +57,7 @@ With both devices connected to one computer, pick the target of each install wit
 | Ride | Every second, odometer, trip A and trip B grow by the distance ridden at the current speed. |
 | Fuel bars | 0-6. With **Drain fuel while riding** on, one bar drops every 5 km of riding. |
 | Gear | `N`, `1`-`6`, sent in byte 23. |
-| Byte 25 | Raw value 0-255, sent in byte 25. |
+| Engine °C (byte 25) | Engine temperature in whole °C, 0-254; 255 (`0xFF`) means no reading. |
 | Send bad framing | One cluster frame with a broken start byte and end byte (and non-digit speed and odometer). Safar rejects it at the framing check. |
 | Send bad fields | One cluster frame with valid framing and checksum but non-digit speed and odometer. It passes Safar's framing check and fails in the field decoder. |
 | Send wrong checksum | One correct cluster frame whose checksum matches neither checksum mode. |

@@ -33,13 +33,13 @@ data class SimCluster(
     val tripBKm: Double = 462.3,
     val fuelBars: Int = 4,
     val gear: Gear = Gear.NEUTRAL,
-    /** Byte 25: raw binary, meaning unknown. A V-Strom SX sent 0x1D and 0x1E (docs 3.1). */
-    val raw25: Int = 0x1D,
+    /** Byte 25: engine temperature, whole °C as one raw byte; 0xFF = no reading. A cold V-Strom SX sent 29, 30. */
+    val engineTempC: Int = 29,
 ) {
     init {
         if (speedKmh !in 0..999) throw FrameException("speedKmh must be 0..999, got $speedKmh")
         if (fuelBars !in 0..MAX_FUEL_BARS) throw FrameException("fuelBars must be 0..6, got $fuelBars")
-        if (raw25 !in 0..0xFF) throw FrameException("raw25 must be 0..255, got $raw25")
+        if (engineTempC !in 0..0xFF) throw FrameException("engineTempC must be 0..255, got $engineTempC")
         if (odometerKm < 0 || tripAKm < 0 || tripBKm < 0) throw FrameException("distances must be >= 0")
     }
 }

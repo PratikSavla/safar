@@ -89,11 +89,20 @@ class ClearedFlagTracker(private val holdTicks: Int = HOLD_TICKS) {
 /**
  * Navigation status byte (docs 4.3) with its priority: GPS off, no network, no internet, reroute, arrived, via.
  * No network uses the phone layer's rule ([cellularOk]), so the cluster agrees with what the app shows.
+ *
+ * When [mapsActive] is true, Google Maps is actively sending turn notifications, which proves that routing
+ * is working even without cellular or internet (e.g. offline maps in Airplane mode). In that case, skip
+ * the network and internet checks so the cluster keeps showing turn arrows. GPS still gates navigation.
  */
-fun navStatusFor(code: NavStatusCode, phone: PhoneSnapshot, rerouteAlreadySent: Boolean): NavStatus = when {
+fun navStatusFor(
+    code: NavStatusCode,
+    phone: PhoneSnapshot,
+    rerouteAlreadySent: Boolean,
+    mapsActive: Boolean = false,
+): NavStatus = when {
     !phone.gpsOn || code == NavStatusCode.GPS_OFF -> NavStatus.GPS_OFF
-    !phone.cellularOk || code == NavStatusCode.NO_NETWORK -> NavStatus.NO_NETWORK_SIGNAL
-    !phone.hasInternet || code == NavStatusCode.NO_INTERNET -> NavStatus.NO_INTERNET
+    !mapsActive && (!phone.cellularOk || code == NavStatusCode.NO_NETWORK) -> NavStatus.NO_NETWORK_SIGNAL
+    !mapsActive && (!phone.hasInternet || code == NavStatusCode.NO_INTERNET) -> NavStatus.NO_INTERNET
     code == NavStatusCode.RECALCULATING && !rerouteAlreadySent -> NavStatus.REROUTING
     code == NavStatusCode.ARRIVED -> NavStatus.DESTINATION_REACHED
     code == NavStatusCode.VIA_POINT -> NavStatus.VIA_POINT_REACHED
@@ -113,7 +122,7 @@ class NavFrameMapper(private val zone: () -> ZoneId) {
     fun map(snapshot: NavSnapshot, phone: PhoneSnapshot, active: Boolean): NavigationData {
         if (snapshot.iconCode in MIN_ICON_CODE..MAX_ICON_CODE) lastIcon = snapshot.iconCode
         val sent = rerouteSentFor == snapshot.receivedAtMillis
-        val status = navStatusFor(snapshot.status, phone, sent)
+        val status = navStatusFor(snapshot.status, phone, sent, mapsActive = active)
         if (status == NavStatus.REROUTING) rerouteSentFor = snapshot.receivedAtMillis
         return NavigationData(
             iconCode = lastIcon,

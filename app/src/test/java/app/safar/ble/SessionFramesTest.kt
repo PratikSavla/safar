@@ -158,6 +158,20 @@ class SessionFramesTest {
     }
 
     @Test
+    fun mapsActiveBypassesNetworkAndInternetChecks() {
+        val offline = good.copy(signalBars = 0, hasInternet = false)
+        // GPS off still gates: active Maps cannot help without a GPS fix.
+        assertEquals(NavStatus.GPS_OFF, navStatusFor(NavStatusCode.NORMAL, offline.copy(gpsOn = false), false, mapsActive = true))
+        // No signal + no internet but Maps is delivering turns (e.g. offline maps): keep the arrow.
+        assertEquals(NavStatus.NORMAL, navStatusFor(NavStatusCode.NORMAL, offline, false, mapsActive = true))
+        assertEquals(NavStatus.NORMAL, navStatusFor(NavStatusCode.NO_NETWORK, offline, false, mapsActive = true))
+        assertEquals(NavStatus.NORMAL, navStatusFor(NavStatusCode.NO_INTERNET, offline, false, mapsActive = true))
+        // NavFrameMapper.map() passes active = true as mapsActive.
+        val data = NavFrameMapper(zone).map(snap(), offline, active = true)
+        assertEquals(NavStatus.NORMAL, data.status)
+    }
+
+    @Test
     fun reroutingIsSentForOneFramePerSnapshot() {
         val mapper = NavFrameMapper(zone)
         val first = snap(NavStatusCode.RECALCULATING, at = 10)

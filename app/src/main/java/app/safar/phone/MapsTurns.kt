@@ -75,15 +75,23 @@ fun reduceMaps(
     )
 }
 
-/** Phone facts for the navigation status byte; see [cellularOk] for the network rule. */
-fun phoneConditions(phone: PhoneSnapshot): PhoneConditions =
-    PhoneConditions(gpsOn = phone.gpsOn, cellularOk = phone.cellularOk, internetOk = phone.hasInternet)
+/**
+ * Phone facts for the navigation status byte; see [cellularOk] for the network rule.
+ * When Maps is actively delivering turns ([mapsActive] = true), network and internet states are
+ * treated as fine: if Google Maps is sending us notifications, routing is working regardless of
+ * whether the phone has cellular or internet (e.g. offline maps in Airplane mode). GPS still matters.
+ */
+fun phoneConditions(phone: PhoneSnapshot, mapsActive: Boolean): PhoneConditions = PhoneConditions(
+    gpsOn = phone.gpsOn,
+    cellularOk = mapsActive || phone.cellularOk,
+    internetOk = mapsActive || phone.hasInternet,
+)
 
 fun navStatusCode(status: NavStatus): NavStatusCode = NavStatusCode.entries.first { it.code == status.code }
 
 /** What the cluster receives on the next navigation tick, given the phone's current state. */
 fun MapsTurn.toSnapshot(phone: PhoneSnapshot, zone: ZoneId = ZoneId.systemDefault()): NavSnapshot {
-    val data = toNavigationData(update, iconCode, phoneConditions(phone))
+    val data = toNavigationData(update, iconCode, phoneConditions(phone, mapsActive = update.active))
     return NavSnapshot(
         iconCode = data.iconCode,
         iconMatched = iconMatched,

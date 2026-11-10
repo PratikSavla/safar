@@ -74,10 +74,12 @@ class MapsTurnsTest {
     @Test
     fun phoneStateDecidesStatus() {
         val state = reduceMaps(null, turn, null, now, zone)
+        // GPS off always suppresses the route, even when Maps is active.
         assertEquals(NavStatusCode.GPS_OFF, state.toSnapshot(phoneOk.copy(gpsOn = false), zone).status)
-        assertEquals(NavStatusCode.NO_INTERNET, state.toSnapshot(phoneOk.copy(hasInternet = false), zone).status)
+        // No internet / no signal: Maps is active (update.active = true), so the cluster keeps the arrow.
+        assertEquals(NavStatusCode.NORMAL, state.toSnapshot(phoneOk.copy(hasInternet = false), zone).status)
         val noSignal = phoneOk.copy(signalBars = 0, hasInternet = false)
-        assertEquals(NavStatusCode.NO_NETWORK, state.toSnapshot(noSignal, zone).status)
+        assertEquals(NavStatusCode.NORMAL, state.toSnapshot(noSignal, zone).status)
         assertEquals(NavStatusCode.NORMAL, state.toSnapshot(phoneOk.copy(signalBars = 0), zone).status, "Wi-Fi only")
     }
 

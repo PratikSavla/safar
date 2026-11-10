@@ -115,12 +115,14 @@ class MapsToClusterTest {
         val (rig, maps) = mapsRig()
         maps.post(next)
         rig.advance(period)
+        // GPS off always suppresses the route, even when Maps is active.
         rig.phone.set { it.copy(gpsOn = false) }
         rig.advance(period)
         assertContentEquals(expected(4, 200, LocalTime.of(11, 56), 1_385, NavStatus.GPS_OFF), rig.lastNavBytes())
+        // No internet but Maps is actively delivering turns (e.g. offline maps): keep the turn arrow.
         rig.phone.set { it.copy(gpsOn = true, hasInternet = false) }
         rig.advance(period)
-        assertEquals('6', rig.frames.nav(rig.lastNavBytes()).status)
+        assertEquals('1', rig.frames.nav(rig.lastNavBytes()).status)
     }
 
     @Test

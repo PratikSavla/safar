@@ -75,15 +75,17 @@ class NavigationTest {
         val good = FakePhoneStatus.GOOD_PHONE
         val cases = listOf(
             Triple(good.copy(gpsOn = false, signalBars = 0, hasInternet = false), NavStatusCode.RECALCULATING, '4'),
-            Triple(good.copy(signalBars = 0, hasInternet = false), NavStatusCode.RECALCULATING, '0'),
-            Triple(good.copy(hasInternet = false), NavStatusCode.RECALCULATING, '6'),
+            // No signal + no internet: Maps is active (snapshot delivered), so the cluster keeps the turn arrow.
+            Triple(good.copy(signalBars = 0, hasInternet = false), NavStatusCode.RECALCULATING, '2'),
+            Triple(good.copy(hasInternet = false), NavStatusCode.RECALCULATING, '2'),
             Triple(good, NavStatusCode.RECALCULATING, '2'),
             Triple(good, NavStatusCode.ARRIVED, '5'),
             Triple(good, NavStatusCode.VIA_POINT, '3'),
             Triple(good, NavStatusCode.NORMAL, '1'),
             Triple(good, NavStatusCode.GPS_OFF, '4'),
-            Triple(good, NavStatusCode.NO_NETWORK, '0'),
-            Triple(good, NavStatusCode.NO_INTERNET, '6'),
+            // NO_NETWORK / NO_INTERNET codes from Maps itself: Maps is active, bypass them → '1'.
+            Triple(good, NavStatusCode.NO_NETWORK, '1'),
+            Triple(good, NavStatusCode.NO_INTERNET, '1'),
         )
         for ((phone, code, status) in cases) {
             rig.phone.set { phone }

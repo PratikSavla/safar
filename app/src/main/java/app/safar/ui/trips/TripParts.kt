@@ -34,6 +34,7 @@ import app.safar.ui.components.StatGrid
 import app.safar.ui.components.byMode
 import app.safar.ui.format.Formatters
 import app.safar.ui.theme.Atlas
+import kotlin.math.cos
 import kotlin.math.roundToInt
 
 private val MAP_HEIGHT = 300.dp
@@ -56,12 +57,43 @@ internal fun TrackFigure(trip: TripDetailUi) {
                         trip.trackLat, trip.trackLng, Modifier.fillMaxWidth().height(MAP_HEIGHT), big = true,
                         description = if (trip.fixes == 0) NO_ROUTE else "Map of the route for ${trip.title}",
                     )
+                    if (trip.stops.isNotEmpty() && trip.trackLat.isNotEmpty()) {
+                        Canvas(Modifier.fillMaxWidth().height(MAP_HEIGHT)) {
+                            for (stop in trip.stops) {
+                                val pt = projectPoint(stop.lat, stop.lng, trip.trackLat, trip.trackLng, size.width, size.height, padPx)
+                                if (pt != null) {
+                                    drawCircle(c.card, 5.dp.toPx(), Offset(pt.x, pt.y))
+                                    drawCircle(c.rust, 4.dp.toPx(), Offset(pt.x, pt.y))
+                                }
+                            }
+                        }
+                    }
                     BasicText("N ↑", Modifier.align(Alignment.TopEnd).padding(10.dp, 12.dp), style = Atlas.type.src.copy(color = c.rust))
                 }
                 MapCaption(trip.fixes, scaleBar(scale, widthPx * 0.3f))
             }
         }
     }
+}
+
+private fun projectPoint(lat: Double, lng: Double, trackLat: List<Double>, trackLng: List<Double>, width: Float, height: Float, pad: Float): XY? {
+    if (trackLat.isEmpty() || trackLat.size != trackLng.size) return null
+    val minLat = trackLat.min()
+    val maxLat = trackLat.max()
+    val minLng = trackLng.min()
+    val kx = cos(Math.toRadians((minLat + maxLat) / 2)) * 111_320.0
+    val xs = trackLng.map { (it - minLng) * kx }
+    val ys = trackLat.map { (maxLat - it) * 111_320.0 }
+    val spanX = xs.max()
+    val spanY = ys.max()
+    val fitX = if (spanX > 0) (width - 2 * pad) / spanX else Double.MAX_VALUE
+    val fitY = if (spanY > 0) (height - 2 * pad) / spanY else Double.MAX_VALUE
+    val scale = minOf(fitX, fitY).let { if (it == Double.MAX_VALUE) 0.0 else maxOf(0.0, it) }
+    val ox = (width - spanX * scale) / 2
+    val oy = (height - spanY * scale) / 2
+    val x = (ox + (lng - minLng) * kx * scale).toFloat()
+    val y = (oy + (maxLat - lat) * 111_320.0 * scale).toFloat()
+    return XY(x, y)
 }
 
 @Composable
@@ -132,4 +164,21 @@ internal fun FuelRun(trip: TripDetailUi) {
     }
     BasicText(fuel.note, Modifier.padding(top = 10.dp), style = Atlas.type.src.copy(color = Atlas.colors.ink3))
     DevOnly { DeveloperLine("↳ bike · fuel bars at connect and disconnect") }
+}
+
+/** Shows the ride note or a prompt to add one. */
+@Composable
+internal fun NoteRow(note: String?, onClick: () -> Unit) {
+    SectionHeader("Note")
+    AtlasCard(
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        onClick = onClick,
+        onClickLabel = "Edit note",
+    ) {
+        if (note.isNullOrBlank()) {
+            BasicText("Add a note about this ride…", style = Atlas.type.src.copy(color = Atlas.colors.ink3))
+        } else {
+            BasicText(note, style = Atlas.type.src.copy(color = Atlas.colors.ink))
+        }
+    }
 }

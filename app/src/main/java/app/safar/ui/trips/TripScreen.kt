@@ -25,6 +25,7 @@ import app.safar.ui.components.AtlasToastState
 import app.safar.ui.components.BackTopBar
 import app.safar.ui.components.EmptyState
 import app.safar.ui.components.Note
+import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.TextAction
 import app.safar.ui.components.TopoTransform
@@ -38,14 +39,17 @@ import app.safar.ui.trips.preview.TripsPreviewData
 import app.safar.ui.vm.NoticeToasts
 
 /** Which sheet is open over the trip page. */
-enum class TripSheet { NONE, RENAME, DELETE }
+enum class TripSheet { NONE, RENAME, DELETE, NOTE }
 
 /** One journal entry: ink track, distance, time, speeds, odometer run and fuel bars used (trips.js `trip`). */
 @Composable
 fun TripScreen(navigator: Navigator, tripId: Long) {
     val is24h = DateFormat.is24HourFormat(LocalContext.current)
     val vm: TripViewModel = viewModel(key = "trip-$tripId") {
-        TripViewModel(tripId, AppContainer.trips, AppContainer.ride.state, AppContainer.bike.state, is24h = is24h)
+        TripViewModel(
+            tripId, AppContainer.trips, AppContainer.ride.state, AppContainer.bike.state,
+            is24h = is24h, onStopTrip = { AppContainer.ride.stopTrip() },
+        )
     }
     val state by vm.state.collectAsStateWithLifecycle()
     val ride by vm.ride.collectAsStateWithLifecycle()
@@ -60,6 +64,8 @@ fun TripScreen(navigator: Navigator, tripId: Long) {
         onBack = navigator::back,
         onRename = vm::rename,
         onDelete = vm::delete,
+        onSaveNote = vm::saveNote,
+        onEndTrip = vm::endTrip,
     )
 }
 
@@ -72,6 +78,8 @@ fun TripContent(
     onBack: () -> Unit,
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
+    onSaveNote: (String) -> Unit = {},
+    onEndTrip: () -> Unit = {},
 ) {
     var sheet by rememberSaveable { mutableStateOf(TripSheet.NONE) }
     val trip = (state as? TripDetailState.Ready)?.trip
@@ -81,6 +89,7 @@ fun TripContent(
             if (trip != null) {
                 RenameSheet(sheet == TripSheet.RENAME, trip.title, lockReason, { sheet = TripSheet.NONE }) { onRename(it); sheet = TripSheet.NONE }
                 DeleteSheet(sheet == TripSheet.DELETE && !trip.recording, trip, { sheet = TripSheet.NONE }) { onDelete(); sheet = TripSheet.NONE }
+                NoteSheet(sheet == TripSheet.NOTE, trip.note, lockReason, { sheet = TripSheet.NONE }) { onSaveNote(it); sheet = TripSheet.NONE }
             }
             AtlasToastHost(toast, bottomPadding = 40.dp)
         },
@@ -91,18 +100,22 @@ fun TripContent(
                 BackTopBar("Trips", "Not found", onBack)
                 EmptyState("This ride isn’t here any more.", message = "It may have been deleted.", actionLabel = "Back to Trips", onAction = onBack)
             }
-            is TripDetailState.Ready -> TripBody(state.trip, onBack, onAsk = { sheet = it })
+            is TripDetailState.Ready -> TripBody(state.trip, onBack, onAsk = { sheet = it }, onEndTrip = onEndTrip)
         }
     }
 }
 
 @Composable
-private fun TripBody(trip: TripDetailUi, onBack: () -> Unit, onAsk: (TripSheet) -> Unit) {
+private fun TripBody(trip: TripDetailUi, onBack: () -> Unit, onAsk: (TripSheet) -> Unit, onEndTrip: () -> Unit) {
     BackTopBar("Ride ${entryNumber(trip.number)} · ${trip.day}", trip.title, onBack)
     TrackFigure(trip)
     TripStats(trip)
+    NoteRow(trip.note, onClick = { onAsk(TripSheet.NOTE) })
     OdometerRun(trip)
     FuelRun(trip)
+    if (trip.recording) {
+        PrimaryButton("End this ride", onEndTrip, Modifier.fillMaxWidth().padding(top = 20.dp), icon = AtlasIcons.stop)
+    }
     Row(Modifier.fillMaxWidth().padding(top = 30.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         SecondaryButton("Rename", { onAsk(TripSheet.RENAME) }, Modifier.weight(1f), icon = AtlasIcons.edit)
     }

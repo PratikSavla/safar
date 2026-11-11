@@ -12,18 +12,21 @@ import androidx.room.RoomDatabase
         FuelUpEntity::class,
         TripEntity::class,
         TrackPointEntity::class,
+        TripStopEntity::class,
         ServiceItemEntity::class,
         PlaceEntity::class,
         ParkedSpotEntity::class,
         DocumentEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
     autoMigrations = [
         // Service items by time, and a first service that differs from the recurring one.
         AutoMigration(from = 1, to = 2),
         // The document table (bike papers).
         AutoMigration(from = 2, to = 3),
+        // Trip note and trip stops for merged rides.
+        AutoMigration(from = 3, to = 4),
     ],
 )
 abstract class SafarDatabase : RoomDatabase() {

@@ -2,6 +2,7 @@ package app.safar.ui.trips
 
 import app.safar.data.TrackPoint
 import app.safar.data.Trip
+import app.safar.data.TripStop
 import app.safar.data.avgMovingSpeedKmh
 import app.safar.data.filterTrack
 import app.safar.data.toFix
@@ -13,6 +14,9 @@ import kotlin.math.roundToInt
 
 /** Fuel bars at connect and disconnect, with the line the page prints under them. */
 data class TripFuelUi(val start: Int, val end: Int, val max: Int, val aside: String, val note: String)
+
+/** A stop dot to draw on the map at its coordinates. */
+data class TripStopUi(val lat: Double, val lng: Double, val label: String?)
 
 data class TripDetailUi(
     val id: Long,
@@ -33,6 +37,8 @@ data class TripDetailUi(
     val trackLng: List<Double>,
     val fixes: Int,
     val recording: Boolean,
+    val note: String?,
+    val stops: List<TripStopUi>,
 )
 
 sealed interface TripDetailState {
@@ -69,6 +75,7 @@ fun tripDetail(
     trip: Trip,
     trips: List<Trip>,
     track: List<TrackPoint>,
+    stops: List<TripStop> = emptyList(),
     fuelBarsMax: Int,
     recordingTripId: Long?,
     nowMillis: Long,
@@ -95,7 +102,9 @@ fun tripDetail(
         trackLat = kept.map { it.lat },
         trackLng = kept.map { it.lng },
         fixes = track.size,
-        recording = recordingTripId == trip.id,
+        recording = recordingTripId == trip.id && trip.endMillis == null,
+        note = trip.note,
+        stops = stops.map { TripStopUi(it.lat, it.lng, it.label) },
     )
 }
 

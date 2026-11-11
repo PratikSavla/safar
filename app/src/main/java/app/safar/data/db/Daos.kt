@@ -6,6 +6,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import androidx.room.Upsert
+import app.safar.data.mergeTrips
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -34,14 +35,35 @@ interface TripDao {
     @Query("SELECT * FROM track_point WHERE tripId = :tripId ORDER BY atMillis, id")
     fun observeTrack(tripId: Long): Flow<List<TrackPointEntity>>
 
+    @Query("SELECT * FROM trip_stop WHERE tripId = :tripId ORDER BY `index`")
+    fun observeStops(tripId: Long): Flow<List<TripStopEntity>>
+
     @Insert
     suspend fun insert(row: TripEntity): Long
+
+    @Insert
+    suspend fun insertTrips(rows: List<TripEntity>)
 
     @Update
     suspend fun update(row: TripEntity)
 
     @Insert
     suspend fun insertPoints(rows: List<TrackPointEntity>)
+
+    @Insert
+    suspend fun insertStops(rows: List<TripStopEntity>)
+
+    @Query("DELETE FROM trip_stop WHERE tripId = :tripId")
+    suspend fun deleteStops(tripId: Long)
+
+    @Query("UPDATE trip SET note = :note WHERE id = :id")
+    suspend fun setNote(id: Long, note: String?)
+
+    @Query("SELECT * FROM trip WHERE id IN (:ids)")
+    suspend fun byIds(ids: List<Long>): List<TripEntity>
+
+    @Query("SELECT * FROM track_point WHERE tripId IN (:tripIds) ORDER BY atMillis, id")
+    suspend fun tracksByTripIds(tripIds: List<Long>): List<TrackPointEntity>
 
     @Query("SELECT EXISTS(SELECT 1 FROM trip WHERE id = :id)")
     suspend fun exists(id: Long): Boolean
@@ -64,6 +86,33 @@ interface TripDao {
     /** Track points go with the trip through the foreign key's ON DELETE CASCADE. */
     @Query("DELETE FROM trip WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Transaction
+    suspend fun mergeTrips(sourceIds: List<Long>, mergedTitle: String): Long {
+        val sources = byIds(sourceIds)
+        if (sources.size != sourceIds.size) return -1L
+        val trackRows = tracksByTripIds(sourceIds)
+        val trackMap = trackRows.groupBy { it.tripId }.mapValues { (_, pts) -> pts.map { it.toModel() } }
+        val result = mergeTrips(sources.map { it.toModel() }, trackMap, mergedTitle)
+        val newTripId = insert(result.trip.toEntity().copy(id = 0))
+        if (result.track.isNotEmpty()) {
+            insertPoints(result.track.map { it.toEntity().copy(id = 0, tripId = newTripId) })
+        }
+        if (result.stops.isNotEmpty()) {
+            insertStops(result.stops.map { it.toEntity().copy(id = 0, tripId = newTripId) })
+        }
+        sourceIds.forEach { delete(it) }
+        return newTripId
+    }
+
+    @Transaction
+    suspend fun undoMerge(mergedId: Long, originalTrips: List<TripEntity>, trackPoints: List<TrackPointEntity>) {
+        delete(mergedId)
+        insertTrips(originalTrips)
+        if (trackPoints.isNotEmpty()) {
+            insertPoints(trackPoints)
+        }
+    }
 }
 
 @Dao

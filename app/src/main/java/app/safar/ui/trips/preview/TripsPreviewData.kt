@@ -38,5 +38,7 @@ object TripsPreviewData {
         odoStart = 12_036, odoEnd = 12_164,
         fuel = TripFuelUi(5, 3, 6, "2 bars used", "About 64 km per bar"),
         trackLat = track.map { it.lat }, trackLng = track.map { it.lng }, fixes = track.size, recording = false,
+        note = "Smooth highway run, light traffic after the toll.",
+        stops = emptyList(),
     )
 }

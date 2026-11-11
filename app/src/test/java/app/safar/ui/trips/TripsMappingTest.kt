@@ -3,6 +3,7 @@ package app.safar.ui.trips
 import app.safar.core.RideState
 import app.safar.data.TrackPoint
 import app.safar.data.Trip
+import app.safar.data.TripStop
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -123,14 +124,14 @@ class TripsMappingTest {
             TrackPoint(2, 20_000, 19.5000, 74.8000, 40f), // impossible jump, dropped
             TrackPoint(2, 30_000, 18.5020, 73.8000, 40f),
         )
-        val d = tripDetail(trips[2], trips, track, 6, recordingTripId = null, nowMillis = now, zone = zone, is24h = false)
+        val d = tripDetail(trips[2], trips, track, emptyList(), 6, recordingTripId = null, nowMillis = now, zone = zone, is24h = false)
         assertEquals(2, d.number)
         assertEquals("WED 21 OCT 6:00PM", d.day)
-        assertEquals("WED 21 OCT 18:00", tripDetail(trips[2], trips, track, 6, null, now, zone, is24h = true).day)
+        assertEquals("WED 21 OCT 18:00", tripDetail(trips[2], trips, track, emptyList(), 6, null, now, zone, is24h = true).day)
         assertEquals("bike odometer", d.distanceSource)
         assertEquals(3, d.trackLat.size)
         assertEquals(4, d.fixes)
-        val gpsOnly = tripDetail(trips[2].copy(odoEndKm = null), trips, emptyList(), 6, null, now, zone, is24h = false)
+        val gpsOnly = tripDetail(trips[2].copy(odoEndKm = null), trips, emptyList(), emptyList(), 6, null, now, zone, is24h = false)
         assertEquals("phone GPS", gpsOnly.distanceSource)
     }
 
@@ -139,7 +140,7 @@ class TripsMappingTest {
         val open = trip(9, 0, 0.0, 0, 0f, end = false).copy(avgSpeedKmh = 0f, odoStartKm = null, odoEndKm = null)
         // About 111 m north every 6 s: 66.7 km/h, 10 legs.
         val track = List(11) { i -> TrackPoint(9, 6_000L * i, 18.5 + i * 0.001, 73.8, 66f + i % 2) }
-        val d = tripDetail(open, listOf(open) + trips, track, 6, recordingTripId = 9, nowMillis = now, zone = zone, is24h = false)
+        val d = tripDetail(open, listOf(open) + trips, track, emptyList(), 6, recordingTripId = 9, nowMillis = now, zone = zone, is24h = false)
         assertEquals(1.11, d.km, 0.01)
         assertEquals(67f, d.topKmh)
         assertEquals(66.7f, d.avgKmh, 0.2f)
@@ -173,5 +174,13 @@ class TripsMappingTest {
         assertEquals(18.5 + 499 * 0.0001, thumb.lat.last(), 1e-9)
         assertTrue(thumb.lat.zipWithNext().all { (a, b) -> b > a })
         assertEquals(TrackThumb.Empty, trackThumb(emptyList()))
+    }
+
+    @Test
+    fun `detail maps note and stops`() {
+        val stop = TripStop(2, 0, 18.5010, 73.8000, 10_000, "Highway stop")
+        val d = tripDetail(trips[2].copy(note = "Scenic route"), trips, emptyList(), listOf(stop), 6, null, now, zone, is24h = false)
+        assertEquals("Scenic route", d.note)
+        assertEquals(listOf(TripStopUi(18.5010, 73.8000, "Highway stop")), d.stops)
     }
 }

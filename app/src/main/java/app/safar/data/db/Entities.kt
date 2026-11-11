@@ -32,6 +32,7 @@ data class TripEntity(
     val odoEndKm: Int?,
     val fuelBarsStart: Int?,
     val fuelBarsEnd: Int?,
+    val note: String? = null,
 )
 
 /** GPS track of a trip. Deleting the trip deletes its points. */
@@ -112,4 +113,20 @@ data class DocumentEntity(
     val expiryEpochDay: Long?,
     val note: String?,
     val remindedStage: Int,
+)
+
+/** A GPS waypoint at the join between two merged legs; deleted with the trip via CASCADE. */
+@Entity(
+    tableName = "trip_stop",
+    foreignKeys = [ForeignKey(entity = TripEntity::class, parentColumns = ["id"], childColumns = ["tripId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("tripId")],
+)
+data class TripStopEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val tripId: Long,
+    val index: Int,
+    val lat: Double,
+    val lng: Double,
+    val atMillis: Long,
+    val label: String? = null,
 )

@@ -12,6 +12,7 @@ import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
 import app.safar.data.SpanUnit
 import app.safar.data.TimeSpan
+import app.safar.data.TripStop
 import app.safar.data.TrackPoint
 import app.safar.data.Trip
 import java.time.LocalDate
@@ -35,18 +36,21 @@ fun FuelUp.toEntity() = FuelUpEntity(
 fun TripEntity.toModel() = Trip(
     id = id, title = title, startMillis = startMillis, endMillis = endMillis, distanceKm = distanceKm,
     topSpeedKmh = topSpeedKmh, avgSpeedKmh = avgSpeedKmh, odoStartKm = odoStartKm, odoEndKm = odoEndKm,
-    fuelBarsStart = fuelBarsStart, fuelBarsEnd = fuelBarsEnd,
+    fuelBarsStart = fuelBarsStart, fuelBarsEnd = fuelBarsEnd, note = note,
 )
 
 fun Trip.toEntity() = TripEntity(
     id = id, title = title, startMillis = startMillis, endMillis = endMillis, distanceKm = distanceKm,
     topSpeedKmh = topSpeedKmh, avgSpeedKmh = avgSpeedKmh, odoStartKm = odoStartKm, odoEndKm = odoEndKm,
-    fuelBarsStart = fuelBarsStart, fuelBarsEnd = fuelBarsEnd,
+    fuelBarsStart = fuelBarsStart, fuelBarsEnd = fuelBarsEnd, note = note,
 )
 
 fun TrackPointEntity.toModel() = TrackPoint(tripId = tripId, atMillis = atMillis, lat = lat, lng = lng, speedKmh = speedKmh)
 
 fun TrackPoint.toEntity() = TrackPointEntity(tripId = tripId, atMillis = atMillis, lat = lat, lng = lng, speedKmh = speedKmh)
+
+fun TripStopEntity.toModel() = TripStop(tripId, index, lat, lng, atMillis, label)
+fun TripStop.toEntity() = TripStopEntity(tripId = tripId, index = index, lat = lat, lng = lng, atMillis = atMillis, label = label)
 
 fun ServiceItemEntity.toModel() = ServiceItem(
     id = id, label = label, everyKm = everyKm.takeIf { it > 0 }, lastDoneOdoKm = lastDoneOdoKm, lastDoneMillis = lastDoneMillis,

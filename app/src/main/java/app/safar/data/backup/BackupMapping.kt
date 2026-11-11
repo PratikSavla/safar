@@ -96,11 +96,13 @@ fun Settings.toDto() = SettingsDto(
 
 private fun TripEntity.toDto(track: List<TrackPointEntity>) = TripDto(
     id, title, startMillis, endMillis, distanceKm, topSpeedKmh, avgSpeedKmh, odoStartKm, odoEndKm, fuelBarsStart, fuelBarsEnd,
+    note = note, stops = emptyList(),
     track = track.map { TrackPointDto(it.atMillis, it.lat, it.lng, it.speedKmh) },
 )
 
 private fun TripDto.toEntity() = TripEntity(
     id, title, startMillis, endMillis, distanceKm, topSpeedKmh, avgSpeedKmh, odoStartKm, odoEndKm, fuelBarsStart, fuelBarsEnd,
+    note = note,
 )
 
 private fun FuelUpEntity.toDto() = FuelUpDto(id, atMillis, odometerKm, litres, totalPaid, full, odoSource, barsBefore)

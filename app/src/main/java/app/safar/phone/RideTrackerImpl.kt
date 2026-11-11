@@ -48,6 +48,8 @@ class RideTrackerImpl(context: Context, private val scope: CoroutineScope, priva
         data class Link(val link: BikeLink) : Event
         data class Reading(val reading: ClusterReading) : Event
         data object Tick : Event
+        data object StopTrip : Event
+        data object StartTrip : Event
     }
 
     private val mutable = MutableStateFlow(RideState())
@@ -85,6 +87,14 @@ class RideTrackerImpl(context: Context, private val scope: CoroutineScope, priva
     /** Re-checks the location permission (after the rider grants it) on the next event. Any thread. */
     fun refresh() {
         events.trySend(Event.Tick)
+    }
+
+    override fun stopTrip() {
+        events.trySend(Event.StopTrip)
+    }
+
+    override fun startTrip() {
+        events.trySend(Event.StartTrip)
     }
 
     private suspend fun observeBike() {
@@ -130,6 +140,8 @@ class RideTrackerImpl(context: Context, private val scope: CoroutineScope, priva
                 recorder.onReading(event.reading)
             }
             Event.Tick -> evaluate()
+            Event.StopTrip -> handleStopTrip()
+            Event.StartTrip -> handleStartTrip()
         }
     }
 
@@ -187,6 +199,26 @@ class RideTrackerImpl(context: Context, private val scope: CoroutineScope, priva
         } else {
             log.info("trip.saved", mapOf("id" to done.id.toString(), "km" to String.format(Locale.ROOT, "%.2f", done.distanceKm)))
             thinTrack(done.id)
+        }
+    }
+
+    private suspend fun handleStopTrip() {
+        if (rules.recording) {
+            val now = System.currentTimeMillis()
+            endTrip(now)
+            rules.stop()
+            location.set(wantedMode())
+            publish(now)
+        }
+    }
+
+    private suspend fun handleStartTrip() {
+        if (!rules.recording) {
+            val now = System.currentTimeMillis()
+            val decision = rules.forceStart(link == BikeLink.CONNECTED)
+            startTrip(now, decision.viaBike)
+            location.set(wantedMode())
+            publish(now)
         }
     }
 

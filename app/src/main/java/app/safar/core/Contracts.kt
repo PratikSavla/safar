@@ -53,6 +53,10 @@ interface PhoneStatusSource {
 /** Phone GPS speed, trip recording and parked spot. Implemented in `phone`. */
 interface RideTracker {
     val state: StateFlow<RideState>
+    /** Stops the active trip, if recording. */
+    fun stopTrip() {}
+    /** Starts a new trip, if not already recording. */
+    fun startTrip() {}
 }
 
 /** Debug log (docs 12.6). Implemented in `log`. Thread-safe. */

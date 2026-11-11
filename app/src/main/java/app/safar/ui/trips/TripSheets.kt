@@ -21,6 +21,7 @@ import app.safar.ui.components.SecondaryButton
 import app.safar.ui.format.Formatters
 
 private const val TITLE_MAX = 40
+private const val NOTE_MAX = 400
 
 /** Rename sheet. The field locks while the phone moves (UX rule 3) and says why. */
 @Composable
@@ -47,6 +48,19 @@ internal fun DeleteSheet(visible: Boolean, trip: TripDetailUi, onDismiss: () -> 
         Row(Modifier.fillMaxWidth().padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SecondaryButton("Keep", onDismiss, Modifier.weight(1f))
             PrimaryButton("Delete", onConfirm, Modifier.weight(1f), icon = AtlasIcons.cross)
+        }
+    }
+}
+
+/** Note sheet for editing or adding a ride note. */
+@Composable
+internal fun NoteSheet(visible: Boolean, note: String?, lockReason: String?, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+    var text by rememberSaveable(visible, note) { mutableStateOf(note.orEmpty()) }
+    AtlasBottomSheet(visible, onDismiss, title = "Ride note") {
+        AtlasTextField(text, { text = it }, label = "Note", lockedReason = lockReason, maxLength = NOTE_MAX)
+        Row(Modifier.fillMaxWidth().padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            SecondaryButton("Cancel", onDismiss, Modifier.weight(1f))
+            PrimaryButton("Save", { onSave(text) }, Modifier.weight(1f), icon = AtlasIcons.check, enabled = lockReason == null)
         }
     }
 }

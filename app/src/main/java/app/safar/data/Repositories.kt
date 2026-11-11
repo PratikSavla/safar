@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
 
 /** DataStore-backed settings. [settings] is hot and always has a value (defaults until loaded). */
 interface SettingsStore {
@@ -56,6 +57,7 @@ interface TripRepository {
     val trips: Flow<List<Trip>>
     fun trip(id: Long): Flow<Trip?>
     fun track(tripId: Long): Flow<List<TrackPoint>>
+    fun stops(tripId: Long): Flow<List<TripStop>> = flowOf(emptyList())
     suspend fun start(trip: Trip): Long
     suspend fun update(trip: Trip)
     suspend fun addPoints(points: List<TrackPoint>)
@@ -66,6 +68,10 @@ interface TripRepository {
      */
     suspend fun replaceTrack(tripId: Long, points: List<TrackPoint>)
     suspend fun delete(id: Long)
+    suspend fun setNote(id: Long, note: String?) {}
+    suspend fun merge(tripIds: List<Long>, title: String): Long = -1L
+    /** Reverses a merge: deletes [mergedId] and re-inserts [originals] with their exact original IDs and tracks. */
+    suspend fun undoMerge(mergedId: Long, originals: List<Trip>, tracks: Map<Long, List<TrackPoint>>) {}
 }
 
 interface ServiceRepository {

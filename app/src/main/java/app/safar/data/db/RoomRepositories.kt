@@ -13,6 +13,7 @@ import app.safar.data.ServiceRepository
 import app.safar.data.TrackPoint
 import app.safar.data.Trip
 import app.safar.data.TripRepository
+import app.safar.data.TripStop
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -30,6 +31,7 @@ class RoomTripRepository(private val dao: TripDao) : TripRepository {
     override val trips: Flow<List<Trip>> = dao.observeAll().map { rows -> rows.map { it.toModel() } }
     override fun trip(id: Long): Flow<Trip?> = dao.observe(id).map { it?.toModel() }
     override fun track(tripId: Long): Flow<List<TrackPoint>> = dao.observeTrack(tripId).map { rows -> rows.map { it.toModel() } }
+    override fun stops(tripId: Long): Flow<List<TripStop>> = dao.observeStops(tripId).map { rows -> rows.map { it.toModel() } }
     override suspend fun start(trip: Trip): Long = dao.insert(trip.toEntity().copy(id = 0))
     override suspend fun update(trip: Trip) = dao.update(trip.toEntity())
 
@@ -44,6 +46,19 @@ class RoomTripRepository(private val dao: TripDao) : TripRepository {
 
     /** Also deletes the trip's track (foreign key cascade). */
     override suspend fun delete(id: Long) = dao.delete(id)
+
+    override suspend fun setNote(id: Long, note: String?) = dao.setNote(id, note)
+
+    override suspend fun merge(tripIds: List<Long>, title: String): Long {
+        require(tripIds.size >= 2) { "Need at least 2 trips to merge" }
+        return dao.mergeTrips(tripIds, title)
+    }
+
+    override suspend fun undoMerge(mergedId: Long, originals: List<Trip>, tracks: Map<Long, List<TrackPoint>>) {
+        val tripEntities = originals.map { it.toEntity() }
+        val trackEntities = tracks.flatMap { (_, pts) -> pts.map { it.toEntity() } }
+        dao.undoMerge(mergedId, tripEntities, trackEntities)
+    }
 }
 
 class RoomServiceRepository(private val dao: ServiceItemDao) : ServiceRepository {

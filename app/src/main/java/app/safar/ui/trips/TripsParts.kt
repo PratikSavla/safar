@@ -1,8 +1,10 @@
 package app.safar.ui.trips
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,13 +27,17 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.CardStyle
 import app.safar.ui.components.Freshness
 import app.safar.ui.components.NumberWithUnit
+import app.safar.ui.components.PrimaryButton
+import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.Stamp
 import app.safar.ui.components.StatCell
 import app.safar.ui.components.StatGrid
+import app.safar.ui.components.TextAction
 import app.safar.ui.components.atlasShadow
 import app.safar.ui.format.Formatters
 import app.safar.ui.format.ValueSource
@@ -71,22 +77,38 @@ internal fun LiveEntry(live: LiveRideUi, modifier: Modifier = Modifier, onOpen: 
 }
 
 /** One journal entry as a tilted postcard: ink track on squared paper, day, title and numbers. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun Postcard(row: TripRowUi, tilt: Float, thumb: TrackThumb, onClick: () -> Unit) {
+internal fun Postcard(
+    row: TripRowUi,
+    tilt: Float,
+    thumb: TrackThumb,
+    selected: Boolean = false,
+    onLongPress: () -> Unit = {},
+    onClick: () -> Unit,
+) {
     val c = Atlas.colors
     val spoken = postcardSpoken(row)
+    val borderMod = if (selected) Modifier.border(2.dp, c.rust, AtlasShapes.tiny) else Modifier
     Box(
         Modifier
             .fillMaxWidth()
             .graphicsLayer { rotationZ = tilt }
             .atlasShadow(AtlasShapes.tiny, c)
             .background(c.card, AtlasShapes.tiny)
+            .then(borderMod)
             .clip(AtlasShapes.tiny)
-            .clickable(onClickLabel = "Open ride", role = Role.Button, onClick = onClick)
+            .combinedClickable(
+                onClickLabel = if (selected) "Deselect ride" else "Open ride",
+                onLongClickLabel = "Select ride",
+                onLongClick = onLongPress,
+                role = Role.Button,
+                onClick = onClick,
+            )
             .clearAndSetSemantics {
                 contentDescription = spoken
                 role = Role.Button
-                onClick("Open ride") { onClick(); true }
+                onClick(if (selected) "Deselect ride" else "Open ride") { onClick(); true }
             }
             .padding(12.dp),
     ) {
@@ -131,4 +153,28 @@ private fun PostcardText(row: TripRowUi, modifier: Modifier) {
 @Composable
 internal fun Footnote(text: String, modifier: Modifier = Modifier) {
     BasicText(text, modifier.padding(top = 22.dp), style = Atlas.type.src.copy(color = Atlas.colors.ink3))
+}
+
+@Composable
+internal fun MergeBar(count: Int, enabled: Boolean, onMerge: () -> Unit, onCancel: () -> Unit) {
+    AtlasCard(Modifier.fillMaxWidth().padding(horizontal = 0.dp, vertical = 0.dp), contentPadding = PaddingValues(16.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            SecondaryButton("Cancel", onCancel, Modifier.weight(1f))
+            PrimaryButton("Merge ($count)", onMerge, Modifier.weight(1f), icon = AtlasIcons.check, enabled = enabled)
+        }
+    }
+}
+
+@Composable
+internal fun UndoBar(onUndo: () -> Unit) {
+    AtlasCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BasicText("Rides merged", style = Atlas.type.src.copy(color = Atlas.colors.ink))
+            TextAction("Undo", onUndo, color = Atlas.colors.rust)
+        }
+    }
 }

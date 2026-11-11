@@ -88,13 +88,33 @@ class TripRules(
     private var lastMovingAt: Long? = null
     private var lostSince: Long? = null
     private var bikeSeen = false
+    private var manualStopped = false
 
     var recording: Boolean = false
         private set
 
+    fun stop() {
+        recording = false
+        bikeSeen = false
+        lostSince = null
+        fastSince = null
+        manualStopped = true
+    }
+
+    fun forceStart(viaBike: Boolean): TripDecision.Start {
+        manualStopped = false
+        recording = true
+        bikeSeen = viaBike
+        lostSince = null
+        lastMovingAt = System.currentTimeMillis()
+        fastSince = null
+        return TripDecision.Start(viaBike)
+    }
+
     fun evaluate(nowMillis: Long, link: BikeLink, speedKmh: Float?): TripDecision {
         trackSpeed(nowMillis, speedKmh)
-        if (!recording) return startDecision(nowMillis, link)
+        if (link != BikeLink.CONNECTED) manualStopped = false
+        if (!recording) return startDecision(nowMillis, link, speedKmh)
         if (link == BikeLink.CONNECTED) {
             bikeSeen = true
             lostSince = null
@@ -115,15 +135,17 @@ class TripRules(
         if (kmh >= MOVING_STOP_KMH) lastMovingAt = nowMillis
     }
 
-    private fun startDecision(nowMillis: Long, link: BikeLink): TripDecision {
-        val viaBike = link == BikeLink.CONNECTED
+    private fun startDecision(nowMillis: Long, link: BikeLink, speedKmh: Float?): TripDecision {
+        val viaBike = link == BikeLink.CONNECTED && !manualStopped
         val viaMovement = fastSince?.let { nowMillis - it >= startMovingMs } == true
-        if (!viaBike && !viaMovement) return TripDecision.None
+        val viaResume = manualStopped && link == BikeLink.CONNECTED && (speedKmh ?: 0f) > MOVING_START_KMH
+        if (!viaBike && !viaMovement && !viaResume) return TripDecision.None
+        manualStopped = false
         recording = true
-        bikeSeen = viaBike
+        bikeSeen = link == BikeLink.CONNECTED
         lostSince = null
         lastMovingAt = nowMillis
-        return TripDecision.Start(viaBike)
+        return TripDecision.Start(viaBike || viaResume)
     }
 
     private fun bikeTripOver(nowMillis: Long, link: BikeLink): Boolean {

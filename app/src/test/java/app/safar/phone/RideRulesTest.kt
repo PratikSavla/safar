@@ -101,4 +101,22 @@ class RideRulesTest {
         assertEquals(5.0, tripDistanceKm(0.0, 100, 105))
         assertEquals(0.0, tripDistanceKm(0.0, null, 105))
     }
+
+    @Test
+    fun manualStopPreventsImmediateRestartUntilMovement() {
+        val rules = TripRules()
+        assertEquals(TripDecision.Start(viaBike = true), rules.evaluate(1_000, BikeLink.CONNECTED, 0f))
+        assertTrue(rules.recording)
+
+        rules.stop()
+        assertFalse(rules.recording)
+
+        // Stationary while connected does not immediately restart
+        assertEquals(TripDecision.None, rules.evaluate(2_000, BikeLink.CONNECTED, 0f))
+        assertFalse(rules.recording)
+
+        // As soon as bike moves above 10 km/h, new ride starts easily!
+        assertEquals(TripDecision.Start(viaBike = true), rules.evaluate(3_000, BikeLink.CONNECTED, 15f))
+        assertTrue(rules.recording)
+    }
 }

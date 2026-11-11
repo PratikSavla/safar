@@ -60,7 +60,11 @@ data class Trip(
     val odoEndKm: Int?,
     val fuelBarsStart: Int?,
     val fuelBarsEnd: Int?,
+    val note: String? = null,
 )
+
+/** A labelled waypoint inside a merged trip, shown as a stop marker on the map. */
+data class TripStop(val tripId: Long, val index: Int, val lat: Double, val lng: Double, val atMillis: Long, val label: String? = null)
 
 data class TrackPoint(
     val tripId: Long,

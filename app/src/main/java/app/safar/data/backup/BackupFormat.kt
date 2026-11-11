@@ -69,11 +69,16 @@ data class TripDto(
     val odoEndKm: Int? = null,
     val fuelBarsStart: Int? = null,
     val fuelBarsEnd: Int? = null,
+    val note: String? = null,
+    val stops: List<TripStopDto> = emptyList(),
     val track: List<TrackPointDto> = emptyList(),
 )
 
 @Serializable
 data class TrackPointDto(val atMillis: Long = 0, val lat: Double = 0.0, val lng: Double = 0.0, val speedKmh: Float = 0f)
+
+@Serializable
+data class TripStopDto(val index: Int = 0, val lat: Double = 0.0, val lng: Double = 0.0, val atMillis: Long = 0, val label: String? = null)
 
 @Serializable
 data class FuelUpDto(

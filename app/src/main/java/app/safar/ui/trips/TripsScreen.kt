@@ -3,8 +3,11 @@ package app.safar.ui.trips
 import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +31,7 @@ import app.safar.ui.components.Gap
 import app.safar.ui.components.Kicker
 import app.safar.ui.components.Masthead
 import app.safar.ui.components.SectionHeader
+import app.safar.ui.components.TabBarClearance
 import app.safar.ui.components.TextAction
 import app.safar.ui.components.TopoTransform
 import app.safar.ui.components.rememberToastState
@@ -67,7 +71,7 @@ fun TripsScreen(navigator: Navigator, bottomBar: (@Composable () -> Unit)? = nul
             },
             bottomBar = bottomBar,
         )
-        AtlasToastHost(toast, bottomPadding = 40.dp)
+        AtlasToastHost(toast, bottomPadding = TabBarClearance + 16.dp)
     }
 }
 
@@ -92,11 +96,21 @@ fun TripsContent(
         bottomBar = bottomBar,
         overlay = {
             if (inSelection) {
-                Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 24.dp)) {
+                Box(
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                        .padding(start = 16.dp, end = 16.dp, bottom = TabBarClearance + 12.dp)
+                ) {
                     MergeBar(count = selection.size, enabled = selection.size >= 2, onMerge = onMerge, onCancel = onClearSelect)
                 }
             } else if (canUndo) {
-                Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 24.dp)) {
+                Box(
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                        .padding(start = 16.dp, end = 16.dp, bottom = TabBarClearance + 12.dp)
+                ) {
                     UndoBar(onUndo = onUndoMerge)
                 }
             }
@@ -110,6 +124,7 @@ fun TripsContent(
                     tilt = if (i % 2 == 1) 0.5f else -0.6f,
                     thumb = thumbFor(row.id),
                     selected = row.id in selection,
+                    selecting = inSelection,
                     onLongPress = { onToggleSelect(row.id) },
                     onClick = { if (inSelection) onToggleSelect(row.id) else onOpen(row.id) },
                 )

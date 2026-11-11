@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -29,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasCard
+import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.CardStyle
 import app.safar.ui.components.Freshness
 import app.safar.ui.components.NumberWithUnit
@@ -84,6 +87,7 @@ internal fun Postcard(
     tilt: Float,
     thumb: TrackThumb,
     selected: Boolean = false,
+    selecting: Boolean = false,
     onLongPress: () -> Unit = {},
     onClick: () -> Unit,
 ) {
@@ -119,11 +123,26 @@ internal fun Postcard(
             )
             PostcardText(row, Modifier.weight(1f))
         }
-        BasicText(
-            entryNumber(row.number),
-            Modifier.align(Alignment.TopEnd),
-            style = Atlas.type.src.copy(color = c.rust, fontSize = Atlas.type.src.fontSize * 0.9f),
-        )
+        if (selecting) {
+            Box(
+                Modifier
+                    .size(24.dp)
+                    .align(Alignment.TopEnd)
+                    .background(if (selected) c.rust else Color.Transparent, CircleShape)
+                    .border(1.5.dp, if (selected) c.rust else c.ink3, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (selected) {
+                    AtlasIcon(AtlasIcons.check, tint = Color.White, size = 14.dp)
+                }
+            }
+        } else {
+            BasicText(
+                entryNumber(row.number),
+                Modifier.align(Alignment.TopEnd),
+                style = Atlas.type.src.copy(color = c.rust, fontSize = Atlas.type.src.fontSize * 0.9f),
+            )
+        }
     }
 }
 

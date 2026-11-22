@@ -137,7 +137,7 @@ private fun PairNotes() {
     Column(Modifier.fillMaxWidth().padding(top = 22.dp)) {
         DashedRule(Modifier.padding(bottom = 6.dp), thickness = 1.dp, dash = 4.dp, gap = 3.dp)
         Note(AtlasIcons.lock, Phrases.NO_CODE_NEEDED, "")
-        Note(AtlasIcons.bike, "Only Suzuki bikes show up here.", byMode("", " Names have 12 characters and start with SA or SB."))
+        Note(AtlasIcons.bike, "Only Suzuki bikes show up here.", byMode("", " Turn ignition on and press the Mode button on your cluster."))
     }
 }
 

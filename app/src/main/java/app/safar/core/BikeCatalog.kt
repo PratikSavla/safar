@@ -19,6 +19,16 @@ object BikeCatalog {
         BikeModel("BM01", "V-Strom SX", VehicleFamily.MOTORCYCLE, 6, MOTO_ALERT, 12.0),
         BikeModel("BM11", "Gixxer / Gixxer SF", VehicleFamily.MOTORCYCLE, 6, MOTO_ALERT, 12.0),
         BikeModel("BM21", "Gixxer 250 / SF 250", VehicleFamily.MOTORCYCLE, 6, MOTO_ALERT, 12.0),
+        // SC series
+        BikeModel("CS01", "Access 125", VehicleFamily.SCOOTER, 5, SCOOTER_ALERT, 5.3),
+        BikeModel("CS02", "Access 125", VehicleFamily.SCOOTER, 5, SCOOTER_ALERT, 5.3),
+        BikeModel("CS11", "Burgman Street", VehicleFamily.SCOOTER, 5, SCOOTER_ALERT, 5.5),
+        BikeModel("CS12", "Burgman Street", VehicleFamily.SCOOTER, 5, SCOOTER_ALERT, 5.5),
+        BikeModel("CS21", "Avenis", VehicleFamily.SCOOTER, 5, SCOOTER_ALERT, 5.2),
+        BikeModel("CS31", "Burgman Street EX", VehicleFamily.SCOOTER, 5, SCOOTER_ALERT, 5.5),
+        BikeModel("CM01", "V-Strom SX", VehicleFamily.MOTORCYCLE, 6, MOTO_ALERT, 12.0),
+        BikeModel("CM11", "Gixxer / Gixxer SF", VehicleFamily.MOTORCYCLE, 6, MOTO_ALERT, 12.0),
+        BikeModel("CM21", "Gixxer 250 / SF 250", VehicleFamily.MOTORCYCLE, 6, MOTO_ALERT, 12.0),
     ).associateBy { it.code }
 
     fun forBleName(bleName: String): BikeModel {

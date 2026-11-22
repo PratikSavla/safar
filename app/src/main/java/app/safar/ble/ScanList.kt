@@ -5,7 +5,7 @@ import app.safar.core.ScannedBike
 import app.safar.protocol.isSuzukiCluster
 
 /**
- * Scan results (docs 2.2 step 2): only 12-character names with "SA" or "SB", one row per bike, in the order
+ * Scan results (docs 2.2 step 2): Suzuki cluster names (SA, SB, SC, SD), one row per bike, in the order
  * found. A repeat advertisement updates the RSSI (and the name, if the first one had none). The name is the
  * bike's own, so a bike that rotated its address shows once: the newest address replaces the old row.
  */

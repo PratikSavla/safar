@@ -31,12 +31,22 @@ val VEHICLES: List<Vehicle> = listOf(
     Vehicle("BM01", "V-STROM SX", VehicleType.MOTORCYCLE, ChecksumMode.SUM),
     Vehicle("BM11", "GIXXER / GIXXER SF", VehicleType.MOTORCYCLE, ChecksumMode.SUM),
     Vehicle("BM21", "GIXXER 250 / GIXXER SF 250", VehicleType.MOTORCYCLE, ChecksumMode.SUM),
+    // SC series (e.g. SCS01... Access 125 LCD and other revisions)
+    Vehicle("CS01", "Access 125", VehicleType.SCOOTER, ChecksumMode.SUM),
+    Vehicle("CS02", "Access 125", VehicleType.SCOOTER, ChecksumMode.SUM),
+    Vehicle("CS11", "Burgman Street", VehicleType.SCOOTER, ChecksumMode.SUM),
+    Vehicle("CS12", "Burgman Street", VehicleType.SCOOTER, ChecksumMode.SUM),
+    Vehicle("CS21", "Avenis", VehicleType.SCOOTER, ChecksumMode.SUM),
+    Vehicle("CS31", "Burgman Street EX", VehicleType.SCOOTER, ChecksumMode.SUM),
+    Vehicle("CM01", "V-STROM SX", VehicleType.MOTORCYCLE, ChecksumMode.SUM),
+    Vehicle("CM11", "GIXXER / GIXXER SF", VehicleType.MOTORCYCLE, ChecksumMode.SUM),
+    Vehicle("CM21", "GIXXER 250 / GIXXER SF 250", VehicleType.MOTORCYCLE, ChecksumMode.SUM),
 )
 
-/** Same filter as the original scan list: 12 characters and contains "SA" or "SB". */
+/** Filter for Suzuki clusters: 12 characters and contains SA, SB, SC, SD. */
 fun isSuzukiCluster(bleName: String?): Boolean {
     if (bleName == null || bleName.length != BLE_NAME_LENGTH) return false
-    return "SA" in bleName || "SB" in bleName
+    return "SA" in bleName || "SB" in bleName || "SC" in bleName || "SD" in bleName
 }
 
 /** Checksum mode from the name. Char [1] 'A' = inverted, anything else = sum. */

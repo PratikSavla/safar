@@ -21,7 +21,7 @@ class ConnectionTest {
     @Test
     fun connectionValuesMatchDocs() {
         assertEquals(20_000L, ConnectTiming.CONNECT_TIMEOUT_MS)
-        assertEquals(500L, ConnectTiming.DISCOVER_DELAY_MS)
+        assertEquals(1_000L, ConnectTiming.DISCOVER_DELAY_MS)
         assertEquals(250, ConnectTiming.REQUEST_MTU)
         assertEquals(10_000L, ConnectTiming.SCAN_DURATION_MS)
     }

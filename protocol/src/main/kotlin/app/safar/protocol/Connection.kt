@@ -15,8 +15,8 @@ object ConnectTiming {
     /** connectGatt() gives up after 20 s (docs 2.2 step 4). */
     const val CONNECT_TIMEOUT_MS = 20_000L
 
-    /** Wait after STATE_CONNECTED before discoverServices() (docs 2.2 step 4). */
-    const val DISCOVER_DELAY_MS = 500L
+    /** Wait after STATE_CONNECTED before discoverServices() (docs 2.2 step 4). Increased to 1000ms for older LCD cluster compatibility. */
+    const val DISCOVER_DELAY_MS = 1_000L
 
     /** MTU the app asks for (docs 2.2 step 5). The bike answers 65; a frame needs [MIN_MTU_FOR_FRAME]. */
     const val REQUEST_MTU = 250

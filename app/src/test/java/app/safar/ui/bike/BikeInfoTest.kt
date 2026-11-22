@@ -68,6 +68,15 @@ class BikeInfoTest {
     }
 
     @Test
+    fun scsClusterIdentifiesAsAccess125() {
+        val scsRecord = SavedBikeRecord("SCS010052043", "00:00:00:00:00:02")
+        val info = bikeInfo(BikeState(), scsRecord)!!
+        assertEquals("Access 125", info.model.name)
+        assertEquals(app.safar.core.VehicleFamily.SCOOTER, info.model.family)
+        assertEquals(5, info.model.fuelBars)
+    }
+
+    @Test
     fun missingDeviceFieldsShowADash() {
         val rows = developerDeviceRows(DeviceInfo(manufacturer = "SUZUKI", software = " ")).toMap()
         assertEquals("SUZUKI", rows["Manufacturer"])

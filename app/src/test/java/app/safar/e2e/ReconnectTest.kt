@@ -39,7 +39,7 @@ class ReconnectTest {
         val rig = BikeRig(this, savedBike = SavedBikeRecord(MOTO_NAME, BIKE_ADDRESS))
         rig.bike.mtu = 23
         rig.start()
-        rig.advance(1_000)
+        rig.advance(1_500)
 
         val failed = rig.recording.named("Connect failed").single()
         assertEquals(mapOf("reason" to "MTU 23 is below 33"), failed.detail)
@@ -52,7 +52,7 @@ class ReconnectTest {
 
         rig.advance(2_000)
         assertEquals(listOf(0L, failedAt + 2_000), rig.bike.connectRequests)
-        rig.advance(1_000)
+        rig.advance(1_500)
         assertEquals(LinkState.Reconnecting(2, CLOCK_BASE + 2 * failedAt + 2_000 + 5_000), rig.link)
         assertEquals(emptyList(), rig.recording.tx())
     }

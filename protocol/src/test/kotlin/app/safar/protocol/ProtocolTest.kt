@@ -149,11 +149,16 @@ class ProtocolTest {
     @Test
     fun `vehicle detection from the BLE name`() {
         assertEquals(true, isSuzukiCluster("SBM01A1B2C3D"))
+        assertEquals(true, isSuzukiCluster("SCS010052043"))
+        assertEquals(true, isSuzukiCluster("SDS01A1B2C3D"))
         assertEquals(false, isSuzukiCluster("SBM01"))
         assertEquals(false, isSuzukiCluster("MyHeadphones"))
         assertEquals("V-STROM SX", identifyVehicle("SBM01A1B2C3D")?.name)
+        assertEquals("Access 125", identifyVehicle("SCS010052043")?.name)
+        assertEquals("Burgman Street", identifyVehicle("SCS110052043")?.name)
         assertEquals(ChecksumMode.SUM, checksumModeFor("SBM01A1B2C3D"))
         assertEquals(ChecksumMode.INVERTED, checksumModeFor("SAS01A1B2C3D"))
+        assertEquals(ChecksumMode.SUM, checksumModeFor("SCS010052043"))
         assertNull(identifyVehicle("SBX99A1B2C3D"))
     }
 }

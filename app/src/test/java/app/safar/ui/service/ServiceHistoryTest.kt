@@ -30,6 +30,8 @@ class ServiceHistoryTest {
         val rows = historyRows(records, "₹", utc)
         assertEquals(HistoryRowUi(4, "Engine oil", ServiceIcon.OIL, "12 Mar 2026", "11,820 km · ₹450", "Main Rd garage"), rows[0])
         assertEquals(HistoryRowUi(3, "Battery check", ServiceIcon.BATTERY, "1 Dec 2025", "", null), rows[1])
+        val free = ServiceRecord(5, 1, "Engine oil", ServiceIcon.OIL, Instant.parse("2025-10-19T12:00:00Z").toEpochMilli(), 3_912, 0.0)
+        assertEquals("3,912 km · free", historyRows(listOf(free), "₹", utc)[0].detail)
     }
 
     @Test

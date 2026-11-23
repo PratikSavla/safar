@@ -61,7 +61,7 @@ fun ConnectionCard(conn: ConnUi, autoRideOn: Boolean, actions: ConnActions, modi
             }
             Stamp(conn.stamp, tone = conn.tone)
         }
-        LinkArt(conn.kind, conn.family)
+        LinkArt(conn.kind, conn.style)
         ConnFoot(conn, autoRideOn, actions)
     }
 }

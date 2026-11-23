@@ -1,5 +1,6 @@
 package app.safar.data.backup
 
+import app.safar.core.BikeStyle
 import app.safar.data.SavedBikeRecord
 import app.safar.data.Settings
 import app.safar.data.ThemeMode
@@ -88,6 +89,7 @@ fun SettingsDto.applyTo(base: Settings): Settings = base.copy(
     tankLitres = tankLitres,
     currencySymbol = currencySymbol ?: base.currencySymbol,
     developerMode = developerMode ?: base.developerMode,
+    bikeStyle = BikeStyle.entries.firstOrNull { it.name == bikeStyle } ?: base.bikeStyle,
 )
 
 fun Settings.toDto() = SettingsDto(
@@ -95,7 +97,7 @@ fun Settings.toDto() = SettingsDto(
     alertWhatsAppCalls = alertWhatsAppCalls, alertWhatsAppMessages = alertWhatsAppMessages, debugLog = debugLog,
     hideNames = hideNames, theme = theme.name, keepScreenOn = keepScreenOn, autoRideMode = autoRideMode,
     serviceReminders = serviceReminders, lowFuelAlert = lowFuelAlert, documentReminders = documentReminders,
-    tankLitres = tankLitres, currencySymbol = currencySymbol, developerMode = developerMode,
+    tankLitres = tankLitres, currencySymbol = currencySymbol, developerMode = developerMode, bikeStyle = bikeStyle?.name,
 )
 
 private fun TripEntity.toDto(track: List<TrackPointEntity>) = TripDto(

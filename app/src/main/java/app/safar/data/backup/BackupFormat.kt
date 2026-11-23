@@ -179,6 +179,8 @@ data class SettingsDto(
     val tankLitres: Double? = null,
     val currencySymbol: String? = null,
     val developerMode: Boolean? = null,
+    /** The rider's choice of bike drawing (a [app.safar.core.BikeStyle] name). The photo stays on the phone. */
+    val bikeStyle: String? = null,
 )
 
 /** The paired bike at export time. Kept for the record; import leaves the phone's own pairing alone. */

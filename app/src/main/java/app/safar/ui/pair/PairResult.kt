@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import app.safar.core.BikeStyle
 import app.safar.core.VehicleFamily
 import app.safar.protocol.sanitizeName
 import app.safar.ui.art.AtlasIcons
@@ -69,7 +70,7 @@ internal fun PairSuccess(ui: PairUi, onDone: () -> Unit) {
             },
             solid = true,
         )
-        BikeSilhouette(ui.model?.family ?: VehicleFamily.MOTORCYCLE, Modifier.padding(vertical = 8.dp), width = 200.dp, contentDescription = ui.model?.name)
+        BikeSilhouette(ui.model?.style ?: BikeStyle.STANDARD, Modifier.padding(vertical = 8.dp), width = 200.dp, contentDescription = ui.model?.name)
         DisplayTitle(ui.model?.name ?: "Suzuki", null, Atlas.type.displayMedium, Modifier.semantics { heading() })
         DevOnly {
             BasicText(listOfNotNull(ui.bikeName, ui.address).joinToString(" · "), style = Atlas.type.src.copy(color = c.ink3, textAlign = TextAlign.Center))

@@ -1,5 +1,6 @@
 package app.safar.data
 
+import app.safar.core.BikeStyle
 import java.time.LocalDate
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
@@ -30,6 +31,10 @@ data class Settings(
     val developerMode: Boolean = false,
     /** Permissions the rider waved away on Today ("Not now"), by name. The card returns when another one goes off. */
     val dismissedPermissions: Set<String> = emptySet(),
+    /** The rider's choice of bike drawing; null = the paired model's own. */
+    val bikeStyle: BikeStyle? = null,
+    /** The rider's photo of the bike: a file name in [BikePhotos]; null = the drawing. */
+    val bikePhoto: String? = null,
 )
 
 /** Where a fuel-up odometer came from (ux/FUEL.md). */

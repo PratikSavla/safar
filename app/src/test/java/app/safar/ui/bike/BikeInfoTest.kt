@@ -1,16 +1,20 @@
 package app.safar.ui.bike
 
 import app.safar.core.BikeState
+import app.safar.core.BikeStyle
 import app.safar.core.DeviceInfo
 import app.safar.core.LinkState
+import app.safar.data.BikePhotos
 import app.safar.data.SavedBikeRecord
 import app.safar.ui.testing.FakeBike
 import app.safar.ui.testing.FakeSavedBike
+import app.safar.ui.testing.FakeSettings
 import app.safar.ui.testing.MainDispatcherRule
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -19,6 +23,9 @@ import kotlin.test.assertTrue
 class BikeInfoTest {
     @get:Rule
     val main = MainDispatcherRule()
+
+    @get:Rule
+    val tmp = TemporaryFolder()
 
     private val record = SavedBikeRecord("SBM01A1B2C3D", "00:00:00:00:00:01")
 
@@ -90,11 +97,23 @@ class BikeInfoTest {
     @Test
     fun viewModelForgetsTheBike() = runTest {
         val bike = FakeBike(BikeState(link = LinkState.Connected, mtu = 65))
-        val vm = BikeViewModel(bike, FakeSavedBike(record))
+        val vm = BikeViewModel(bike, FakeSavedBike(record), FakeSettings(), BikePhotos(tmp.root), main.dispatcher)
         backgroundScope.launch(main.dispatcher) { vm.state.collect {} }
         assertTrue(vm.state.value.loaded)
         assertEquals("65", vm.state.value.info?.mtu)
         assertTrue(vm.forget())
         assertEquals(1, bike.forgotten)
+    }
+
+    @Test
+    fun viewModelSavesTheRidersDrawing() = runTest {
+        val settings = FakeSettings()
+        val vm = BikeViewModel(FakeBike(BikeState()), FakeSavedBike(record), settings, BikePhotos(tmp.root), main.dispatcher)
+        backgroundScope.launch(main.dispatcher) { vm.state.collect {} }
+        vm.chooseStyle(BikeStyle.SPORT)
+        assertEquals(BikeStyle.SPORT, settings.settings.value.bikeStyle)
+        assertEquals(BikeStyle.SPORT, vm.state.value.picture.style)
+        vm.chooseStyle(null)
+        assertNull(settings.settings.value.bikeStyle)
     }
 }

@@ -5,9 +5,13 @@ import app.safar.protocol.engineTempC as engineTempFromByte
 /** Scooter or motorcycle: decides fuel bar count, speed alert range and artwork (docs 7.2). */
 enum class VehicleFamily { SCOOTER, MOTORCYCLE }
 
+/** The shape of a bike, for its drawing. Stored by name: append new styles, never rename the old ones. */
+enum class BikeStyle { SCOOTER, MAXI_SCOOTER, SPORT_SCOOTER, STANDARD, SPORT, ADVENTURE }
+
 /**
  * App-side facts about a model code (BLE name chars [1..4]). The protocol module knows the checksum;
  * this adds what the UI needs. [tankLitres] is the model spec; the rider can override it in Settings.
+ * [style] picks the drawing; the rider can choose another one or a photo on the Bike page.
  */
 data class BikeModel(
     val code: String,
@@ -16,6 +20,7 @@ data class BikeModel(
     val fuelBars: Int,
     val alertRange: IntRange,
     val tankLitres: Double,
+    val style: BikeStyle = if (family == VehicleFamily.SCOOTER) BikeStyle.SCOOTER else BikeStyle.STANDARD,
 )
 
 /** A cluster found by the scan. [rssi] in dBm. */

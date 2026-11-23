@@ -1,5 +1,7 @@
 package app.safar.data.backup
 
+import app.safar.core.BikeStyle
+import app.safar.data.BikePhotos
 import app.safar.data.DocumentFiles
 import app.safar.data.SavedBikeRecord
 import app.safar.data.Settings
@@ -23,8 +25,8 @@ class UserDataManagerTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
-    private fun manager(dao: FakeBackupDao, settings: FakeSettings, bike: FakeSavedBike, docs: File): UserDataManager =
-        UserDataManager(dao, settings, bike, DocumentFiles(docs), tmp.root, Dispatchers.Unconfined)
+    private fun manager(dao: FakeBackupDao, settings: FakeSettings, bike: FakeSavedBike, docs: File, photos: File? = null): UserDataManager =
+        UserDataManager(dao, settings, bike, DocumentFiles(docs), tmp.root, Dispatchers.Unconfined, photos?.let(::BikePhotos))
 
     @Test
     fun exportThenImportOnAnotherPhoneRestoresEverything() = runTest {
@@ -85,15 +87,31 @@ class UserDataManagerTest {
     fun wipeLeavesNothingBehind() = runTest {
         val docs = tmp.newFolder("docs").also { File(it, PDF_NAME).writeBytes(byteArrayOf(9)) }
         val dao = FakeBackupDao(sampleRows())
-        val settings = FakeSettings(Settings(onboarded = true, riderName = "Alex", developerMode = true))
+        val photos = tmp.newFolder("bike").also { File(it, JPG_NAME).writeBytes(byteArrayOf(7)) }
+        val settings = FakeSettings(Settings(onboarded = true, riderName = "Alex", developerMode = true, bikePhoto = JPG_NAME))
         val bike = FakeSavedBike(SavedBikeRecord("SUZUKI-TEST", "00:11"))
-        manager(dao, settings, bike, docs).wipe()
+        manager(dao, settings, bike, docs, photos).wipe()
         assertTrue(dao.trips.isEmpty() && dao.points.isEmpty() && dao.fuel.isEmpty() && dao.service.isEmpty())
+        assertTrue(dao.records.isEmpty())
+        assertFalse(photos.exists())
         assertTrue(dao.placeRows.isEmpty() && dao.docs.isEmpty())
         assertNull(dao.parked)
         assertFalse(docs.exists())
         assertEquals(Settings(), settings.settings.value)
         assertNull(bike.saved.value)
+    }
+
+    @Test
+    fun importKeepsThisPhonesBikePhotoAndTakesTheFilesDrawing() = runTest {
+        val docs = tmp.newFolder("docs")
+        val source = FakeSettings(Settings(riderName = "Alex", bikeStyle = BikeStyle.SPORT, bikePhoto = "other.jpg"))
+        val out = ByteArrayOutputStream()
+        manager(FakeBackupDao(), source, FakeSavedBike(), docs).export(out, "1.0", 1)
+        val here = FakeSettings(Settings(onboarded = true, bikePhoto = JPG_NAME))
+        val m = manager(FakeBackupDao(), here, FakeSavedBike(), tmp.newFolder("docs2"))
+        m.restore(m.stage(ByteArrayInputStream(out.toByteArray())), 0)
+        assertEquals(JPG_NAME, here.settings.value.bikePhoto)
+        assertEquals(BikeStyle.SPORT, here.settings.value.bikeStyle)
     }
 
     @Test

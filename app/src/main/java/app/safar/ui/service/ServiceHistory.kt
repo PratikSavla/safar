@@ -25,16 +25,18 @@ data class HistoryRowUi(
     /** Odometer and cost, when known; empty otherwise. */
     val detail: String,
     val note: String?,
+    /** Bills and receipts kept with it. */
+    val bills: Int = 0,
 )
 
 /** History rows, newest first (the repository's order). A cost of 0 reads "free" (a first service at the dealer). */
-fun historyRows(records: List<ServiceRecord>, currency: String, zone: ZoneId): List<HistoryRowUi> = records.map { r ->
+fun historyRows(records: List<ServiceRecord>, currency: String, zone: ZoneId, billCounts: Map<Long, Int> = emptyMap()): List<HistoryRowUi> = records.map { r ->
     val date = RECORD_DATE.format(Instant.ofEpochMilli(r.atMillis).atZone(zone))
     val detail = listOfNotNull(
         r.odoKm?.let { "${Formatters.odometer(it)} km" },
         r.cost?.let { if (it == 0.0) "free" else Formatters.money(it, currency) },
     ).joinToString(" · ")
-    HistoryRowUi(r.id, r.label, r.icon, date, detail, r.note)
+    HistoryRowUi(r.id, r.label, r.icon, date, detail, r.note, billCounts[r.id] ?: 0)
 }
 
 /** What the "Log a past service" sheet holds. [day] is days since 1970-01-01. */

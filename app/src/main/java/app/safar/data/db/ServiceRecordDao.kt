@@ -28,6 +28,19 @@ interface ServiceRecordDao {
     )
     suspend fun setItemDone(id: Long, odoKm: Int, atMillis: Long)
 
+    @Update
+    suspend fun updateRecord(row: ServiceRecordEntity)
+
+    @Update
+    suspend fun updateItems(rows: List<ServiceItemEntity>)
+
+    /** Saves a changed record and the items that count from a different service because of it. */
+    @Transaction
+    suspend fun editRecord(record: ServiceRecordEntity, items: List<ServiceItemEntity>) {
+        updateRecord(record)
+        if (items.isNotEmpty()) updateItems(items)
+    }
+
     @Query("DELETE FROM service_record WHERE id = :id")
     suspend fun delete(id: Long)
 
@@ -41,8 +54,9 @@ interface ServiceRecordDao {
 
     /** Adds an earlier service, and updates [item] to count from it when given. */
     @Transaction
-    suspend fun logPast(record: ServiceRecordEntity, item: ServiceItemEntity?): Unit {
-        insert(record)
+    suspend fun logPast(record: ServiceRecordEntity, item: ServiceItemEntity?): Long {
+        val id = insert(record)
         if (item != null) updateItem(item)
+        return id
     }
 }

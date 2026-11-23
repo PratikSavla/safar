@@ -86,9 +86,15 @@ interface ServiceRepository {
 
     /**
      * Adds an earlier service to the history. [item], when given, is the item updated to count from this
-     * service (it was newer than the item's last one); both are written in one transaction.
+     * service (it was newer than the item's last one); both are written in one transaction. Returns the record's id.
      */
-    suspend fun logPast(record: ServiceRecord, item: ServiceItem?) {}
+    suspend fun logPast(record: ServiceRecord, item: ServiceItem?): Long = 0L
+
+    /**
+     * Saves a changed history record. [items] are the logbook items whose last service moves with it (see
+     * `itemsAfterEdit`); all are written in one transaction.
+     */
+    suspend fun updateRecord(record: ServiceRecord, items: List<ServiceItem>) {}
 
     /** Removes a record from the history. The item keeps counting from its last service. */
     suspend fun deleteRecord(id: Long) {}

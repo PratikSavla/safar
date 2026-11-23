@@ -163,7 +163,8 @@ enum class DocKind { RC, INSURANCE, PUC, LICENCE, SERVICE_BILL, OTHER }
 /**
  * A bike paper kept on this phone: a PDF or an image in `filesDir/documents/[fileName]`. The file is never part
  * of Android backup. [expiryEpochDay] is a local date (days since 1970-01-01); [remindedStage] is the last
- * expiry reminder sent for that date (see `reminderStage`), 0 = none yet.
+ * expiry reminder sent for that date (see `reminderStage`), 0 = none yet. [serviceRecordId] links a bill or
+ * receipt to the [ServiceRecord] it belongs to; it stays a paper when that record is removed.
  */
 data class BikeDocument(
     val id: Long = 0,
@@ -176,4 +177,5 @@ data class BikeDocument(
     val expiryEpochDay: Long? = null,
     val note: String? = null,
     val remindedStage: Int = 0,
+    val serviceRecordId: Long? = null,
 )

@@ -157,6 +157,8 @@ data class DocumentDto(
     /** The same date as text (yyyy-MM-dd), for people reading the file. Ignored on import. */
     val expiryDate: String? = null,
     val note: String? = null,
+    /** The service record this bill belongs to (an id in serviceRecords), if any. */
+    val serviceRecordId: Long? = null,
 )
 
 /** Rider settings. Missing values take the app's defaults on import. */

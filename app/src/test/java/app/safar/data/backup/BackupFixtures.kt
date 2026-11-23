@@ -35,7 +35,7 @@ internal fun sampleRows(): DatabaseRows = DatabaseRows(
     parkedSpot = ParkedSpotEntity(lat = 10.5, lng = 70.25, accuracyM = 8f, atMillis = 3_000, label = "Main Rd"),
     documents = listOf(
         DocumentEntity(1, "PUC", "PUC", PDF_NAME, "application/pdf", 9, 500, 20_400, "Centre 12", 1),
-        DocumentEntity(2, "RC", "RC", JPG_NAME, "image/jpeg", 5, 600, null, null, 0),
+        DocumentEntity(2, "RC", "RC", JPG_NAME, "image/jpeg", 5, 600, null, null, 0, serviceRecordId = 2),
     ),
     serviceRecords = listOf(
         ServiceRecordEntity(2, 5, "Engine oil", "OIL", 900, 9_800, 450.0, "Main Rd garage"),

@@ -93,11 +93,13 @@ fun ParkedSpot.toEntity() = ParkedSpotEntity(lat = lat, lng = lng, accuracyM = a
 fun DocumentEntity.toModel() = BikeDocument(
     id = id, title = title, kind = enumOr(kind, DocKind.OTHER), fileName = fileName, mimeType = mimeType,
     sizeBytes = sizeBytes, addedMillis = addedMillis, expiryEpochDay = expiryEpochDay, note = note, remindedStage = remindedStage,
+    serviceRecordId = serviceRecordId,
 )
 
 fun BikeDocument.toEntity() = DocumentEntity(
     id = id, title = title, kind = kind.name, fileName = fileName, mimeType = mimeType, sizeBytes = sizeBytes,
     addedMillis = addedMillis, expiryEpochDay = expiryEpochDay, note = note, remindedStage = remindedStage,
+    serviceRecordId = serviceRecordId,
 )
 
 /**

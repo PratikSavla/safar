@@ -31,9 +31,8 @@ class ServiceViewModel(
     private val now: () -> Long = System::currentTimeMillis,
     private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
-    val state: StateFlow<ServiceUiState> = combine(combine(service.items, service.records, ::Pair), settings.settings, bike, ride, fuelUps) { (items, records), s, b, r, f ->
+    val state: StateFlow<ServiceUiState> = combine(service.items, settings.settings, bike, ride, fuelUps) { items, s, b, r, f ->
         serviceUiState(items, b, r, s.serviceReminders, f, now(), zone)
-            .copy(history = historyRows(records, s.currencySymbol, zone), currency = s.currencySymbol)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ServiceUiState())
 
     val notices = Notices()
@@ -79,28 +78,6 @@ class ServiceViewModel(
         launchLogged(TAG, "delete of service item $id", { notices.post("Couldn’t remove the item. Try again.") }) {
             service.delete(id)
             notices.post("${item.label} removed")
-        }
-    }
-
-    /** Adds a service done earlier; the item counts from it when it is newer than the item's last service. */
-    fun logPast(form: PastForm) {
-        val s = state.value
-        if (s.lockReason != null) return
-        val items = s.rows.map { it.status.item }
-        val record = pastRecord(form, items, s.today, zone) ?: return
-        val item = items.first { it.id == record.itemId }
-        val moved = itemAfterPast(item, record)
-        launchLogged(TAG, "log of a past service for item ${item.id}", { notices.post("Couldn’t log the service. Try again.") }) {
-            service.logPast(record, moved)
-            notices.post(pastLoggedText(record, moved != null, zone))
-        }
-    }
-
-    fun deleteRecord(id: Long) {
-        val row = state.value.history.firstOrNull { it.id == id } ?: return
-        launchLogged(TAG, "delete of service record $id", { notices.post("Couldn’t remove it. Try again.") }) {
-            service.deleteRecord(id)
-            notices.post("${row.label} on ${row.date} removed from the history")
         }
     }
 

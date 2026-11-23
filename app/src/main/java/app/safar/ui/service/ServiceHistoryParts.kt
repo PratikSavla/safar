@@ -21,19 +21,15 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import app.safar.data.ServiceItem
 import app.safar.ui.art.AtlasIcons
-import app.safar.ui.components.AtlasBottomSheet
 import app.safar.ui.components.Hairline
 import app.safar.ui.components.IconBox
-import app.safar.ui.components.Kicker
 import app.safar.ui.components.Note
-import app.safar.ui.components.PrimaryButton
-import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.SectionHeader
 import app.safar.ui.components.TextAction
 import app.safar.ui.theme.Atlas
 import app.safar.ui.theme.AtlasShapes
 
-/** Services done, newest first, with "Log a past service". Tapping a line offers to remove it. */
+/** Services done, newest first, with "Log a past service". Tapping a line opens it to change or remove. */
 @Composable
 internal fun HistorySection(rows: List<HistoryRowUi>, canLog: Boolean, onLogPast: () -> Unit, onRecord: (Long) -> Unit) {
     SectionHeader("Service history")
@@ -47,7 +43,7 @@ internal fun HistorySection(rows: List<HistoryRowUi>, canLog: Boolean, onLogPast
 @Composable
 private fun HistoryLine(row: HistoryRowUi, onClick: () -> Unit) {
     val c = Atlas.colors
-    Column(Modifier.fillMaxWidth().clickable(onClickLabel = "Remove from history", onClick = onClick)) {
+    Column(Modifier.fillMaxWidth().clickable(onClickLabel = "Change", onClick = onClick)) {
         Row(
             Modifier.fillMaxWidth().heightIn(min = Atlas.dimens.touchTarget).padding(vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -56,25 +52,17 @@ private fun HistoryLine(row: HistoryRowUi, onClick: () -> Unit) {
             IconBox(row.icon.vector(), tint = c.ink2, outline = c.rule2)
             Column(Modifier.weight(1f)) {
                 BasicText(row.label, style = Atlas.type.uiStrong.copy(color = c.ink))
-                val sub = listOf(row.date, row.detail).filter { it.isNotEmpty() }.joinToString(" · ")
+                val bills = when (row.bills) {
+                    0 -> ""
+                    1 -> "1 bill"
+                    else -> "${row.bills} bills"
+                }
+                val sub = listOf(row.date, row.detail, bills).filter { it.isNotEmpty() }.joinToString(" · ")
                 BasicText(sub, Modifier.padding(top = 2.dp), style = Atlas.type.src.copy(color = c.ink3))
                 row.note?.let { BasicText(it, Modifier.padding(top = 2.dp), style = Atlas.type.uiSmall.copy(color = c.ink2)) }
             }
         }
         Hairline(color = c.rule2)
-    }
-}
-
-/** Confirms removing a history line. The item's reminder is left as it is. */
-@Composable
-internal fun RemoveRecordSheet(row: HistoryRowUi?, onDismiss: () -> Unit, onRemove: (Long) -> Unit) {
-    AtlasBottomSheet(row != null, onDismiss, title = row?.let { "Remove ${it.label} on ${it.date}?" }) {
-        Kicker("Service history")
-        Note("Only the history line goes. The reminder keeps counting from the last service.", Modifier.padding(top = 8.dp))
-        Row(Modifier.fillMaxWidth().padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            SecondaryButton("Keep", onDismiss, Modifier.weight(1f))
-            PrimaryButton("Remove", { row?.let { onRemove(it.id) } }, Modifier.weight(1f), icon = AtlasIcons.cross)
-        }
     }
 }
 

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 5,
-    "identityHash": "d376005df6d3773ab4aa9cf7f89f9bfc",
+    "identityHash": "ca2dae84a6efabadd54d7d1d6d1e9206",
     "entities": [
       {
         "tableName": "fuel_up",
@@ -537,7 +537,7 @@
       },
       {
         "tableName": "document",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `kind` TEXT NOT NULL, `fileName` TEXT NOT NULL, `mimeType` TEXT NOT NULL, `sizeBytes` INTEGER NOT NULL, `addedMillis` INTEGER NOT NULL, `expiryEpochDay` INTEGER, `note` TEXT, `remindedStage` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `kind` TEXT NOT NULL, `fileName` TEXT NOT NULL, `mimeType` TEXT NOT NULL, `sizeBytes` INTEGER NOT NULL, `addedMillis` INTEGER NOT NULL, `expiryEpochDay` INTEGER, `note` TEXT, `remindedStage` INTEGER NOT NULL, `serviceRecordId` INTEGER)",
         "fields": [
           {
             "fieldPath": "id",
@@ -596,6 +596,11 @@
             "columnName": "remindedStage",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "serviceRecordId",
+            "columnName": "serviceRecordId",
+            "affinity": "INTEGER"
           }
         ],
         "primaryKey": {
@@ -608,7 +613,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd376005df6d3773ab4aa9cf7f89f9bfc')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ca2dae84a6efabadd54d7d1d6d1e9206')"
     ]
   }
 }

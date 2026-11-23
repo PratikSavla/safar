@@ -65,7 +65,7 @@ fun BackupData.toRows(todayEpochDay: Long): DatabaseRows = DatabaseRows(
     parkedSpot = parkedSpot?.let { ParkedSpotEntity(lat = it.lat, lng = it.lng, accuracyM = it.accuracyM, atMillis = it.atMillis, label = it.label) },
     documents = documents.map {
         val stage = reminderStage(todayEpochDay, it.expiryEpochDay)
-        DocumentEntity(it.id, it.title, it.kind, it.fileName, it.mimeType, it.sizeBytes, it.addedMillis, it.expiryEpochDay, it.note, stage)
+        DocumentEntity(it.id, it.title, it.kind, it.fileName, it.mimeType, it.sizeBytes, it.addedMillis, it.expiryEpochDay, it.note, stage, it.serviceRecordId)
     },
     serviceRecords = serviceRecords.map { ServiceRecordEntity(it.id, it.itemId, it.label, it.icon, it.atMillis, it.odoKm, it.cost, it.note) },
 )
@@ -122,5 +122,5 @@ private fun PlaceEntity.toDto() = PlaceDto(id, label, detail, query, kind, sourc
 
 private fun DocumentEntity.toDto() = DocumentDto(
     id, title, kind, fileName, mimeType, sizeBytes, addedMillis, expiryEpochDay,
-    expiryDate = expiryEpochDay?.let { LocalDate.ofEpochDay(it).toString() }, note = note,
+    expiryDate = expiryEpochDay?.let { LocalDate.ofEpochDay(it).toString() }, note = note, serviceRecordId = serviceRecordId,
 )

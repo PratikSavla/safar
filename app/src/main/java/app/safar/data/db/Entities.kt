@@ -126,6 +126,8 @@ data class DocumentEntity(
     val expiryEpochDay: Long?,
     val note: String?,
     val remindedStage: Int,
+    // Added in version 5: the service record a bill belongs to.
+    val serviceRecordId: Long? = null,
 )
 
 /** A GPS waypoint at the join between two merged legs; deleted with the trip via CASCADE. */

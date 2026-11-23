@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -18,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.safar.data.ServiceItem
+import app.safar.data.ServiceRecord
 import app.safar.ui.art.AtlasIcons
 import app.safar.ui.components.AtlasBottomSheet
 import app.safar.ui.components.AtlasTextField
@@ -28,6 +30,7 @@ import app.safar.ui.components.SecondaryButton
 import app.safar.ui.components.showPastDatePicker
 import app.safar.ui.theme.Atlas
 import java.time.LocalDate
+import java.time.ZoneId
 
 private const val NO_ITEM = -1L
 
@@ -37,25 +40,32 @@ private val PastSaver = listSaver<PastForm, Any>(
     restore = { PastForm((it[0] as Long).takeIf { id -> id != NO_ITEM }, it[1] as Long, it[2] as String, it[3] as String, it[4] as String) },
 )
 
-/** What the sheet needs from the logbook. */
+/** What the sheet needs from the logbook. [editing] is the record being changed; null logs a new one. */
 internal class PastSheetSpec(
     val visible: Boolean,
     val items: List<ServiceItem>,
     val today: LocalDate,
     val currency: String,
     val lockReason: String?,
+    val editing: ServiceRecord? = null,
+    val bills: SheetBills = SheetBills(),
 )
 
 /**
- * Log a service done before (an oil change last spring, the first service at the dealer): what, when, the
- * odometer then, and an optional cost and note. The text fields lock while moving (UX rule 3).
+ * Log a service done before (an oil change last spring, the first service at the dealer), or change one in the
+ * history: what, when, the odometer then, an optional cost and note, and its bills. The text fields lock while
+ * moving (UX rule 3). [onDelete] removes the record being edited.
  */
 @Composable
-internal fun PastServiceSheet(spec: PastSheetSpec, onDismiss: () -> Unit, onSave: (PastForm) -> Unit) {
+internal fun PastServiceSheet(spec: PastSheetSpec, onDismiss: () -> Unit, onSave: (PastForm) -> Unit, onDelete: () -> Unit = {}) {
     val today = spec.today.toEpochDay()
-    var form by rememberSaveable(spec.visible, stateSaver = PastSaver) { mutableStateOf(PastForm(day = today)) }
+    val editing = spec.editing
+    val zone = remember { ZoneId.systemDefault() }
+    var form by rememberSaveable(spec.visible, editing?.id, stateSaver = PastSaver) {
+        mutableStateOf(editing?.let { formForRecord(it, zone) } ?: PastForm(day = today))
+    }
     val context = LocalContext.current
-    AtlasBottomSheet(spec.visible, onDismiss, title = "Log a past service") {
+    AtlasBottomSheet(spec.visible, onDismiss, title = if (editing == null) "Log a past service" else "Change this service") {
         Kicker("What was done", Modifier.padding(bottom = 8.dp))
         ItemChips(spec.items, form.itemId) { form = form.copy(itemId = it) }
         DayRow(form.day, today) { showPastDatePicker(context, form.day, today) { day -> form = form.copy(day = day) } }
@@ -72,7 +82,9 @@ internal fun PastServiceSheet(spec: PastSheetSpec, onDismiss: () -> Unit, onSave
             form.note, { form = form.copy(note = it) }, "Note · optional", Modifier.padding(top = 12.dp),
             lockedReason = spec.lockReason, placeholder = "Dealer, parts, anything", maxLength = 80, textStyle = Atlas.type.ui,
         )
+        BillsBlock(spec.bills, enabled = spec.lockReason == null)
         PastActions(spec, form, onDismiss, onSave)
+        if (editing != null) RemoveRecordAction(onDelete)
     }
 }
 
@@ -99,6 +111,7 @@ private fun PastActions(spec: PastSheetSpec, form: PastForm, onDismiss: () -> Un
     if (problem != null && form.itemId != null) Note(problem, Modifier.padding(top = 12.dp), color = Atlas.colors.rust)
     Row(Modifier.fillMaxWidth().padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         SecondaryButton("Cancel", onDismiss, Modifier.weight(1f))
-        PrimaryButton("Log it", { onSave(form) }, Modifier.weight(1f), icon = AtlasIcons.check, enabled = problem == null && spec.lockReason == null)
+        val ready = problem == null && spec.lockReason == null && !spec.bills.draft.adding
+        PrimaryButton(if (spec.editing == null) "Log it" else "Save", { onSave(form) }, Modifier.weight(1f), icon = AtlasIcons.check, enabled = ready)
     }
 }

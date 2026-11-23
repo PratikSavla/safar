@@ -79,6 +79,9 @@ class RoomServiceRepository(private val dao: ServiceItemDao, private val recordD
     override suspend fun logPast(record: ServiceRecord, item: ServiceItem?) =
         recordDao.logPast(record.toEntity().copy(id = 0), item?.toEntity())
 
+    override suspend fun updateRecord(record: ServiceRecord, items: List<ServiceItem>) =
+        recordDao.editRecord(record.toEntity(), items.map { it.toEntity() })
+
     override suspend fun deleteRecord(id: Long) = recordDao.delete(id)
 
     /** Inserts [items] in one transaction when there are none yet. Returns true when it seeded. */

@@ -29,6 +29,13 @@ class MappersTest {
     }
 
     @Test
+    fun aBillKeepsItsServiceRecord() {
+        val bill = BikeDocument(9, "Oil receipt", DocKind.SERVICE_BILL, "b.jpg", "image/jpeg", 2_048, 5_000, serviceRecordId = 4)
+        assertEquals(bill, bill.toEntity().toModel())
+        assertEquals(4L, bill.toEntity().serviceRecordId)
+    }
+
+    @Test
     fun roundTripsAServiceRecordAndReadsAnUnknownIconAsGeneric() {
         val record = ServiceRecord(4, 1, "Engine oil", ServiceIcon.OIL, 5_000, 11_820, 450.0, "Main Rd garage")
         assertEquals(record, record.toEntity().toModel())

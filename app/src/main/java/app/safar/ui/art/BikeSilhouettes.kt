@@ -38,32 +38,33 @@ object BikeSilhouettes {
     val maxiScooter: ImageVector by lazy {
         lineArt("atlas.maxiScooter", w = 124f, h = 66f, stroke = 2.6f) {
             circle(26f, 52f, 10f); circle(26f, 52f, 3f); circle(98f, 52f, 10f); circle(98f, 52f, 3f)
-            path("M10 44c0-14 12-22 28-22h20l6 14h14c10 0 18 8 20 16"); path("M36 22c2-6 8-9 16-9h10l4 6")
-            path("M78 36 90 10l8-4"); path("M90 12l-6-6"); path("M58 46h26"); path("M12 34l-4-2")
+            path("M10 46c0-14 10-22 26-22h22l6 14h14c8 0 15 6 18 14"); path("M34 24c0-6 6-9 14-9h6l4 4h10")
+            path("M78 38 90 10l6-4"); path("M88 14l-6-4"); path("M62 46h22")
         }
     }
 
     val sportScooter: ImageVector by lazy {
         lineArt("atlas.sportScooter", w = 124f, h = 66f, stroke = 2.6f) {
             circle(26f, 52f, 10f); circle(26f, 52f, 3f); circle(96f, 52f, 10f); circle(96f, 52f, 3f)
-            path("M14 44l6-14h28l6 10h22l10 6 6 8"); path("M38 30l4-8h18l4 8")
-            path("M80 40 90 14h8"); path("M86 14l-4-4"); path("M58 46h22"); path("M18 32l-8-6")
+            path("M16 46l4-12 8-6h28l6 10h16l10 4 6 8"); path("M36 28l4-8h22")
+            path("M80 38 90 12h8"); path("M86 12l-4-4"); path("M60 46h22")
         }
     }
 
     val sport: ImageVector by lazy {
         lineArt("atlas.sport", w = 124f, h = 66f, stroke = 2.6f) {
             circle(24f, 48f, 14f); circle(24f, 48f, 4f); circle(100f, 48f, 14f); circle(100f, 48f, 4f)
-            path("M24 48 46 32h22l16 8 16 8"); path("M12 26l14 2h18"); path("M44 28l6-8h16l8 6")
-            path("M74 26l14-10h8l4 6-4 12-14 6"); path("M90 16l4-8"); path("M50 40h18l8-6")
+            path("M24 48 46 34"); path("M16 24l26 6h8"); path("M50 30c4-8 14-10 24-6")
+            path("M74 24l12-6 8 4-4 14-14 6H48l-2-12"); path("M86 18l4-8"); path("M90 36 100 48")
         }
     }
 
     val adventure: ImageVector by lazy {
         lineArt("atlas.adventure", w = 124f, h = 66f, stroke = 2.6f) {
             circle(24f, 48f, 13f); circle(24f, 48f, 4f); circle(100f, 47f, 15f); circle(100f, 47f, 4f)
-            path("M24 48 44 26h24l16 6 16 15"); path("M40 26 34 16h16l8 10"); path("M58 26c4-8 14-10 22-6l4 10")
-            path("M84 30 92 6l8-2"); path("M92 10l-8-4"); path("M92 22l14 6"); path("M8 20h16l4 6"); path("M50 40h20l8-6")
+            path("M24 48 44 28h26l14 6 16 13"); path("M44 28 40 18h16l6 10"); path("M40 18H24l-2 4")
+            path("M58 28c4-9 15-11 23-6l3 12"); path("M84 34 93 10"); path("M93 10l4-8 5 2-2 8")
+            path("M87 26l15 4-3 5"); path("M50 40h20l8-6")
         }
     }
 

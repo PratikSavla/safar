@@ -72,6 +72,8 @@ internal class AndroidGattPort(
     override fun has(service: UUID, characteristic: UUID?): Boolean =
         if (characteristic == null) client.service(service) != null else characteristic(service, characteristic) != null
 
+    override fun services(): List<GattServiceInfo> = client.services()
+
     override suspend fun enableNotify(service: UUID, characteristic: UUID): Boolean =
         characteristic(service, characteristic)?.let { client.enableNotify(it) } ?: false
 

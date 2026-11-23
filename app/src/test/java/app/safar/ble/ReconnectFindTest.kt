@@ -64,7 +64,7 @@ class ReconnectFindTest {
         assertEquals(listOf(Action.StartTimer(10_000)), p.onFindDone(null))
         assertEquals(State.Waiting(mac, 3, 10_000), p.state)
         assertEquals(listOf(Action.Connect(mac, 3)), p.onTimer())
-        assertEquals(listOf(Action.CloseLink, Action.StartTimer(30_000)), p.onLinkLost(), "count restarts")
+        assertEquals(listOf(Action.CloseLink, Action.StartTimer(10_000)), p.onLinkLost(), "count restarts")
     }
 
     @Test

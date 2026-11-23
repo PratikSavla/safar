@@ -30,6 +30,27 @@ object GattUuids {
 const val BIKE_MTU = 65
 const val MIN_MTU_FOR_FRAME = 33
 
+/** ATT MTU of a link before (or without) an MTU exchange: 20 bytes of data per packet. */
+const val DEFAULT_ATT_MTU = 23
+
+/** Characteristic property bits (Bluetooth Core Spec Vol 3 Part G 3.3.1.1), as Android reports them. */
+object GattProperty {
+    const val READ = 0x02
+    const val WRITE_NO_RESPONSE = 0x04
+    const val WRITE = 0x08
+    const val NOTIFY = 0x10
+    const val INDICATE = 0x20
+
+    fun canWrite(properties: Int): Boolean = properties and (WRITE or WRITE_NO_RESPONSE) != 0
+    fun canNotify(properties: Int): Boolean = properties and (NOTIFY or INDICATE) != 0
+
+    /**
+     * The original app (FastBLE) never sets a write type, so Android uses the characteristic's default: write
+     * without response when the property allows it, else write with response. The V-Strom SX TX has WRITE only.
+     */
+    fun writesWithoutResponse(properties: Int): Boolean = properties and WRITE_NO_RESPONSE != 0
+}
+
 /** The bike sends one cluster frame about every 5 s. */
 const val CLUSTER_PERIOD_MS = 5000L
 
@@ -62,8 +83,11 @@ object Timing {
     const val EVENT_REPEAT = SEND_REPEAT
     const val EVENT_GAP_MS = SEND_GAP_MS
 
-    /** Auto-reconnect back-off (docs 12.4 R3): 2 s, 5 s, 10 s, then every 30 s. */
-    val RECONNECT_BACKOFF_MS: List<Long> = listOf(2_000L, 5_000L, 10_000L, 30_000L)
+    /**
+     * Auto-reconnect back-off (docs 12.4 R3): 2 s, 5 s, then every 10 s, the period of the original app's
+     * reconnect timer (docs 2.4).
+     */
+    val RECONNECT_BACKOFF_MS: List<Long> = listOf(2_000L, 5_000L, 10_000L)
 
     /** Delay before reconnect [attempt] (1-based). Attempts past the list use the last value. */
     fun reconnectDelayMs(attempt: Int): Long {

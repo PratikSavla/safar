@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothProfile
 import android.os.Build
 import app.safar.core.DebugLog
-import app.safar.protocol.GattUuids
 
 /** Text for common GATT / HCI disconnect statuses, for the log (docs 12.6 "disconnect with reason"). */
 fun gattStatusText(status: Int): String = when (status) {
@@ -89,13 +88,13 @@ internal class GattCallbackBridge(
         characteristic: BluetoothGattCharacteristic,
         value: ByteArray,
     ) {
-        if (characteristic.uuid == GattUuids.RX_CHARACTERISTIC) client.rx.trySend(value.copyOf())
+        if (characteristic.uuid == client.rxUuid) client.rx.trySend(value.copyOf())
     }
 
     @Deprecated("Below API 33 only")
     override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return
-        if (characteristic.uuid != GattUuids.RX_CHARACTERISTIC) return
+        if (characteristic.uuid != client.rxUuid) return
         @Suppress("DEPRECATION")
         characteristic.value?.copyOf()?.let { client.rx.trySend(it) }
     }

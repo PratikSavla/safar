@@ -3,15 +3,18 @@ package app.safar.ble
 import app.safar.core.DebugLog
 import app.safar.core.DeviceInfo
 import app.safar.protocol.ConnectTiming
+import app.safar.protocol.DEFAULT_ATT_MTU
 import app.safar.protocol.DeviceInformationUuids
-import app.safar.protocol.GattUuids
 import app.safar.protocol.MIN_MTU_FOR_FRAME
 import app.safar.protocol.toHex
 import kotlinx.coroutines.delay
 import java.util.UUID
 
-/** A link ready for frames: MTU set, TX found, notify on, Device Information read. */
-class LinkReady(val mtu: Int, val deviceInfo: DeviceInfo)
+/**
+ * A link ready for frames: MTU exchanged (or the default kept), frame [channel] found, notify on. Device
+ * Information is read later, once the session runs ([readDeviceInfo]).
+ */
+class LinkReady(val mtu: Int, val channel: ClusterChannel)
 
 class LinkSetupException(message: String) : Exception(message)
 
@@ -24,9 +27,10 @@ private fun GattPort.failStep(step: String): Nothing {
 }
 
 /**
- * The connection sequence of docs 2.2 steps 4-7, then Device Information (docs 12.4 E1). Throws
- * [LinkSetupException] with the reason when a step fails or the link drops; the caller logs it and closes
- * the client.
+ * The connection sequence of docs 2.2 steps 4-7, as forgiving as the original app: a refused MTU exchange is
+ * logged and the link goes on with the default MTU, and the frame channel is found by UUID, else by the
+ * original app's positions, else by properties ([findClusterChannel]). Throws [LinkSetupException] with the
+ * reason when a step fails or the link drops; the caller logs it and closes the client.
  */
 suspend fun setUpLink(client: GattPort, log: DebugLog): LinkReady {
     if (!client.connect(ConnectTiming.CONNECT_TIMEOUT_MS)) {
@@ -36,42 +40,75 @@ suspend fun setUpLink(client: GattPort, log: DebugLog): LinkReady {
     log.event("GATT connected")
     delay(ConnectTiming.DISCOVER_DELAY_MS)
     if (!client.discoverServices()) client.failStep("service discovery failed")
-    val mtu = client.requestMtu(ConnectTiming.REQUEST_MTU) ?: client.failStep("MTU request failed")
-    log.event("MTU changed", mapOf("mtu" to mtu.toString(), "requested" to ConnectTiming.REQUEST_MTU.toString()))
-    if (mtu < MIN_MTU_FOR_FRAME) fail("MTU $mtu is below $MIN_MTU_FOR_FRAME")
-    if (!client.has(GattUuids.SERVICE)) fail("service FFF0 not found")
-    if (!client.has(GattUuids.SERVICE, GattUuids.TX_CHARACTERISTIC)) fail("TX characteristic FFF1 not found")
-    if (!client.has(GattUuids.SERVICE, GattUuids.RX_CHARACTERISTIC)) fail("RX characteristic FFF2 not found")
-    log.event("Characteristics found by UUID", mapOf("service" to "FFF0", "tx" to "FFF1", "rx" to "FFF2"))
-    if (!client.enableNotify(GattUuids.SERVICE, GattUuids.RX_CHARACTERISTIC)) {
-        client.failStep("enabling notify on FFF2 failed")
+    val mtu = exchangeMtu(client, log)
+    val services = client.services()
+    log.event("GATT layout", mapOf("services" to layoutText(services)))
+    val channel = findClusterChannel(services) ?: fail("no frame channel (service FFF0 with FFF1 and FFF2) found")
+    log.event("Frame channel", channelDetail(channel))
+    if (!client.enableNotify(channel.service, channel.rx.uuid)) {
+        client.failStep("enabling notify on ${shortUuid(channel.rx.uuid)} failed")
     }
-    log.event("Notify on", mapOf("cccd" to "01 00"))
-    val info = readDeviceInfo(client, log)
-    if (client.link.value != GattLink.Connected) client.failStep("device information read")
-    return LinkReady(mtu, info)
+    log.event("Notify on", mapOf("rx" to shortUuid(channel.rx.uuid)))
+    if (client.link.value != GattLink.Connected) client.failStep("notify")
+    return LinkReady(mtu, channel)
 }
 
-/** Reads every Device Information characteristic the bike has. Missing ones stay null; no step is fatal. */
-suspend fun readDeviceInfo(client: GattPort, log: DebugLog): DeviceInfo {
+/**
+ * MTU exchange (docs 2.2 step 5). The original app only logs a failure, so a refused or failed exchange keeps
+ * [DEFAULT_ATT_MTU] and a small MTU is logged; only a lost link fails the step.
+ */
+private suspend fun exchangeMtu(client: GattPort, log: DebugLog): Int {
+    val requested = ConnectTiming.REQUEST_MTU
+    val accepted = client.requestMtu(requested)
+    if (accepted == null) {
+        if (client.link.value != GattLink.Connected) client.failStep("MTU request failed")
+        log.event("MTU request failed", mapOf("requested" to "$requested", "using" to "$DEFAULT_ATT_MTU"), error = true)
+        return DEFAULT_ATT_MTU
+    }
+    log.event("MTU changed", mapOf("mtu" to "$accepted", "requested" to "$requested"))
+    if (accepted < MIN_MTU_FOR_FRAME) {
+        log.event("MTU below frame size", mapOf("mtu" to "$accepted", "needed" to "$MIN_MTU_FOR_FRAME"), error = true)
+    }
+    return accepted
+}
+
+private fun channelDetail(channel: ClusterChannel): Map<String, String> = mapOf(
+    "lookup" to channel.lookup.name.lowercase(),
+    "service" to shortUuid(channel.service),
+    "tx" to "${shortUuid(channel.tx.uuid)} ${propertiesText(channel.tx.properties)}",
+    "rx" to "${shortUuid(channel.rx.uuid)} ${propertiesText(channel.rx.properties)}",
+    "write" to if (channel.txWithoutResponse) "without response" else "with response",
+)
+
+/** Device Information read: what was read, and whether every read the bike was asked for succeeded. */
+class DeviceInfoRead(val info: DeviceInfo, val complete: Boolean)
+
+/**
+ * Reads the Device Information characteristics the bike has, stopping at the first failed read: a read the
+ * bike does not answer holds the link until the stack's ATT timeout, so no further read is risked. The
+ * original app never reads them; Safar reads them only once the session runs (docs 12.4 E1).
+ */
+suspend fun readDeviceInfo(client: GattPort, log: DebugLog): DeviceInfoRead {
     val service = DeviceInformationUuids.SERVICE
     if (!client.has(service)) {
         log.event("Device information service not found")
-        return DeviceInfo()
+        return DeviceInfoRead(DeviceInfo(), complete = true)
     }
     val values = mutableMapOf<UUID, ByteArray>()
+    var complete = true
     for (uuid in DeviceInformationUuids.ALL) {
         if (!client.has(service, uuid)) continue
         val value = client.read(service, uuid)
         if (value == null) {
-            log.event("Device information read failed", mapOf("uuid" to uuid.toString().substring(4, 8)), error = true)
-        } else {
-            values[uuid] = value
+            log.event("Device information read failed", mapOf("uuid" to shortUuid(uuid)), error = true)
+            complete = false
+            break
         }
+        values[uuid] = value
     }
     val info = deviceInfoFrom(values)
     log.event("Device information", deviceInfoDetail(info, values))
-    return info
+    return DeviceInfoRead(info, complete)
 }
 
 /** Text characteristics are UTF-8 strings, often NUL padded; PnP ID is binary and kept as hex. */

@@ -9,6 +9,7 @@ import app.safar.core.BikeState
 import app.safar.core.ClusterOutbox
 import app.safar.core.ClusterReading
 import app.safar.core.DebugLog
+import app.safar.core.DeviceInfo
 import app.safar.core.SavedBike
 import app.safar.data.SavedBikeRecord
 import app.safar.data.SavedBikeStore
@@ -265,9 +266,15 @@ class BikeManager(
             if (gen != generation) return
             this@BikeManager.session = session
             apply(policy.onLinkReady())
-            _state.update { it.copy(mtu = ready.mtu, deviceInfo = ready.deviceInfo, framesReceived = 0) }
+            val sameBike = !target.firstConnection // Device Information comes later, in onDeviceInfo.
+            _state.update { it.copy(mtu = ready.mtu, deviceInfo = it.deviceInfo.takeIf { sameBike }, framesReceived = 0) }
             if (target.firstConnection) seedPending = true
             if (records.needsSave(name, target.address)) scope.launch { records.save(name, target.address) }
+        }
+
+        override fun onDeviceInfo(info: DeviceInfo) {
+            if (gen != generation) return
+            _state.update { it.copy(deviceInfo = info) }
         }
 
         override fun onReading(reading: ClusterReading) {

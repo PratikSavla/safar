@@ -6,18 +6,14 @@ import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/** Reconnects stop 2 minutes after the link was lost (ConnectTiming.RECONNECT_WINDOW_MS). */
+/** With a reconnect window (2 minutes here), reconnects stop that long after the link was lost. */
 class ReconnectWindowTest {
     private val mac = "00:11:22:33:44:55"
     private val other = "00:11:22:33:44:66"
     private var t = 0L
 
-    private fun connected(findAfter: Int = Int.MAX_VALUE, delayFor: ((Int) -> Long)? = null): ReconnectPolicy {
-        val p = if (delayFor == null) {
-            ReconnectPolicy(clock = { t }, findAfter = findAfter, findIntervalMs = 0)
-        } else {
-            ReconnectPolicy(clock = { t }, findAfter = findAfter, findIntervalMs = 0, delayFor = delayFor)
-        }
+    private fun connected(findAfter: Int = Int.MAX_VALUE, delayFor: (Int) -> Long = ::schedule): ReconnectPolicy {
+        val p = ReconnectPolicy(clock = { t }, findAfter = findAfter, findIntervalMs = 0, windowMs = WINDOW_MS, delayFor = delayFor)
         p.connect(mac)
         p.onLinkReady()
         return p
@@ -120,5 +116,29 @@ class ReconnectWindowTest {
         assertEquals(listOf(Action.CancelTimer, Action.Connect(mac, 0)), p.connect(mac))
         t = 150_000
         assertEquals(listOf(Action.CloseLink, Action.StartTimer(2_000)), p.onLinkLost())
+    }
+
+    @Test
+    fun withoutAWindowReconnectsNeverGiveUpLikeTheOriginalApp() {
+        val p = ReconnectPolicy(clock = { t }, findAfter = Int.MAX_VALUE)
+        p.connect(mac)
+        p.onLinkReady()
+        p.onLinkLost()
+        // An hour of connects that each time out after 20 s: still waiting 10 s and connecting again.
+        repeat(200) { attempt ->
+            p.onTimer()
+            t += 20_000
+            val wait = if (attempt == 0) 5_000L else 10_000L
+            assertEquals(listOf(Action.CloseLink, Action.StartTimer(wait)), p.onLinkLost(), "attempt ${attempt + 1}")
+            t += wait
+        }
+        assertEquals(mac, p.address)
+    }
+
+    private companion object {
+        const val WINDOW_MS = 120_000L
+
+        /** The 2 s, 5 s, 10 s, 30 s schedule these window tests were written against. */
+        fun schedule(attempt: Int): Long = listOf(2_000L, 5_000L, 10_000L, 30_000L)[minOf(attempt, 4) - 1]
     }
 }

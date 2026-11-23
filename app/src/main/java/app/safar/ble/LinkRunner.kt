@@ -4,8 +4,9 @@ import android.util.Log
 import app.safar.core.BikeCatalog
 import app.safar.core.ClusterReading
 import app.safar.core.DebugLog
-import app.safar.protocol.GattUuids
+import app.safar.core.DeviceInfo
 import app.safar.protocol.checksumModeFor
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -14,6 +15,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import java.util.Collections
 
 /** What to connect to. [firstConnection] = not the saved bike: rider frame 'F' (docs 6.2). */
 class LinkTarget(val address: String, val name: String?, val firstConnection: Boolean)
@@ -30,7 +32,16 @@ internal class LinkRunner(
     interface Listener {
         fun onReady(name: String, ready: LinkReady, session: BikeSession)
         fun onReading(reading: ClusterReading)
+
+        /** Device Information, read once the first cluster frame arrived. Not called when it is skipped. */
+        fun onDeviceInfo(info: DeviceInfo)
     }
+
+    /**
+     * Bikes (by address) whose Device Information read failed or was cut off by a drop: not read again in this
+     * app run, so a cluster that cannot answer it is never asked twice.
+     */
+    private val skipDeviceInfo: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
 
     private val errors = CoroutineExceptionHandler { _, e ->
         Log.e(TAG, "Uncaught error in a bike connection coroutine", e)
@@ -51,8 +62,16 @@ internal class LinkRunner(
                 return e.message ?: "setup failed"
             }
             val name = target.name ?: client.deviceName ?: return "unknown bike name"
-            val session = startSession(linkScope, client, ready, name, target, inputs(), listener)
+            val firstReading = CompletableDeferred<Unit>()
+            val readings = object : Listener by listener {
+                override fun onReading(reading: ClusterReading) {
+                    firstReading.complete(Unit)
+                    listener.onReading(reading)
+                }
+            }
+            val session = startSession(linkScope, client, ready, name, target, inputs(), readings)
             listener.onReady(name, ready, session)
+            linkScope.launch { deviceInfoAfter(firstReading, client, target.address, listener) }
             val lost = client.link.first { it is GattLink.Disconnected } as GattLink.Disconnected
             return lost.reason
         } finally {
@@ -70,7 +89,8 @@ internal class LinkRunner(
         inputs: SessionInputs,
         listener: Listener,
     ): BikeSession {
-        val write = FrameWriter { client.write(GattUuids.SERVICE, GattUuids.TX_CHARACTERISTIC, it) }
+        val channel = ready.channel
+        val write = FrameWriter { client.write(channel.service, channel.tx.uuid, it) }
         val queue = WriteQueue(write, TxLogger(log, client, now), clock = now)
         scope.launch { queue.run() }
         scope.coroutineContext.job.invokeOnCompletion { queue.close() }
@@ -80,5 +100,31 @@ internal class LinkRunner(
         session.start()
         log.event("Session started", mapOf("bike" to name, "riderFrame" to if (target.firstConnection) "F" else "R"))
         return session
+    }
+
+    /**
+     * Reads Device Information once the bike sent its first cluster frame, so the session is up and the
+     * cluster answers before any read is risked. A failed or cut-off read puts the bike in [skipDeviceInfo].
+     */
+    private suspend fun deviceInfoAfter(
+        firstReading: CompletableDeferred<Unit>,
+        client: GattPort,
+        address: String,
+        listener: Listener,
+    ) {
+        if (address in skipDeviceInfo) {
+            log.event("Device information skipped", mapOf("reason" to "an earlier read failed"))
+            return
+        }
+        firstReading.await()
+        var done = false
+        try {
+            val read = readDeviceInfo(client, log)
+            if (!read.complete) skipDeviceInfo += address
+            done = true
+            listener.onDeviceInfo(read.info)
+        } finally {
+            if (!done) skipDeviceInfo += address
+        }
     }
 }

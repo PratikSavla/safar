@@ -26,7 +26,7 @@ class ReconnectPolicyTest {
     }
 
     @Test
-    fun backOffIs2s5s10sThenEvery30s() {
+    fun backOffIs2s5sThenEvery10sLikeTheOriginalApp() {
         val p = connected()
         val delays = mutableListOf<Long>()
         repeat(6) { i ->
@@ -40,7 +40,7 @@ class ReconnectPolicyTest {
             assertEquals(listOf(Action.Connect(mac, i + 1)), p.onTimer())
             assertEquals(State.Connecting(mac, i + 1), p.state)
         }
-        assertEquals(listOf(2_000L, 5_000L, 10_000L, 30_000L, 30_000L, 30_000L), delays)
+        assertEquals(listOf(2_000L, 5_000L, 10_000L, 10_000L, 10_000L, 10_000L), delays)
     }
 
     @Test

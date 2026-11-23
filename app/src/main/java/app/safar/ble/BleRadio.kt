@@ -65,11 +65,17 @@ interface GattPort {
     /** Whether discovery found [characteristic] in [service]; a null [characteristic] asks for the service. */
     fun has(service: UUID, characteristic: UUID? = null): Boolean
 
-    /** Notification on [characteristic] with a CCCD write of 01 00. */
+    /** Every service and characteristic discovery found, in the phone's order; empty before discovery. */
+    fun services(): List<GattServiceInfo>
+
+    /** Notification on [characteristic] with a CCCD write of 01 00 (02 00 when it can only indicate). */
     suspend fun enableNotify(service: UUID, characteristic: UUID): Boolean
     suspend fun read(service: UUID, characteristic: UUID): ByteArray?
 
-    /** One write with response; suspends until the device acknowledged it. */
+    /**
+     * One write with the characteristic's own write type (without response when it allows it, as the original
+     * app); suspends until the stack reports it done.
+     */
     suspend fun write(service: UUID, characteristic: UUID, frame: ByteArray): WriteOutcome
 
     /** Marks the link lost and fails the waiting operation. */

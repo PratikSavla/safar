@@ -15,7 +15,7 @@ object ConnectTiming {
     /** connectGatt() gives up after 20 s (docs 2.2 step 4). */
     const val CONNECT_TIMEOUT_MS = 20_000L
 
-    /** Wait after STATE_CONNECTED before discoverServices() (docs 2.2 step 4). Increased to 1000ms for older LCD cluster compatibility. */
+    /** Wait after STATE_CONNECTED before discoverServices() (docs 2.2 step 4). 1 s gives older LCD clusters time to settle. */
     const val DISCOVER_DELAY_MS = 1_000L
 
     /** MTU the app asks for (docs 2.2 step 5). The bike answers 65; a frame needs [MIN_MTU_FOR_FRAME]. */
@@ -32,12 +32,6 @@ object ConnectTiming {
 
     /** At most one fallback scan per this interval, to save battery. */
     const val FIND_MIN_INTERVAL_MS = 60_000L
-
-    /**
-     * Safar's own limit, not in the original app: reconnects stop once this long has passed since the link was
-     * lost (or the first connect failed). No connect or scan starts after it; the rider taps Connect again.
-     */
-    const val RECONNECT_WINDOW_MS = 120_000L
 }
 
 /** Bluetooth SIG 16-bit UUID in the base UUID. */

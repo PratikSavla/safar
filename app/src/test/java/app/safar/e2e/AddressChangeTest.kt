@@ -93,10 +93,10 @@ class AddressChangeTest {
         assertEquals(mapOf("permission" to "BLUETOOTH_SCAN"), logged.detail)
         assertTrue(logged.error)
         assertTrue(rig.radio.opened.all { it == BIKE_ADDRESS }, "only direct connects")
-        // First connect, then attempts at 2, 27, 57 and 107 s after the drop. Attempt 4 fails at 127 s and
-        // attempt 5 would start at 157 s, past the 2 minute window: Safar gives up.
-        assertEquals(5, rig.radio.opened.size, "${rig.radio.opened}")
-        assertEquals(LinkState.Idle, rig.link)
+        // First connect, then attempts at 2, 27 and 57 s after the drop, then every 30 s (20 s connect timeout
+        // plus the 10 s wait) up to 297 s: 11 reconnects in 5 minutes. Safar never gives up, like the original app.
+        assertEquals(12, rig.radio.opened.size, "${rig.radio.opened}")
+        assertTrue(rig.link is LinkState.Reconnecting || rig.link is LinkState.Connecting, "${rig.link}")
     }
 
     @Test

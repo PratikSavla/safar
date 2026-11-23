@@ -112,10 +112,10 @@ class HomeStateTest {
     @Test
     fun backoffScheduleMarksPastAndCurrentSteps() {
         val steps = backoffSteps(3)
-        assertEquals(listOf("2 s", "5 s", "10 s", "30 s"), steps.map { it.label })
-        assertEquals(listOf(true, true, false, false), steps.map { it.past })
+        assertEquals(listOf("2 s", "5 s", "10 s"), steps.map { it.label })
+        assertEquals(listOf(true, true, false), steps.map { it.past })
         assertEquals(2, steps.indexOfFirst { it.now })
-        assertEquals(3, backoffSteps(9).indexOfFirst { it.now })
+        assertEquals(2, backoffSteps(9).indexOfFirst { it.now }, "then every 10 s")
         assertEquals(5, secondsLeft(10_000, 5_200))
         assertEquals(0, secondsLeft(1_000, 5_000))
         assertEquals(0.5f, waitFraction(1, 2_000, 1_000))

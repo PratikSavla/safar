@@ -30,8 +30,19 @@ class GattTest {
     }
 
     @Test
-    fun `reconnect back-off is 2 s, 5 s, 10 s, then 30 s`() {
-        assertEquals(listOf(2_000L, 5_000L, 10_000L, 30_000L, 30_000L, 30_000L), (1..6).map(Timing::reconnectDelayMs))
+    fun `reconnect back-off is 2 s, 5 s, then every 10 s like the original app`() {
+        assertEquals(listOf(2_000L, 5_000L, 10_000L, 10_000L, 10_000L, 10_000L), (1..6).map(Timing::reconnectDelayMs))
         assertFailsWith<IllegalArgumentException> { Timing.reconnectDelayMs(0) }
+    }
+
+    @Test
+    fun `write type follows the TX properties like the original app`() {
+        assertEquals(false, GattProperty.writesWithoutResponse(GattProperty.WRITE), "V-Strom SX: WRITE only")
+        assertEquals(true, GattProperty.writesWithoutResponse(GattProperty.WRITE_NO_RESPONSE))
+        assertEquals(true, GattProperty.writesWithoutResponse(GattProperty.WRITE or GattProperty.WRITE_NO_RESPONSE))
+        assertEquals(true, GattProperty.canWrite(GattProperty.WRITE_NO_RESPONSE or GattProperty.NOTIFY))
+        assertEquals(false, GattProperty.canWrite(GattProperty.READ or GattProperty.NOTIFY))
+        assertEquals(true, GattProperty.canNotify(GattProperty.INDICATE))
+        assertEquals(false, GattProperty.canNotify(GattProperty.WRITE))
     }
 }

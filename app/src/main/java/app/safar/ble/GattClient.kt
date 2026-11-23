@@ -11,6 +11,7 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import app.safar.core.DebugLog
+import app.safar.protocol.GattProperty
 import app.safar.protocol.GattUuids
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.BufferOverflow
@@ -65,6 +66,9 @@ class GattClient(
     val link: StateFlow<GattLink> = linkState.asStateFlow()
 
     internal val rx = Channel<ByteArray>(NOTIFY_BUFFER, BufferOverflow.DROP_OLDEST)
+
+    /** The characteristic whose notifications go to [rx]: FFF2, or the RX found another way ([enableNotify]). */
+    @Volatile internal var rxUuid: UUID = GattUuids.RX_CHARACTERISTIC
     val notifications: ReceiveChannel<ByteArray> get() = rx
 
     private val bridge = GattCallbackBridge(this, log)
@@ -99,14 +103,29 @@ class GattClient(
 
     fun service(uuid: UUID): BluetoothGattService? = gatt?.getService(uuid)
 
-    /** setCharacteristicNotification + CCCD write of ENABLE_NOTIFICATION_VALUE (docs 2.2 step 7). */
+    /** What service discovery found, in the order the phone reports it; empty before discovery. */
+    fun services(): List<GattServiceInfo> = gatt?.services.orEmpty().map { s ->
+        GattServiceInfo(s.uuid, s.characteristics.map { GattCharInfo(it.uuid, it.properties) })
+    }
+
+    /**
+     * setCharacteristicNotification + CCCD write (docs 2.2 step 7): ENABLE_NOTIFICATION_VALUE, as the original
+     * app, or ENABLE_INDICATION_VALUE for a characteristic that can only indicate.
+     */
     suspend fun enableNotify(characteristic: BluetoothGattCharacteristic): Boolean {
         val g = gatt ?: return false
         val cccd = characteristic.getDescriptor(GattUuids.CCCD) ?: return false
+        rxUuid = characteristic.uuid
         if (guarded("setCharacteristicNotification") { g.setCharacteristicNotification(characteristic, true) } != true) {
             return false
         }
-        val value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+        val indicateOnly = characteristic.properties and GattProperty.NOTIFY == 0 &&
+            characteristic.properties and GattProperty.INDICATE != 0
+        val value = if (indicateOnly) {
+            BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
+        } else {
+            BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+        }
         val result = op(OpKind.DESCRIPTOR, cccd.uuid) { gt ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 gt.writeDescriptor(cccd, value) == BluetoothStatusCodes.SUCCESS
@@ -126,11 +145,17 @@ class GattClient(
     }
 
     /**
-     * One write with response (WRITE_TYPE_DEFAULT, docs 2.3); suspends until onCharacteristicWrite(). A write
-     * the stack refuses to start (busy: API 33+ ERROR_GATT_WRITE_REQUEST_BUSY, older false) is [WriteOutcome.Busy].
+     * One write; suspends until onCharacteristicWrite(), which Android also calls for a write without response
+     * once the packet is sent. The write type is the characteristic's default, as in the original app (it never
+     * sets one): without response when TX allows it, else with response (V-Strom SX, docs 2.3). A write the
+     * stack refuses to start (busy: API 33+ ERROR_GATT_WRITE_REQUEST_BUSY, older false) is [WriteOutcome.Busy].
      */
     suspend fun write(characteristic: BluetoothGattCharacteristic, frame: ByteArray): WriteOutcome {
-        val type = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+        val type = if (GattProperty.writesWithoutResponse(characteristic.properties)) {
+            BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+        } else {
+            BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+        }
         var refused = "refused"
         val result = op(OpKind.WRITE, characteristic.uuid) { g ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -150,7 +175,8 @@ class GattClient(
             BluetoothGatt.GATT_SUCCESS -> WriteOutcome.Ok
             STATUS_NOT_STARTED -> WriteOutcome.Busy(refused)
             STATUS_NO_CALLBACK -> WriteOutcome.TimedOut
-            else -> WriteOutcome.Failed("GATT error status ${result.status}")
+            STATUS_LOCAL -> WriteOutcome.Failed("link lost")
+            else -> WriteOutcome.Rejected(result.status)
         }
     }
 

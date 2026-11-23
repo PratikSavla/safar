@@ -21,8 +21,14 @@ fun priorityOf(frame: ByteArray): FramePriority = when (messageType(frame)) {
 sealed interface WriteOutcome {
     data object Ok : WriteOutcome
 
-    /** A real failure: a GATT error status in the callback, an exception, or the link closed. */
+    /** A real failure: an exception, the link closed, or nowhere to write. */
     data class Failed(val reason: String) : WriteOutcome
+
+    /**
+     * The write completed with GATT error [status]: the bike (or the stack for it) answered, so the link is
+     * alive. The original app only logs these and never drops the link for them.
+     */
+    data class Rejected(val status: Int) : WriteOutcome
 
     /** A real failure: no acknowledgement within [WriteQueue.WRITE_HARD_LIMIT_MS]. */
     data object TimedOut : WriteOutcome

@@ -33,14 +33,18 @@ class ConnectSequenceTest {
         val state = rig.manager.state.value
         assertEquals(BIKE_MTU, state.mtu)
         assertTrue((state.mtu ?: 0) >= MIN_MTU_FOR_FRAME)
-        assertEquals(
-            DeviceInfo("Suzuki", "BM01", "A1B2C3D", "1.0.4", null, "2.1", "01 0d 00 00 01 01 00"),
-            state.deviceInfo,
-        )
+        assertEquals(null, state.deviceInfo, "read only after the first cluster frame")
+        assertEquals(emptyList(), rig.bike.deviceInfoReads)
         assertEquals(1, rig.bike.notifyEnabledAt.size)
-        assertTrue(rig.bike.notifyEnabledAt.single() < t0, "notify is on before the first frame")
+        assertTrue(rig.bike.notifyEnabledAt.single() <= t0, "notify is on before the first frame")
 
         rig.advance(2_500)
+        assertEquals(
+            DeviceInfo("Suzuki", "BM01", "A1B2C3D", "1.0.4", null, "2.1", "01 0d 00 00 01 01 00"),
+            rig.manager.state.value.deviceInfo,
+        )
+        val firstClusterAt = rig.bike.notifyEnabledAt.single() + rig.bike.firstClusterDelayMs
+        assertTrue(rig.bike.deviceInfoReads.first() >= firstClusterAt, "Device Information after the first cluster frame")
         val riders = rig.writes('6')
         assertEquals(List(BikeSession.RIDER_REPEAT) { t0 + it * BikeSession.RIDER_GAP_MS }, riders.map { it.atMillis })
         val expected = encodeRider("ALEX RIDER", firstConnection = true, mode = ChecksumMode.SUM)

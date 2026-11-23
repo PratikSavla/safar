@@ -4,6 +4,7 @@ import app.safar.ble.WriteQueue
 import app.safar.core.LinkState
 import app.safar.data.SavedBikeRecord
 import app.safar.protocol.ConnectTiming
+import app.safar.protocol.DEFAULT_ATT_MTU
 import app.safar.protocol.Timing
 import app.safar.sim.ADAPTER_OFF_STATUS
 import app.safar.sim.BIKE_ADDRESS
@@ -21,8 +22,8 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * MTU check, link drops, the reconnect back-off and its 2 minute limit against the simulated bike
- * (docs 2.2, 2.4, 2.5, 12.4 R3).
+ * MTU handling, link drops and the reconnect back-off, which never gives up (like the original app), against
+ * the simulated bike (docs 2.2, 2.4, 2.5, 12.4 R3).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReconnectTest {
@@ -35,30 +36,40 @@ class ReconnectTest {
     }
 
     @Test
-    fun mtu23FailsTheSetupCleanlyAndStartsReconnecting() = runTest {
+    fun mtu23IsLoggedAndTheLinkGoesOnLikeTheOriginalApp() = runTest {
         val rig = BikeRig(this, savedBike = SavedBikeRecord(MOTO_NAME, BIKE_ADDRESS))
         rig.bike.mtu = 23
         rig.start()
-        rig.advance(1_500)
+        rig.awaitConnected()
+        rig.advance(2_500)
 
-        val failed = rig.recording.named("Connect failed").single()
-        assertEquals(mapOf("reason" to "MTU 23 is below 33"), failed.detail)
-        val failedAt = failed.atMillis - CLOCK_BASE
-        assertEquals(LinkState.Reconnecting(1, CLOCK_BASE + failedAt + 2_000), rig.link)
-        assertEquals(emptyList(), rig.recording.tx(), "no write attempted")
-        assertEquals(emptyList(), rig.bike.notifyEnabledAt, "notify never enabled")
-        assertTrue(rig.radio.links.single().closed, "GATT closed")
-        assertEquals(true, rig.manager.serviceWanted.value)
-
-        rig.advance(2_000)
-        assertEquals(listOf(0L, failedAt + 2_000), rig.bike.connectRequests)
-        rig.advance(1_500)
-        assertEquals(LinkState.Reconnecting(2, CLOCK_BASE + 2 * failedAt + 2_000 + 5_000), rig.link)
-        assertEquals(emptyList(), rig.recording.tx())
+        val small = rig.recording.named("MTU below frame size").single()
+        assertEquals(mapOf("mtu" to "23", "needed" to "33"), small.detail)
+        assertTrue(small.error)
+        assertEquals(23, rig.manager.state.value.mtu)
+        assertEquals(emptyList(), rig.recording.named("Connect failed"))
+        assertEquals(1, rig.bike.notifyEnabledAt.size)
+        assertTrue(rig.writes('6').isNotEmpty() && rig.writes('3').isNotEmpty(), "frames are written")
+        assertEquals(LinkState.Connected, rig.link)
     }
 
     @Test
-    fun dropBacksOffTwoFiveTenThirtySecondsWithASearchThenGivesUpAfterTwoMinutes() = runTest {
+    fun aRefusedMtuExchangeKeepsTheDefaultMtuAndConnects() = runTest {
+        val rig = BikeRig(this, savedBike = SavedBikeRecord(MOTO_NAME, BIKE_ADDRESS))
+        rig.bike.refusesMtu = true
+        rig.start()
+        rig.awaitConnected()
+        rig.advance(Timing.CLUSTER_PERIOD_MS)
+
+        val failed = rig.recording.named("MTU request failed").single()
+        assertEquals(mapOf("requested" to "${ConnectTiming.REQUEST_MTU}", "using" to "$DEFAULT_ATT_MTU"), failed.detail)
+        assertEquals(DEFAULT_ATT_MTU, rig.manager.state.value.mtu)
+        assertTrue(rig.manager.state.value.framesReceived >= 1, "cluster frames arrive")
+        assertEquals(1, rig.bike.connectRequests.size, "no reconnect")
+    }
+
+    @Test
+    fun dropBacksOffTwoFiveThenEveryTenSecondsWithSearchesAndNeverGivesUp() = runTest {
         val rig = connectedRig()
         val dropAt = rig.time
         rig.bike.powerOff()
@@ -70,12 +81,11 @@ class ReconnectTest {
         assertEquals(mapOf("reason" to "supervision timeout"), rig.recording.named("Link ended").single().detail)
 
         // Each attempt to the switched-off bike ends with the 20 s connect timeout, then the next back-off.
-        // Attempt 2 is the second failure in a row: an 8 s search by name runs (and finds nothing) first.
-        // Attempts start 2, 27, 65 and 115 s after the drop.
+        // Every second failure in a row searches by name for 8 s first (at most once a minute).
         val timeout = ConnectTiming.CONNECT_TIMEOUT_MS
         var at = dropAt
         val expectedRequests = mutableListOf<Long>()
-        Timing.RECONNECT_BACKOFF_MS.forEachIndexed { index, backoff ->
+        listOf(2_000L, 5_000L, 10_000L, 10_000L, 10_000L, 10_000L).forEachIndexed { index, backoff ->
             at += backoff
             expectedRequests += at
             rig.advance(at - rig.time - 1)
@@ -84,28 +94,31 @@ class ReconnectTest {
             assertEquals(LinkState.Connecting(MOTO_NAME), rig.link, "attempt ${index + 1}")
             at += timeout
             rig.advance(timeout)
-            if (index == 1) {
-                assertEquals(LinkState.Connecting(MOTO_NAME), rig.link, "searching after attempt 2")
+            if (index % 2 == 1) {
+                assertEquals(LinkState.Connecting(MOTO_NAME), rig.link, "searching after attempt ${index + 1}")
                 at += ConnectTiming.FIND_SCAN_MS
                 rig.advance(ConnectTiming.FIND_SCAN_MS)
             }
-            if (index < 3) {
-                val next = Timing.reconnectDelayMs(index + 2)
-                assertEquals(LinkState.Reconnecting(index + 2, CLOCK_BASE + at + next), rig.link)
-            }
+            val next = Timing.reconnectDelayMs(index + 2)
+            assertEquals(LinkState.Reconnecting(index + 2, CLOCK_BASE + at + next), rig.link)
         }
-        // Attempt 4 failed 135 s after the drop; attempt 5 would start at 165 s, past the 2 minute window.
-        assertEquals(LinkState.Idle, rig.link)
-        val gaveUp = rig.recording.named("Reconnect gave up").single()
-        assertEquals(mapOf("address" to BIKE_ADDRESS, "afterS" to "135"), gaveUp.detail)
-        assertEquals(false, rig.manager.serviceWanted.value, "the service stops with the reconnects")
-        rig.advance(300_000)
-        assertEquals(listOf(0L) + expectedRequests, rig.bike.connectRequests, "no connect after giving up")
+        assertEquals(listOf(0L) + expectedRequests, rig.bike.connectRequests)
+        assertEquals(3, rig.radio.findScanner.starts)
+
+        // Ten more minutes: still trying every 10 s, never giving up, like the original app's service timer.
+        val before = rig.bike.connectRequests.size
+        rig.advance(600_000)
+        assertTrue(rig.link is LinkState.Reconnecting || rig.link is LinkState.Connecting, "still reconnecting")
+        assertTrue(rig.bike.connectRequests.size - before >= 15, "${rig.bike.connectRequests.size - before} connects")
+        assertEquals(emptyList(), rig.recording.named("Reconnect gave up"))
+        assertEquals(true, rig.manager.serviceWanted.value, "the service keeps running")
         assertTrue(rig.radio.opened.all { it == BIKE_ADDRESS }, "direct connect to the saved address")
         assertEquals(0, rig.radio.scanner.starts, "the rider's scan is not used")
-        assertEquals(1, rig.radio.findScanner.starts, "no search after the window")
-        assertEquals(1, rig.recording.named("Bike not found by name").size)
         assertEquals(emptyList(), rig.txAfter(dropAt), "no write attempted while the link is down")
+
+        rig.bike.powerOn()
+        rig.awaitConnected(limitMs = 60_000)
+        assertEquals(LinkState.Connected, rig.link, "the bike is back after 13 minutes")
     }
 
     @Test

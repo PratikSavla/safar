@@ -3,10 +3,11 @@ package app.safar.sim
 import app.safar.ble.GattClient
 import app.safar.ble.GattLink
 import app.safar.ble.GattPort
+import app.safar.ble.GattServiceInfo
 import app.safar.ble.WriteOutcome
 import app.safar.ble.onGattDisconnected
 import app.safar.core.DebugLog
-import app.safar.protocol.GattUuids
+import app.safar.protocol.GattProperty
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
@@ -77,25 +78,29 @@ class SimGattLink(
 
     override suspend fun requestMtu(mtu: Int): Int? {
         delay(bike.opDelayMs)
-        return if (isUp) minOf(mtu, bike.mtu) else null
+        return if (isUp && !bike.refusesMtu) minOf(mtu, bike.mtu) else null
     }
 
     override fun has(service: UUID, characteristic: UUID?): Boolean = isUp && bike.has(service, characteristic)
 
+    override fun services(): List<GattServiceInfo> = if (isUp) bike.services() else emptyList()
+
     override suspend fun enableNotify(service: UUID, characteristic: UUID): Boolean {
         delay(bike.opDelayMs)
-        if (!isUp || service != GattUuids.SERVICE || characteristic != GattUuids.RX_CHARACTERISTIC) return false
+        if (!isUp || service != bike.clusterService || characteristic != bike.rxUuid) return false
         bike.onNotifyEnabled(this)
         return true
     }
 
     override suspend fun read(service: UUID, characteristic: UUID): ByteArray? {
         delay(bike.opDelayMs)
-        return if (isUp && bike.has(service, characteristic)) bike.deviceInfo[characteristic]?.copyOf() else null
+        if (!isUp || !bike.has(service, characteristic)) return null
+        bike.onDeviceInfoRead()
+        return if (bike.deviceInfoFails) null else bike.deviceInfo[characteristic]?.copyOf()
     }
 
     override suspend fun write(service: UUID, characteristic: UUID, frame: ByteArray): WriteOutcome {
-        if (!isUp || service != GattUuids.SERVICE) return WriteOutcome.Failed("not connected")
+        if (!isUp || service != bike.clusterService) return WriteOutcome.Failed("not connected")
         // As GattClient: a write the caller gave up on is still held by the stack; wait for its ack first.
         orphanWrite?.let { held ->
             withTimeoutOrNull(ORPHAN_WAIT_MS) { held.await() } ?: return WriteOutcome.TimedOut
@@ -105,6 +110,12 @@ class SimGattLink(
             refuseWrites--
             busyRefusals++
             return WriteOutcome.Busy("request busy")
+        }
+        // As GattClient: with response unless TX allows write without response. A TX without WRITE refuses it.
+        val withResponse = !GattProperty.writesWithoutResponse(bike.txProperties)
+        if (bike.rejectsWrites || (withResponse && !bike.acceptsWriteRequests)) {
+            delay(bike.ackDelayMs)
+            return if (isUp) WriteOutcome.Rejected(WRITE_NOT_PERMITTED) else WriteOutcome.Failed("link lost")
         }
         val result = CompletableDeferred<WriteOutcome>()
         pendingWrite = result
@@ -146,5 +157,8 @@ class SimGattLink(
 
         /** GattClient's OP_TIMEOUT_MS. */
         const val ORPHAN_WAIT_MS = 10_000L
+
+        /** ATT error "Write Not Permitted". */
+        const val WRITE_NOT_PERMITTED = 0x03
     }
 }

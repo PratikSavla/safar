@@ -43,7 +43,7 @@ import kotlin.math.ceil
 /** One step of the reconnect schedule: "2 s", "5 s", ... with whether it is done or current. */
 data class BackoffStep(val label: String, val past: Boolean, val now: Boolean)
 
-/** The schedule 2 s → 5 s → 10 s → 30 s for upcoming [attempt] (1-based), from [Timing]. */
+/** The schedule 2 s → 5 s → 10 s (then every 10 s) for upcoming [attempt] (1-based), from [Timing]. */
 internal fun backoffSteps(attempt: Int): List<BackoffStep> {
     val steps = Timing.RECONNECT_BACKOFF_MS
     val current = (attempt - 1).coerceIn(0, steps.lastIndex)
@@ -136,6 +136,6 @@ private fun Schedule(attempt: Int) {
             )
             BasicText("→", style = style.copy(color = c.ink3.copy(alpha = 0.6f)))
         }
-        BasicText("every 30 s", style = style.copy(color = c.ink3))
+        BasicText("every ${Timing.RECONNECT_BACKOFF_MS.last() / 1000} s", style = style.copy(color = c.ink3))
     }
 }

@@ -13,8 +13,8 @@ import java.util.Locale
 
 // The fuel-up form's date and price-per-litre inputs. Pure, unit-tested.
 
-private val DAY_THIS_YEAR = DateTimeFormatter.ofPattern("EEE, d MMM", Locale.UK)
-private val DAY_OTHER_YEAR = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.UK)
+private val DAY_THIS_YEAR = DateTimeFormatter.ofPattern("EEE, d MMM", Locale.ENGLISH)
+private val DAY_OTHER_YEAR = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
 
 /** Local date of [atMillis] as days since 1970-01-01. */
 fun localDay(atMillis: Long, zone: ZoneId): Long = Instant.ofEpochMilli(atMillis).atZone(zone).toLocalDate().toEpochDay()

@@ -26,6 +26,7 @@ import app.safar.ui.components.BackTopBar
 import app.safar.ui.components.EmptyState
 import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.SecondaryButton
+import app.safar.ui.components.showPastDatePicker
 import app.safar.ui.components.SwitchRow
 import app.safar.ui.components.TextAction
 import app.safar.ui.components.TopoTransform
@@ -74,7 +75,7 @@ fun FuelUpScreen(navigator: Navigator, fuelUpId: Long?) {
     val context = LocalContext.current
     val actions = FuelUpActions(
         onLitres = vm::setLitres, onPrice = vm::setPrice, onByPrice = vm::setByPrice,
-        onPickDay = { showFillDatePicker(context, state.day, state.today, vm::setDay) },
+        onPickDay = { showPastDatePicker(context, state.day, state.today, vm::setDay) },
         onTotal = vm::setTotal, onOdo = vm::setOdo, onEditOdo = vm::editOdo, onFull = vm::setFull,
         onSave = vm::save, onDelete = vm::delete, onClose = navigator::back,
     )

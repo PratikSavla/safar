@@ -1,7 +1,5 @@
 package app.safar.ui.fuel
 
-import android.app.DatePickerDialog
-import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,10 +13,6 @@ import androidx.compose.ui.unit.dp
 import app.safar.ui.components.Kicker
 import app.safar.ui.components.SecondaryButton
 import app.safar.ui.theme.Atlas
-import java.time.LocalDate
-import java.time.ZoneId
-
-private const val DAY_MILLIS = 86_400_000L
 
 /** The fill's date with a Change button: a receipt can be logged on a later day than the fill. */
 @Composable
@@ -36,18 +30,4 @@ internal fun FillDateRow(state: FuelUpUiState, onPick: () -> Unit) {
         }
         SecondaryButton("Change", onPick, small = true)
     }
-}
-
-/** Android's date picker at [day], no later than [today] (both days since 1970-01-01). */
-internal fun showFillDatePicker(context: Context, day: Long, today: Long, onPicked: (Long) -> Unit) {
-    val start = LocalDate.ofEpochDay(day)
-    val dialog = DatePickerDialog(
-        context,
-        { _, y, m, d -> onPicked(LocalDate.of(y, m + 1, d).toEpochDay()) },
-        start.year, start.monthValue - 1, start.dayOfMonth,
-    )
-    // The end of today in this zone, so today itself stays selectable.
-    val endOfToday = LocalDate.ofEpochDay(today).plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
-    dialog.datePicker.maxDate = if (today > 0) endOfToday else System.currentTimeMillis() + DAY_MILLIS
-    dialog.show()
 }

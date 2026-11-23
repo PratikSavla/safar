@@ -60,7 +60,8 @@ fun NameSection(s: SimUiState, vm: SimViewModel) {
         )
         val info = s.nameInfo
         Txt(info.summary, Type.small, color = if (info.matchesFilter) p.muted else p.error)
-        if (locked) Txt("Switch advertising off to change the name.", Type.small, color = p.muted)
+        Toggle("FFF1 write without response only", s.txWithoutResponse, vm::setTxWithoutResponse, enabled = !locked)
+        if (locked) Txt("Switch advertising off to change the name or FFF1.", Type.small, color = p.muted)
     }
 }
 

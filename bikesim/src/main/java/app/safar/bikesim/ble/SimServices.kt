@@ -20,12 +20,19 @@ object SimServices {
         DeviceInformationUuids.PNP_ID to byteArrayOf(0x01, 0xFF.toByte(), 0xFF.toByte(), 0x01, 0x00, 0x00, 0x01),
     )
 
-    /** FFF1 write with response (app -> bike), FFF2 notify with its CCCD (bike -> app). */
-    fun cluster(): BluetoothGattService {
+    /**
+     * FFF1 (app -> bike) and FFF2 notify with its CCCD (bike -> app). FFF1 is write with response, as on the
+     * V-Strom SX, or write without response only when [txWithoutResponse] (a cluster that refuses write requests).
+     */
+    fun cluster(txWithoutResponse: Boolean = false): BluetoothGattService {
         val service = BluetoothGattService(GattUuids.SERVICE, BluetoothGattService.SERVICE_TYPE_PRIMARY)
         val tx = BluetoothGattCharacteristic(
             GattUuids.TX_CHARACTERISTIC,
-            BluetoothGattCharacteristic.PROPERTY_WRITE,
+            if (txWithoutResponse) {
+                BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE
+            } else {
+                BluetoothGattCharacteristic.PROPERTY_WRITE
+            },
             BluetoothGattCharacteristic.PERMISSION_WRITE,
         )
         val rx = BluetoothGattCharacteristic(

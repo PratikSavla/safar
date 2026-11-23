@@ -66,6 +66,12 @@ internal class SimGattCallback(
             if (responseNeeded) owner.respond(device, requestId, BluetoothGatt.GATT_WRITE_NOT_PERMITTED, offset, null)
             return
         }
+        if (responseNeeded && owner.txWithoutResponse) {
+            // Like a cluster whose TX takes only write commands: a write request is refused and dropped.
+            events.onEvent("Write request refused: FFF1 is write without response", error = true)
+            owner.respond(device, requestId, BluetoothGatt.GATT_WRITE_NOT_PERMITTED, offset, null)
+            return
+        }
         if (preparedWrite) {
             synchronized(prepared) { prepared.write(value) }
         } else {

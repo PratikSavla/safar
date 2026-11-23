@@ -15,9 +15,11 @@ layout, checksums and UUIDs and shares no code with `:app`.
   restores it as soon as Bluetooth is on again with BikeSim open.
 - **GATT server**:
   - `0000fff0-…` with `FFF1` (write with response, app to bike) and `FFF2` (notify, bike to app, with CCCD `2902`).
+    With **FFF1 write without response only** on, `FFF1` has only the write-without-response property and every
+    write request to it is refused with "write not permitted", like a cluster that takes only write commands.
   - Device Information `0x180A` with synthetic values: `2A29` manufacturer, `2A24` model, `2A25` serial,
     `2A26` firmware, `2A27` hardware, `2A28` software and `2A50` PnP ID.
-  - Every write to `FFF1` is answered with `GATT_SUCCESS`.
+  - Every write to `FFF1` is answered with `GATT_SUCCESS` (unless the write-without-response mode refuses it).
   - Notify state is kept per device. The server sees every LE link of the phone (a watch, a second central), but
     another link becomes the central only when it enables notify or no central is connected, and it never turns
     the central's notify off. Frames go to every device that enabled notify.
@@ -51,6 +53,7 @@ With both devices connected to one computer, pick the target of each install wit
 | Control | What it does |
 |---|---|
 | Advertise | Switches the simulator on (GATT server + advertising) or off (both stop, the link drops). |
+| FFF1 write without response only | Gives `FFF1` the write-without-response property only and refuses write requests to it. Locked while advertising. |
 | Advertised name | Presets `SBM01A1B2C3D` (V-Strom SX), `SBM11A1B2C3D` (Gixxer), `SBS21A1B2C3D` (Avenis), `SAS01A1B2C3D` (Access 125, inverted checksum), or type any name. The line below says whether Safar's scan filter (12 characters, contains `SA` or `SB`) matches it. The name is locked while advertising. |
 | Link | Advertising state, connected central, MTU, notify state, frames sent and the last frame sent in hex. |
 | Speed | Slider, 0-180 km/h. |

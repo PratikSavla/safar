@@ -29,6 +29,8 @@ data class SimUiState(
     val framesPaused: Boolean = false,
     val riding: Boolean = false,
     val autoDrain: Boolean = true,
+    /** FFF1 write without response only, refusing write requests; set while the simulator is off. */
+    val txWithoutResponse: Boolean = false,
     val ride: RideState = RideState(SimCluster()),
     val framesSent: Int = 0,
     val lastSent: String? = null,

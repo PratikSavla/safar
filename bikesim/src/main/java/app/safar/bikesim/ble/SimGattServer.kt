@@ -28,9 +28,14 @@ class SimGattServer(private val context: Context, private val events: Peripheral
     private val pending = ArrayDeque<BluetoothGattService>()
     private val lock = Any()
 
+    /** FFF1 is write without response only; write requests to it are refused ([SimServices.cluster]). */
+    @Volatile var txWithoutResponse = false
+        private set
+
     /** Opens the server and adds FFF0 and 0x180A, one after the other. */
-    fun open(): Boolean {
+    fun open(txWithoutResponse: Boolean = false): Boolean {
         if (server != null) return true
+        this.txWithoutResponse = txWithoutResponse
         if (!SimPermissions.granted(context)) return fail("Bluetooth permission missing")
         val manager = bluetoothManager(context) ?: return fail("no Bluetooth on this device")
         val opened = guard("openGattServer") { manager.openGattServer(context, SimGattCallback(this, events)) }
@@ -38,7 +43,7 @@ class SimGattServer(private val context: Context, private val events: Peripheral
         server = opened
         synchronized(lock) {
             pending.clear()
-            pending.addLast(SimServices.cluster())
+            pending.addLast(SimServices.cluster(txWithoutResponse))
             pending.addLast(SimServices.deviceInformation())
         }
         addNextService()

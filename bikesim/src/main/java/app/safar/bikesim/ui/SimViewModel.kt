@@ -64,6 +64,11 @@ class SimViewModel(app: Application) : AndroidViewModel(app), PeripheralEvents {
         _state.update { it.copy(name = name.take(NAME_MAX)) }
     }
 
+    fun setTxWithoutResponse(on: Boolean) {
+        if (_state.value.wanted) return
+        _state.update { it.copy(txWithoutResponse = on) }
+    }
+
     fun setSimulatorOn(on: Boolean) = if (on) switchOn() else switchOff()
 
     private fun switchOn() {
@@ -71,7 +76,8 @@ class SimViewModel(app: Application) : AndroidViewModel(app), PeripheralEvents {
         if (s.wanted || !s.permissionsOk || !s.bluetoothOn) return
         _state.update { it.copy(wanted = true) }
         advertiseJob = viewModelScope.launch {
-            if ((!server.open() || !advertiser.start(_state.value.name)) && _state.value.wanted) switchOff()
+            val opened = server.open(_state.value.txWithoutResponse)
+            if ((!opened || !advertiser.start(_state.value.name)) && _state.value.wanted) switchOff()
         }
     }
 

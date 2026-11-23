@@ -178,6 +178,25 @@ export function buildService(now: number, trips: DemoTrip[]): object[] {
   ];
 }
 
+/**
+ * Services done: each item's last one (matching [buildService]) and a few older ones, as the app keeps them in
+ * its service history. Ids ascend with time.
+ */
+export function buildServiceHistory(now: number, trips: DemoTrip[]): object[] {
+  const daysAgo = (d: number): number => localAt(now, d, 10, 30);
+  const atOdo = (o: number): number => onDayAt(now, timeAtOdo(trips, o), 10, 30);
+  const list = [
+    { itemId: 1, label: 'Engine oil', icon: 'OIL', atMillis: daysAgo(400), odoKm: 3912, cost: 0, note: 'First free service at the dealer' },
+    { itemId: 1, label: 'Engine oil', icon: 'OIL', atMillis: daysAgo(290), odoKm: 6874, cost: 1380, note: null },
+    { itemId: 3, label: 'Air filter', icon: 'AIR', atMillis: daysAgo(190), odoKm: 7960, cost: 420, note: null },
+    { itemId: 4, label: 'Brake pads check', icon: 'BRAKE', atMillis: daysAgo(168), odoKm: 8402, cost: 250, note: 'Front pads at 60%' },
+    { itemId: 1, label: 'Engine oil', icon: 'OIL', atMillis: daysAgo(104), odoKm: 9874, cost: 1450, note: 'Workshop, NH 48' },
+    { itemId: 2, label: 'Chain clean & lube', icon: 'CHAIN', atMillis: atOdo(11_655), odoKm: 11_655, cost: null, note: null },
+    { itemId: 5, label: 'Tyre pressure', icon: 'TYRE', atMillis: atOdo(12_034), odoKm: 12_034, cost: null, note: null },
+  ];
+  return list.map((r, i) => ({ id: i + 1, ...r }));
+}
+
 const q = (p: { lat: number; lng: number }): string => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
 
 export function buildPlaces(): object[] {

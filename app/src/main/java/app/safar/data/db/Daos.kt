@@ -132,13 +132,6 @@ interface ServiceItemDao {
     @Update
     suspend fun update(row: ServiceItemEntity)
 
-    /** Also ends a pending first service: the recurring interval counts from here. */
-    @Query(
-        "UPDATE service_item SET lastDoneOdoKm = :odoKm, lastDoneMillis = :atMillis, firstAtKm = NULL, firstByEpochDay = NULL " +
-            "WHERE id = :id",
-    )
-    suspend fun markDone(id: Long, odoKm: Int, atMillis: Long)
-
     @Query("DELETE FROM service_item WHERE id = :id")
     suspend fun delete(id: Long)
 

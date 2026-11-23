@@ -76,10 +76,22 @@ interface TripRepository {
 
 interface ServiceRepository {
     val items: Flow<List<ServiceItem>>
+
+    /** Services done, newest first. */
+    val records: Flow<List<ServiceRecord>> get() = flowOf(emptyList())
     suspend fun upsert(item: ServiceItem): Long
-    /** Logs a service at [odoKm] and [atMillis], ending any pending first service. */
+    /** Logs a service at [odoKm] and [atMillis], ending any pending first service, and adds it to the history. */
     suspend fun markDone(id: Long, odoKm: Int, atMillis: Long)
     suspend fun delete(id: Long)
+
+    /**
+     * Adds an earlier service to the history. [item], when given, is the item updated to count from this
+     * service (it was newer than the item's last one); both are written in one transaction.
+     */
+    suspend fun logPast(record: ServiceRecord, item: ServiceItem?) {}
+
+    /** Removes a record from the history. The item keeps counting from its last service. */
+    suspend fun deleteRecord(id: Long) {}
 }
 
 interface PlaceRepository {

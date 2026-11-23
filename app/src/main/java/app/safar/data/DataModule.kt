@@ -50,7 +50,7 @@ object DataModule {
         AppContainer.fuel = RoomFuelRepository(db.fuelUps())
         val trips = RoomTripRepository(db.trips())
         AppContainer.trips = trips
-        AppContainer.service = RoomServiceRepository(db.serviceItems())
+        AppContainer.service = RoomServiceRepository(db.serviceItems(), db.serviceRecords())
         AppContainer.places = RoomPlaceRepository(db.places())
         AppContainer.parked = RoomParkedRepository(db.parkedSpot())
         val documents = RoomDocumentRepository(db.documents())

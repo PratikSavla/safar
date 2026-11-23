@@ -10,6 +10,7 @@ import app.safar.data.PlaceKind
 import app.safar.data.PlaceSource
 import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
+import app.safar.data.ServiceRecord
 import app.safar.data.SpanUnit
 import app.safar.data.TimeSpan
 import app.safar.data.TrackPoint
@@ -25,6 +26,15 @@ class MappersTest {
         val doc = BikeDocument(7, "PUC", DocKind.PUC, "a.pdf", "application/pdf", 1_024, 5_000, 20_400, "Centre 12", 2)
         assertEquals(doc, doc.toEntity().toModel())
         assertEquals(DocKind.OTHER, doc.toEntity().copy(kind = "PERMIT").toModel().kind)
+    }
+
+    @Test
+    fun roundTripsAServiceRecordAndReadsAnUnknownIconAsGeneric() {
+        val record = ServiceRecord(4, 1, "Engine oil", ServiceIcon.OIL, 5_000, 11_820, 450.0, "Main Rd garage")
+        assertEquals(record, record.toEntity().toModel())
+        assertEquals("OIL", record.toEntity().icon)
+        val removedItem = ServiceRecordEntity(5, null, "Coolant", "SOMETHING_NEW", 6_000, null, null, null)
+        assertEquals(ServiceRecord(5, null, "Coolant", ServiceIcon.GENERIC, 6_000, null), removedItem.toModel())
     }
 
     @Test

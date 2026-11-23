@@ -39,6 +39,7 @@ data class BackupCounts(
     val trackPoints: Int = 0,
     val fuelUps: Int = 0,
     val serviceItems: Int = 0,
+    val serviceRecords: Int = 0,
     val places: Int = 0,
     val parkedSpot: Boolean = false,
     val documents: Int = 0,
@@ -49,6 +50,7 @@ data class BackupData(
     val trips: List<TripDto> = emptyList(),
     val fuelUps: List<FuelUpDto> = emptyList(),
     val serviceItems: List<ServiceItemDto> = emptyList(),
+    val serviceRecords: List<ServiceRecordDto> = emptyList(),
     val places: List<PlaceDto> = emptyList(),
     val parkedSpot: ParkedSpotDto? = null,
     val documents: List<DocumentDto> = emptyList(),
@@ -109,6 +111,19 @@ data class ServiceItemDto(
     val firstByEpochDay: Long? = null,
     /** The same date as text (yyyy-MM-dd), for people reading the file. Ignored on import. */
     val firstByDate: String? = null,
+)
+
+/** A service done. [itemId] is the logbook item's id in the same file, or null / unknown once it was removed. */
+@Serializable
+data class ServiceRecordDto(
+    val id: Long = 0,
+    val itemId: Long? = null,
+    val label: String = "",
+    val icon: String = "GENERIC",
+    val atMillis: Long = 0,
+    val odoKm: Int? = null,
+    val cost: Double? = null,
+    val note: String? = null,
 )
 
 @Serializable

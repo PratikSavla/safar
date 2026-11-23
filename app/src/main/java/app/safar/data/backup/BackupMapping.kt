@@ -9,6 +9,7 @@ import app.safar.data.db.FuelUpEntity
 import app.safar.data.db.ParkedSpotEntity
 import app.safar.data.db.PlaceEntity
 import app.safar.data.db.ServiceItemEntity
+import app.safar.data.db.ServiceRecordEntity
 import app.safar.data.db.TrackPointEntity
 import app.safar.data.db.TripEntity
 import app.safar.data.reminderStage
@@ -25,6 +26,7 @@ fun UserSnapshot.toBackupData(): BackupData {
         trips = rows.trips.map { it.toDto(tracks[it.id].orEmpty()) },
         fuelUps = rows.fuelUps.map { it.toDto() },
         serviceItems = rows.serviceItems.map { it.toDto() },
+        serviceRecords = rows.serviceRecords.map { ServiceRecordDto(it.id, it.itemId, it.label, it.icon, it.atMillis, it.odoKm, it.cost, it.note) },
         places = rows.places.map { it.toDto() },
         parkedSpot = rows.parkedSpot?.let { ParkedSpotDto(it.lat, it.lng, it.accuracyM, it.atMillis, it.label) },
         documents = rows.documents.map { it.toDto() },
@@ -38,6 +40,7 @@ fun BackupData.counts(): BackupCounts = BackupCounts(
     trackPoints = trips.sumOf { it.track.size },
     fuelUps = fuelUps.size,
     serviceItems = serviceItems.size,
+    serviceRecords = serviceRecords.size,
     places = places.size,
     parkedSpot = parkedSpot != null,
     documents = documents.size,
@@ -63,6 +66,7 @@ fun BackupData.toRows(todayEpochDay: Long): DatabaseRows = DatabaseRows(
         val stage = reminderStage(todayEpochDay, it.expiryEpochDay)
         DocumentEntity(it.id, it.title, it.kind, it.fileName, it.mimeType, it.sizeBytes, it.addedMillis, it.expiryEpochDay, it.note, stage)
     },
+    serviceRecords = serviceRecords.map { ServiceRecordEntity(it.id, it.itemId, it.label, it.icon, it.atMillis, it.odoKm, it.cost, it.note) },
 )
 
 /** [this] applied over [base]: missing values keep [base]'s. Onboarding and dismissed cards stay [base]'s. */

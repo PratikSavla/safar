@@ -66,6 +66,9 @@ data class ServiceUiState(
     val lockReason: String? = null,
     /** The day the logbook counts to, for the sheets' date steppers. */
     val today: LocalDate = LocalDate.MIN,
+    /** Services done, newest first. */
+    val history: List<HistoryRowUi> = emptyList(),
+    val currency: String = "₹",
 )
 
 /**

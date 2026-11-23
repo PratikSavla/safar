@@ -54,6 +54,8 @@ data class ServiceActions(
     val onDelete: (Long) -> Unit = {},
     val onAdd: (ServiceForm) -> Unit = {},
     val onReminders: (Boolean) -> Unit = {},
+    val onLogPast: (PastForm) -> Unit = {},
+    val onDeleteRecord: (Long) -> Unit = {},
 )
 
 /** Service reminders by distance, time or both (service.js). */
@@ -65,7 +67,10 @@ fun ServiceScreen(navigator: Navigator) {
     val state by vm.state.collectAsStateWithLifecycle()
     val toast = rememberToastState()
     NoticeToasts(vm.notices, toast)
-    ServiceContent(state, toast, ServiceActions(navigator::back, vm::markDone, vm::save, vm::delete, vm::add, vm::setReminders))
+    ServiceContent(
+        state, toast,
+        ServiceActions(navigator::back, vm::markDone, vm::save, vm::delete, vm::add, vm::setReminders, vm::logPast, vm::deleteRecord),
+    )
 }
 
 /** Stateless logbook page. */
@@ -73,6 +78,8 @@ fun ServiceScreen(navigator: Navigator) {
 fun ServiceContent(state: ServiceUiState, toast: AtlasToastState, actions: ServiceActions) {
     var editing by rememberSaveable { mutableStateOf<Long?>(null) }
     var adding by rememberSaveable { mutableStateOf(false) }
+    var loggingPast by rememberSaveable { mutableStateOf(false) }
+    var removing by rememberSaveable { mutableStateOf<Long?>(null) }
     val editItem = state.rows.firstOrNull { it.status.item.id == editing }?.status?.item
     AtlasPage(
         topo = TopoTransform.Quiet,
@@ -86,6 +93,7 @@ fun ServiceContent(state: ServiceUiState, toast: AtlasToastState, actions: Servi
                 actions.onAdd(form)
                 adding = false
             })
+            HistorySheets(state, loggingPast, removing, actions, onClose = { loggingPast = false; removing = null })
             AtlasToastHost(toast, bottomPadding = 40.dp)
         },
     ) {
@@ -101,8 +109,22 @@ fun ServiceContent(state: ServiceUiState, toast: AtlasToastState, actions: Servi
             }
         }
         TextAction("Add your own item", { adding = true }, Modifier.padding(top = 14.dp), icon = AtlasIcons.plus)
+        HistorySection(state.history, canLog = state.rows.isNotEmpty(), onLogPast = { loggingPast = true }, onRecord = { removing = it })
         SectionHeader("Reminders")
         SwitchRow("Service reminders", state.reminders, actions.onReminders, subtitle = SwitchCopy.SERVICE_REMINDERS)
+    }
+}
+
+@Composable
+private fun HistorySheets(state: ServiceUiState, loggingPast: Boolean, removing: Long?, actions: ServiceActions, onClose: () -> Unit) {
+    val items = state.rows.map { it.status.item }
+    PastServiceSheet(PastSheetSpec(loggingPast, items, state.today, state.currency, state.lockReason), onClose) { form ->
+        actions.onLogPast(form)
+        onClose()
+    }
+    RemoveRecordSheet(state.history.firstOrNull { it.id == removing }, onClose) { id ->
+        actions.onDeleteRecord(id)
+        onClose()
     }
 }
 

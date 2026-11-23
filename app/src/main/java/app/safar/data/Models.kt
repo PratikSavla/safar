@@ -109,6 +109,22 @@ data class ServiceItem(
     val firstPending: Boolean get() = firstAtKm != null || firstByDate != null
 }
 
+/**
+ * A service that was done: logged by marking an item done, or typed in afterwards for an earlier service.
+ * [label] and [icon] are copied from the item so the history reads the same after the item is removed
+ * ([itemId] then points nowhere). [odoKm] is null when the rider did not know it.
+ */
+data class ServiceRecord(
+    val id: Long = 0,
+    val itemId: Long?,
+    val label: String,
+    val icon: ServiceIcon,
+    val atMillis: Long,
+    val odoKm: Int?,
+    val cost: Double? = null,
+    val note: String? = null,
+)
+
 enum class PlaceKind { HOME, WORK, FUEL, STAR }
 
 /** How a place was saved: shared from Google Maps, phone GPS, typed, parked spot, or end of a trip. */

@@ -111,7 +111,10 @@ private class ZipBackupReader(private val staging: File, private val limits: Bac
     }
 
     private fun checkUniqueIds(d: BackupData) {
-        val lists = listOf(d.trips.map { it.id }, d.fuelUps.map { it.id }, d.serviceItems.map { it.id }, d.places.map { it.id }, d.documents.map { it.id })
+        val lists = listOf(
+            d.trips.map { it.id }, d.fuelUps.map { it.id }, d.serviceItems.map { it.id }, d.places.map { it.id }, d.documents.map { it.id },
+            d.serviceRecords.map { it.id },
+        )
         if (lists.any { ids -> ids.any { it <= 0 } || ids.toSet().size != ids.size }) throw BackupRejected(DAMAGED)
         if (d.documents.map { it.fileName }.toSet().size != d.documents.size) throw BackupRejected(DAMAGED)
     }

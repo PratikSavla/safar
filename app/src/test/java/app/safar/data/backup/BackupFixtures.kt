@@ -7,6 +7,7 @@ import app.safar.data.db.FuelUpEntity
 import app.safar.data.db.ParkedSpotEntity
 import app.safar.data.db.PlaceEntity
 import app.safar.data.db.ServiceItemEntity
+import app.safar.data.db.ServiceRecordEntity
 import app.safar.data.db.TrackPointEntity
 import app.safar.data.db.TripEntity
 
@@ -36,6 +37,10 @@ internal fun sampleRows(): DatabaseRows = DatabaseRows(
         DocumentEntity(1, "PUC", "PUC", PDF_NAME, "application/pdf", 9, 500, 20_400, "Centre 12", 1),
         DocumentEntity(2, "RC", "RC", JPG_NAME, "image/jpeg", 5, 600, null, null, 0),
     ),
+    serviceRecords = listOf(
+        ServiceRecordEntity(2, 5, "Engine oil", "OIL", 900, 9_800, 450.0, "Main Rd garage"),
+        ServiceRecordEntity(3, null, "Coolant", "COOLANT", 400, null, null, null),
+    ),
 )
 
 /** In-memory [BackupDao]: the transaction methods come from the interface and run on these lists. */
@@ -47,6 +52,7 @@ internal class FakeBackupDao(rows: DatabaseRows = DatabaseRows(emptyList(), empt
     var placeRows = rows.places.toMutableList()
     var parked: ParkedSpotEntity? = rows.parkedSpot
     var docs = rows.documents.toMutableList()
+    var records = rows.serviceRecords.toMutableList()
 
     override suspend fun trips() = trips.toList()
     override suspend fun trackPoints() = points.toList()
@@ -55,6 +61,9 @@ internal class FakeBackupDao(rows: DatabaseRows = DatabaseRows(emptyList(), empt
     override suspend fun places() = placeRows.toList()
     override suspend fun parkedSpot() = parked
     override suspend fun documents() = docs.toList()
+    override suspend fun serviceRecords() = records.toList()
+    override suspend fun clearServiceRecords() = records.clear()
+    override suspend fun insertServiceRecords(rows: List<ServiceRecordEntity>) { records += rows }
     override suspend fun clearTrackPoints() = points.clear()
     override suspend fun clearTrips() = trips.clear()
     override suspend fun clearFuelUps() = fuel.clear()

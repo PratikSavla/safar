@@ -23,6 +23,9 @@ interface BackupDao {
     @Query("SELECT * FROM service_item ORDER BY id")
     suspend fun serviceItems(): List<ServiceItemEntity>
 
+    @Query("SELECT * FROM service_record ORDER BY id")
+    suspend fun serviceRecords(): List<ServiceRecordEntity>
+
     @Query("SELECT * FROM place ORDER BY sortOrder, id")
     suspend fun places(): List<PlaceEntity>
 
@@ -43,6 +46,9 @@ interface BackupDao {
 
     @Query("DELETE FROM service_item")
     suspend fun clearServiceItems()
+
+    @Query("DELETE FROM service_record")
+    suspend fun clearServiceRecords()
 
     @Query("DELETE FROM place")
     suspend fun clearPlaces()
@@ -66,6 +72,9 @@ interface BackupDao {
     suspend fun insertServiceItems(rows: List<ServiceItemEntity>)
 
     @Insert
+    suspend fun insertServiceRecords(rows: List<ServiceRecordEntity>)
+
+    @Insert
     suspend fun insertPlaces(rows: List<PlaceEntity>)
 
     @Insert
@@ -82,6 +91,7 @@ interface BackupDao {
         fuelUps = fuelUps(),
         serviceItems = serviceItems(),
         places = places(),
+        serviceRecords = serviceRecords(),
         parkedSpot = parkedSpot(),
         documents = documents(),
     )
@@ -93,6 +103,7 @@ interface BackupDao {
         clearTrips()
         clearFuelUps()
         clearServiceItems()
+        clearServiceRecords()
         clearPlaces()
         clearParkedSpot()
         clearDocuments()
@@ -106,6 +117,7 @@ interface BackupDao {
         insertTrackPoints(rows.trackPoints)
         insertFuelUps(rows.fuelUps)
         insertServiceItems(rows.serviceItems)
+        insertServiceRecords(rows.serviceRecords)
         insertPlaces(rows.places)
         rows.parkedSpot?.let { insertParkedSpot(it) }
         insertDocuments(rows.documents)
@@ -121,4 +133,5 @@ data class DatabaseRows(
     val places: List<PlaceEntity>,
     val parkedSpot: ParkedSpotEntity?,
     val documents: List<DocumentEntity>,
+    val serviceRecords: List<ServiceRecordEntity> = emptyList(),
 )

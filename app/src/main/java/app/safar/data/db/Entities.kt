@@ -72,6 +72,19 @@ data class ServiceItemEntity(
     val firstByEpochDay: Long? = null,
 )
 
+/** A service done ([app.safar.data.ServiceRecord]). No foreign key: the history outlives a removed item. */
+@Entity(tableName = "service_record", indices = [Index("itemId")])
+data class ServiceRecordEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val itemId: Long?,
+    val label: String,
+    val icon: String,
+    val atMillis: Long,
+    val odoKm: Int?,
+    val cost: Double?,
+    val note: String?,
+)
+
 @Entity(tableName = "place")
 data class PlaceEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

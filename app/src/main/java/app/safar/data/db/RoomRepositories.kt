@@ -9,6 +9,7 @@ import app.safar.data.ParkedSpot
 import app.safar.data.Place
 import app.safar.data.PlaceRepository
 import app.safar.data.ServiceItem
+import app.safar.data.ServiceRecord
 import app.safar.data.ServiceRepository
 import app.safar.data.TrackPoint
 import app.safar.data.Trip
@@ -61,8 +62,9 @@ class RoomTripRepository(private val dao: TripDao) : TripRepository {
     }
 }
 
-class RoomServiceRepository(private val dao: ServiceItemDao) : ServiceRepository {
+class RoomServiceRepository(private val dao: ServiceItemDao, private val recordDao: ServiceRecordDao) : ServiceRepository {
     override val items: Flow<List<ServiceItem>> = dao.observeAll().map { rows -> rows.map { it.toModel() } }
+    override val records: Flow<List<ServiceRecord>> = recordDao.observeAll().map { rows -> rows.map { it.toModel() } }
 
     /** Inserts when [ServiceItem.id] is 0, else updates. Returns the row id. */
     override suspend fun upsert(item: ServiceItem): Long {
@@ -71,8 +73,13 @@ class RoomServiceRepository(private val dao: ServiceItemDao) : ServiceRepository
         return item.id
     }
 
-    override suspend fun markDone(id: Long, odoKm: Int, atMillis: Long) = dao.markDone(id, odoKm, atMillis)
+    override suspend fun markDone(id: Long, odoKm: Int, atMillis: Long) = recordDao.markDone(id, odoKm, atMillis)
     override suspend fun delete(id: Long) = dao.delete(id)
+
+    override suspend fun logPast(record: ServiceRecord, item: ServiceItem?) =
+        recordDao.logPast(record.toEntity().copy(id = 0), item?.toEntity())
+
+    override suspend fun deleteRecord(id: Long) = recordDao.delete(id)
 
     /** Inserts [items] in one transaction when there are none yet. Returns true when it seeded. */
     suspend fun seedIfEmpty(items: List<ServiceItem>): Boolean = dao.seedIfEmpty(items.map { it.toEntity().copy(id = 0) })

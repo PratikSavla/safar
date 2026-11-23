@@ -10,6 +10,7 @@ import app.safar.data.PlaceKind
 import app.safar.data.PlaceSource
 import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
+import app.safar.data.ServiceRecord
 import app.safar.data.SpanUnit
 import app.safar.data.TimeSpan
 import app.safar.data.TripStop
@@ -64,6 +65,15 @@ fun ServiceItem.toEntity() = ServiceItemEntity(
     id = id, label = label, everyKm = everyKm ?: 0, lastDoneOdoKm = lastDoneOdoKm, lastDoneMillis = lastDoneMillis,
     icon = icon.name, everyTimeCount = everyTime?.count, everyTimeUnit = everyTime?.unit?.name,
     firstAtKm = firstAtKm, firstByEpochDay = firstByDate?.toEpochDay(),
+)
+
+fun ServiceRecordEntity.toModel() = ServiceRecord(
+    id = id, itemId = itemId, label = label, icon = enumOr(icon, ServiceIcon.GENERIC), atMillis = atMillis,
+    odoKm = odoKm, cost = cost, note = note,
+)
+
+fun ServiceRecord.toEntity() = ServiceRecordEntity(
+    id = id, itemId = itemId, label = label, icon = icon.name, atMillis = atMillis, odoKm = odoKm, cost = cost, note = note,
 )
 
 fun PlaceEntity.toModel() = Place(

@@ -15,6 +15,7 @@ import app.safar.ui.components.Masthead
 import app.safar.ui.components.SectionHeader
 import app.safar.ui.components.rememberNow
 import app.safar.ui.home.preview.HomePreviewData
+import app.safar.core.AppContainer
 import app.safar.ui.nav.Navigator
 import app.safar.ui.nav.Route
 import app.safar.ui.pair.rememberBtFixes
@@ -40,6 +41,7 @@ fun HomeScreen(navigator: Navigator, vm: HomeViewModel = viewModel { HomeViewMod
             connectSaved = vm::connectSaved,
             openPair = { navigator.go(Route.Pair) },
             enableBluetooth = fixes.enableBluetooth,
+            photoFile = AppContainer.bikePhotos::file,
         )
     }
     val missing by rememberMissingPermissions()

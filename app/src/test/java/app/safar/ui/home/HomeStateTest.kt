@@ -53,6 +53,9 @@ class HomeStateTest {
         assertEquals(3, retry.attempt)
         assertEquals(9_000L, retry.nextAttemptAt)
         assertEquals(ConnKind.BLUETOOTH_OFF, connUi(saved.copy(link = LinkState.BluetoothOff)).kind)
+        val pictured = connUi(saved, app.safar.core.BikeStyle.SPORT, "a.jpg")
+        assertEquals(app.safar.core.BikeStyle.SPORT to "a.jpg", pictured.style to pictured.photo)
+        assertEquals(null, connUi(saved).photo)
     }
 
     private fun stats(bike: BikeState) = fuelStats(emptyList(), Settings(), bike.saved?.model, bike.cluster ?: bike.lastCluster, 0)

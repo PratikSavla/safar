@@ -100,8 +100,17 @@ fun odoSourceFor(form: FuelForm, entry: FuelUp?, sugg: OdoSuggestion): OdoSource
  * Where the odometer came from, in the rider's words (fuel-form.js `odoBlock`). No age while the bike is live;
  * a reading kept from the last ride says which day it is from. Exact ages are Developer mode only.
  */
-fun odoLabel(entry: FuelUp?, sugg: OdoSuggestion, nowMillis: Long, zone: ZoneId = ZoneId.systemDefault()): OdoLabel {
+fun odoLabel(
+    entry: FuelUp?,
+    sugg: OdoSuggestion,
+    nowMillis: Long,
+    zone: ZoneId = ZoneId.systemDefault(),
+    backDated: Boolean = false,
+): OdoLabel {
     if (entry != null) return OdoLabel(savedAs(entry.odoSource), OdoTone.INK)
+    val now = sugg.value
+    // The bike's reading is today's: a fill on an earlier day had a lower odometer.
+    if (backDated && now != null) return OdoLabel("Your bike shows ${Formatters.odometer(now)} km now. Type the odometer on that day.", OdoTone.AMBER)
     return when (sugg.source) {
         OdoSuggestionSource.BIKE -> OdoLabel("From your bike", OdoTone.MOSS)
         OdoSuggestionSource.BIKE_LAST -> {

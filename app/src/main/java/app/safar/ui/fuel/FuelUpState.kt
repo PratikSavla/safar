@@ -53,7 +53,8 @@ fun fuelUpUiState(
         validation = v,
         messages = fieldMessages(form, v),
         perLitre = amountLine(form, v, currency),
-        bikeSaid = bikeSaid(form, entry, sugg),
+        // A back-dated fill already says what the bike shows now (see odoLabel).
+        bikeSaid = bikeSaid(form, entry, sugg).takeUnless { fillDay(form, entry, nowMillis, zone) < localDay(nowMillis, zone) },
         locked = LockText.whileMoving(ride.moving, ride.speedKmh),
         speedKmh = ride.speedKmh,
         currency = currency,

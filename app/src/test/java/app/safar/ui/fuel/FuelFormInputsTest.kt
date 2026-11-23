@@ -112,4 +112,25 @@ class FuelFormInputsTest {
         assertEquals("9", switchByPrice(price.copy(litres = "9"), false).litres)
         assertEquals(price, switchByPrice(price, true))
     }
+
+    @Test
+    fun `a back-dated fill asks for that day's odometer instead of today's bike reading`() {
+        val live = OdoSuggestion(12_301, OdoSuggestionSource.BIKE, now)
+        assertEquals(
+            OdoLabel("Your bike shows 12,301 km now. Type the odometer on that day.", OdoTone.AMBER),
+            odoLabel(null, live, now, utc, backDated = true),
+        )
+        assertEquals(OdoLabel("From your bike", OdoTone.MOSS), odoLabel(null, live, now, utc, backDated = false))
+        assertEquals(OdoTone.INK, odoLabel(ups[5], live, now, utc, backDated = true).tone)
+    }
+
+    @Test
+    fun `the bike-said hint is left out of a back-dated fill`() {
+        val live = OdoSuggestion(12_301, OdoSuggestionSource.BIKE, now)
+        val form = FuelForm("3", "300", "12214", editOdo = true)
+        val todayState = fuelUpUiState(null, false, live, form, ups, 12.0, "₹", app.safar.core.RideState(), now, utc)
+        assertEquals("Your bike showed 12,301 km", todayState.bikeSaid)
+        val earlier = fuelUpUiState(null, false, live, form.copy(day = today - 1), ups, 12.0, "₹", app.safar.core.RideState(), now, utc)
+        assertNull(earlier.bikeSaid)
+    }
 }

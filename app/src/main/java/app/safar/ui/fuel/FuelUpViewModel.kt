@@ -68,8 +68,11 @@ class FuelUpViewModel(
     fun setPrice(text: String) = form.update { it.copy(price = text) }
     fun setByPrice(byPrice: Boolean) = form.update { switchByPrice(it, byPrice) }
 
-    /** The fill's date (days since 1970-01-01). A day after today saves as now (see [recordMillis]). */
-    fun setDay(day: Long) = form.update { it.copy(day = day) }
+    /**
+     * The fill's date (days since 1970-01-01). A day after today saves as now (see [recordMillis]). An earlier day
+     * opens the odometer: the bike's reading is today's.
+     */
+    fun setDay(day: Long) = form.update { it.copy(day = day, editOdo = it.editOdo || day < state.value.today) }
     fun setTotal(text: String) = form.update { it.copy(total = text) }
     fun setOdo(text: String) = form.update { it.copy(odo = text.filter(Char::isDigit)) }
     fun editOdo() = form.update { it.copy(editOdo = true) }

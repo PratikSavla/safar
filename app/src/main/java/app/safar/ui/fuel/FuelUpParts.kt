@@ -116,7 +116,8 @@ private fun OdoSourceLine(state: FuelUpUiState) {
     val zone = remember { ZoneId.systemDefault() }
     val now = rememberNow()
     // The clock ticks every second; the label recomposes only when its words change (a new day, a new source).
-    val label by remember(state.entry, sugg, now) { derivedStateOf { odoLabel(state.entry, sugg, now.value, zone) } }
+    val backDated = state.day < state.today
+    val label by remember(state.entry, sugg, now, backDated) { derivedStateOf { odoLabel(state.entry, sugg, now.value, zone, backDated) } }
     val color = when (label.tone) {
         OdoTone.MOSS -> c.moss
         OdoTone.AMBER -> c.amber

@@ -29,15 +29,20 @@ The screenshots and the film come from the app on an Android emulator, connected
   caller's name and a count, never the message text.
 - **Ride mode**: a large, glanceable screen that opens by itself when you start moving.
 - **Trips**: every ride with its day and start time, distance, speeds and a map of the route.
-- **Fuel**: log fill-ups, see your mileage and an estimated range, and get a low-fuel reminder.
+- **Fuel**: log fill-ups by litres or by price per litre, dated the day you filled (even if you log it later), see
+  your mileage and an estimated range, and get a low-fuel reminder.
 - **Service**: reminders for oil, chain, air filter, brakes and tyres, due every so many kilometres, days, weeks or
-  months, or both, whichever comes first. A first service can have its own odometer reading or date.
+  months, or both, whichever comes first. A first service can have its own odometer reading or date. A service
+  history keeps every service you mark done, and you can add the ones done before you started using Safar, with the
+  odometer, cost and a note.
+- **Your bike**: a drawing of your model (scooter, maxi-scooter, sport scooter, street, sport or adventure bike), or
+  your own photo of it.
 - **Parked**: the place your phone was when the bike switched off.
 - **Papers**: your RC, insurance, PUC, licence and service bills as PDFs or photos, with an optional expiry date. Safar
   reminds you 30 and 7 days before a paper runs out, and on the day.
 - **Widget**: the connection, odometer, Trip A, range and the next turn on your home screen.
 - **Backup**: rides, fuel log, places and settings are saved with Android's own backup and device transfer. You turn
-  it on or off in your phone's settings, under Backup. Papers stay on the phone and are not part of that backup.
+  it on or off in your phone's settings, under Backup. Papers and your bike photo stay on the phone and are not part of that backup.
 - **Your data**: in Settings, export everything (rides with their routes, fuel, service, places, papers and settings)
   to one `.zip` file, import such a file to replace what's on the phone, or delete everything and start fresh.
 

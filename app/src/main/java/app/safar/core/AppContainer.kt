@@ -1,5 +1,6 @@
 package app.safar.core
 
+import app.safar.data.BikePhotos
 import app.safar.data.DocumentFiles
 import app.safar.data.DocumentRepository
 import app.safar.data.FuelRepository
@@ -31,6 +32,7 @@ object AppContainer {
     lateinit var parked: ParkedRepository
     lateinit var documents: DocumentRepository
     lateinit var documentFiles: DocumentFiles
+    lateinit var bikePhotos: BikePhotos
     /** Export, import and "Delete everything". */
     lateinit var userData: UserData
 

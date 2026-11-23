@@ -108,7 +108,7 @@ fun ScanResult(bike: ScannedBike, onPick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            BikeSilhouette(bike.model.family, width = 70.dp)
+            BikeSilhouette(bike.model.style, width = 70.dp)
             Column(Modifier.weight(1f)) {
                 BasicText(bike.model.name, style = Atlas.type.serifTitle.copy(fontSize = Atlas.type.serifTitle.fontSize * 1.04f, color = c.ink), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (dev) {

@@ -141,6 +141,7 @@ internal fun lockReason(r: RideState): String? =
 internal fun exportSummary(c: BackupCounts): String {
     val parts = listOfNotNull(
         plural(c.trips, "ride"), plural(c.fuelUps, "fuel-up"), plural(c.serviceItems, "service item"),
+        plural(c.serviceRecords, "past service"),
         plural(c.places, "place"), plural(c.documents, "paper"),
     )
     return when (parts.size) {

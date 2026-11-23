@@ -1,5 +1,6 @@
 package app.safar.data.backup
 
+import app.safar.core.BikeStyle
 import app.safar.data.SavedBikeRecord
 import app.safar.data.Settings
 import app.safar.data.ThemeMode
@@ -9,6 +10,7 @@ import app.safar.data.db.FuelUpEntity
 import app.safar.data.db.ParkedSpotEntity
 import app.safar.data.db.PlaceEntity
 import app.safar.data.db.ServiceItemEntity
+import app.safar.data.db.ServiceRecordEntity
 import app.safar.data.db.TrackPointEntity
 import app.safar.data.db.TripEntity
 import app.safar.data.reminderStage
@@ -25,6 +27,7 @@ fun UserSnapshot.toBackupData(): BackupData {
         trips = rows.trips.map { it.toDto(tracks[it.id].orEmpty()) },
         fuelUps = rows.fuelUps.map { it.toDto() },
         serviceItems = rows.serviceItems.map { it.toDto() },
+        serviceRecords = rows.serviceRecords.map { ServiceRecordDto(it.id, it.itemId, it.label, it.icon, it.atMillis, it.odoKm, it.cost, it.note) },
         places = rows.places.map { it.toDto() },
         parkedSpot = rows.parkedSpot?.let { ParkedSpotDto(it.lat, it.lng, it.accuracyM, it.atMillis, it.label) },
         documents = rows.documents.map { it.toDto() },
@@ -38,6 +41,7 @@ fun BackupData.counts(): BackupCounts = BackupCounts(
     trackPoints = trips.sumOf { it.track.size },
     fuelUps = fuelUps.size,
     serviceItems = serviceItems.size,
+    serviceRecords = serviceRecords.size,
     places = places.size,
     parkedSpot = parkedSpot != null,
     documents = documents.size,
@@ -61,8 +65,9 @@ fun BackupData.toRows(todayEpochDay: Long): DatabaseRows = DatabaseRows(
     parkedSpot = parkedSpot?.let { ParkedSpotEntity(lat = it.lat, lng = it.lng, accuracyM = it.accuracyM, atMillis = it.atMillis, label = it.label) },
     documents = documents.map {
         val stage = reminderStage(todayEpochDay, it.expiryEpochDay)
-        DocumentEntity(it.id, it.title, it.kind, it.fileName, it.mimeType, it.sizeBytes, it.addedMillis, it.expiryEpochDay, it.note, stage)
+        DocumentEntity(it.id, it.title, it.kind, it.fileName, it.mimeType, it.sizeBytes, it.addedMillis, it.expiryEpochDay, it.note, stage, it.serviceRecordId)
     },
+    serviceRecords = serviceRecords.map { ServiceRecordEntity(it.id, it.itemId, it.label, it.icon, it.atMillis, it.odoKm, it.cost, it.note) },
 )
 
 /** [this] applied over [base]: missing values keep [base]'s. Onboarding and dismissed cards stay [base]'s. */
@@ -84,6 +89,7 @@ fun SettingsDto.applyTo(base: Settings): Settings = base.copy(
     tankLitres = tankLitres,
     currencySymbol = currencySymbol ?: base.currencySymbol,
     developerMode = developerMode ?: base.developerMode,
+    bikeStyle = BikeStyle.entries.firstOrNull { it.name == bikeStyle } ?: base.bikeStyle,
 )
 
 fun Settings.toDto() = SettingsDto(
@@ -91,7 +97,7 @@ fun Settings.toDto() = SettingsDto(
     alertWhatsAppCalls = alertWhatsAppCalls, alertWhatsAppMessages = alertWhatsAppMessages, debugLog = debugLog,
     hideNames = hideNames, theme = theme.name, keepScreenOn = keepScreenOn, autoRideMode = autoRideMode,
     serviceReminders = serviceReminders, lowFuelAlert = lowFuelAlert, documentReminders = documentReminders,
-    tankLitres = tankLitres, currencySymbol = currencySymbol, developerMode = developerMode,
+    tankLitres = tankLitres, currencySymbol = currencySymbol, developerMode = developerMode, bikeStyle = bikeStyle?.name,
 )
 
 private fun TripEntity.toDto(track: List<TrackPointEntity>) = TripDto(
@@ -116,5 +122,5 @@ private fun PlaceEntity.toDto() = PlaceDto(id, label, detail, query, kind, sourc
 
 private fun DocumentEntity.toDto() = DocumentDto(
     id, title, kind, fileName, mimeType, sizeBytes, addedMillis, expiryEpochDay,
-    expiryDate = expiryEpochDay?.let { LocalDate.ofEpochDay(it).toString() }, note = note,
+    expiryDate = expiryEpochDay?.let { LocalDate.ofEpochDay(it).toString() }, note = note, serviceRecordId = serviceRecordId,
 )

@@ -72,6 +72,19 @@ data class ServiceItemEntity(
     val firstByEpochDay: Long? = null,
 )
 
+/** A service done ([app.safar.data.ServiceRecord]). No foreign key: the history outlives a removed item. */
+@Entity(tableName = "service_record", indices = [Index("itemId")])
+data class ServiceRecordEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val itemId: Long?,
+    val label: String,
+    val icon: String,
+    val atMillis: Long,
+    val odoKm: Int?,
+    val cost: Double?,
+    val note: String?,
+)
+
 @Entity(tableName = "place")
 data class PlaceEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -113,6 +126,8 @@ data class DocumentEntity(
     val expiryEpochDay: Long?,
     val note: String?,
     val remindedStage: Int,
+    // Added in version 5: the service record a bill belongs to.
+    val serviceRecordId: Long? = null,
 )
 
 /** A GPS waypoint at the join between two merged legs; deleted with the trip via CASCADE. */

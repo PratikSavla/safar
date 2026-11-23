@@ -14,13 +14,21 @@ import java.time.ZoneId
 
 // Pure logic of the fuel-up form (ux/variant-b/js/screens/fuel-form.js). Validation is data/validateFuelUp.
 
-/** What the rider has typed. [editOdo] = the odometer is an open field rather than the bike's reading. */
+/**
+ * What the rider has typed. [editOdo] = the odometer is an open field rather than the bike's reading. [day] is
+ * the fill's date chosen by the rider (days since 1970-01-01); null keeps the default: today for a new receipt,
+ * the saved time for an edit. [byPrice] = the rider types the price per litre ([price]) and Safar works out
+ * the litres from the amount paid.
+ */
 data class FuelForm(
     val litres: String = "",
     val total: String = "",
     val odo: String = "",
     val full: Boolean = true,
     val editOdo: Boolean = true,
+    val day: Long? = null,
+    val byPrice: Boolean = false,
+    val price: String = "",
 )
 
 /** A line under a field: an error blocks saving, a warning does not. */
@@ -45,16 +53,25 @@ fun initialForm(entry: FuelUp?, sugg: OdoSuggestion): FuelForm {
     return FuelForm(odo = sugg.value?.toString().orEmpty(), editOdo = sugg.source != OdoSuggestionSource.BIKE)
 }
 
-/** Fuel-ups to validate against: when editing, only those before the entry, without the entry itself. */
-fun validationBase(fuelUps: List<FuelUp>, entry: FuelUp?): List<FuelUp> =
-    if (entry == null) fuelUps else fuelUps.filter { it.id != entry.id && it.odometerKm <= entry.odometerKm }
+/** Fuel-ups logged at or before [atMillis], without the entry being edited. */
+fun validationBase(fuelUps: List<FuelUp>, entry: FuelUp?, atMillis: Long = entry?.atMillis ?: Long.MAX_VALUE): List<FuelUp> =
+    fuelUps.filter { it.id != entry?.id && it.atMillis <= atMillis }
 
-fun validate(form: FuelForm, fuelUps: List<FuelUp>, entry: FuelUp?, tank: Double): FuelUpValidation =
-    validateFuelUp(parseOdo(form.odo), parseDecimal(form.litres), parseDecimal(form.total), validationBase(fuelUps, entry), tank)
+/** Fuel-ups logged after [atMillis], without the entry being edited: the new odometer may not pass theirs. */
+fun laterFuelUps(fuelUps: List<FuelUp>, entry: FuelUp?, atMillis: Long): List<FuelUp> =
+    fuelUps.filter { it.id != entry?.id && it.atMillis > atMillis }
+
+/** [atMillis] is when the entry will be saved as filled ([recordMillis]); by default the entry's own time, or after every fuel-up. */
+fun validate(form: FuelForm, fuelUps: List<FuelUp>, entry: FuelUp?, tank: Double, atMillis: Long = entry?.atMillis ?: Long.MAX_VALUE): FuelUpValidation =
+    validateFuelUp(
+        parseOdo(form.odo), formLitres(form), parseDecimal(form.total),
+        validationBase(fuelUps, entry, atMillis), tank, laterFuelUps(fuelUps, entry, atMillis),
+    )
 
 /** Errors only once the field has text (no red on an empty form); warnings always. */
 fun fieldMessages(form: FuelForm, v: FuelUpValidation): Map<FuelField, FieldMessage> {
     val typed = mapOf(FuelField.LITRES to form.litres, FuelField.TOTAL to form.total, FuelField.ODO to form.odo)
+    if (form.byPrice) return priceMessages(form, v, fieldMessages(form.copy(byPrice = false, litres = form.price), v))
     return FuelField.entries.mapNotNull { f ->
         val err = v.errors[f]?.takeIf { typed[f].orEmpty().isNotBlank() }
         when {
@@ -83,8 +100,17 @@ fun odoSourceFor(form: FuelForm, entry: FuelUp?, sugg: OdoSuggestion): OdoSource
  * Where the odometer came from, in the rider's words (fuel-form.js `odoBlock`). No age while the bike is live;
  * a reading kept from the last ride says which day it is from. Exact ages are Developer mode only.
  */
-fun odoLabel(entry: FuelUp?, sugg: OdoSuggestion, nowMillis: Long, zone: ZoneId = ZoneId.systemDefault()): OdoLabel {
+fun odoLabel(
+    entry: FuelUp?,
+    sugg: OdoSuggestion,
+    nowMillis: Long,
+    zone: ZoneId = ZoneId.systemDefault(),
+    backDated: Boolean = false,
+): OdoLabel {
     if (entry != null) return OdoLabel(savedAs(entry.odoSource), OdoTone.INK)
+    val now = sugg.value
+    // The bike's reading is today's: a fill on an earlier day had a lower odometer.
+    if (backDated && now != null) return OdoLabel("Your bike shows ${Formatters.odometer(now)} km now. Type the odometer on that day.", OdoTone.AMBER)
     return when (sugg.source) {
         OdoSuggestionSource.BIKE -> OdoLabel("From your bike", OdoTone.MOSS)
         OdoSuggestionSource.BIKE_LAST -> {
@@ -112,13 +138,28 @@ fun bikeSaid(form: FuelForm, entry: FuelUp?, sugg: OdoSuggestion): String? {
 fun perLitreLine(perLitre: Double?, currency: String): String =
     if (perLitre == null) "Price per litre shows here" else "${Formatters.money(perLitre, currency, 2)} per litre"
 
-/** The record to save, or null while the form has errors. [barsNow] = live fuel bars, if connected. */
-fun toFuelUp(form: FuelForm, v: FuelUpValidation, entry: FuelUp?, sugg: OdoSuggestion, nowMillis: Long, barsNow: Int?): FuelUp? {
+/**
+ * The record to save, or null while the form has errors. [barsNow] = live fuel bars, if connected; kept only for
+ * a fill logged today, since a back-dated fill was not made with the bars on the cluster now.
+ */
+fun toFuelUp(
+    form: FuelForm,
+    v: FuelUpValidation,
+    entry: FuelUp?,
+    sugg: OdoSuggestion,
+    nowMillis: Long,
+    barsNow: Int?,
+    zone: ZoneId = ZoneId.systemDefault(),
+): FuelUp? {
     if (!v.ok) return null
     val odo = parseOdo(form.odo) ?: return null
-    val litres = parseDecimal(form.litres) ?: return null
+    val litres = formLitres(form) ?: return null
     val total = parseDecimal(form.total) ?: return null
     val source = odoSourceFor(form, entry, sugg)
-    return entry?.copy(odometerKm = odo, litres = litres, totalPaid = total, full = form.full, odoSource = source)
-        ?: FuelUp(atMillis = nowMillis, odometerKm = odo, litres = litres, totalPaid = total, full = form.full, odoSource = source, barsBefore = barsNow)
+    val at = recordMillis(form, entry, nowMillis, zone)
+    return entry?.copy(atMillis = at, odometerKm = odo, litres = litres, totalPaid = total, full = form.full, odoSource = source)
+        ?: FuelUp(
+            atMillis = at, odometerKm = odo, litres = litres, totalPaid = total, full = form.full, odoSource = source,
+            barsBefore = barsNow.takeIf { at == nowMillis },
+        )
 }

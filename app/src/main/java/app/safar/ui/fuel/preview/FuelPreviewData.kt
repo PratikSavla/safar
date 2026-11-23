@@ -46,14 +46,14 @@ object FuelPreviewData {
     private val sugg = OdoSuggestion(12_301, OdoSuggestionSource.BIKE, NOW - 3_000)
 
     val form: FuelUpUiState = fuelUpUiState(
-        null, false, sugg, FuelForm("6.7", "712", "12301", full = true, editOdo = false), fuelUps, 12.0, "₹", RideState(),
+        null, false, sugg, FuelForm("6.7", "712", "12301", full = true, editOdo = false), fuelUps, 12.0, "₹", RideState(), NOW, zone,
     )
 
     val formErrors: FuelUpUiState = fuelUpUiState(
-        null, false, OdoSuggestion(null, OdoSuggestionSource.NONE, null), FuelForm("14", "", "11000", editOdo = true), fuelUps, 12.0, "₹", RideState(),
+        null, false, OdoSuggestion(null, OdoSuggestionSource.NONE, null), FuelForm("14", "", "11000", editOdo = true), fuelUps, 12.0, "₹", RideState(), NOW, zone,
     )
 
     val formLocked: FuelUpUiState = fuelUpUiState(
-        null, false, sugg, FuelForm(), fuelUps, 12.0, "₹", RideState(speedKmh = 42f, moving = true),
+        null, false, sugg, FuelForm(), fuelUps, 12.0, "₹", RideState(speedKmh = 42f, moving = true), NOW, zone,
     )
 }

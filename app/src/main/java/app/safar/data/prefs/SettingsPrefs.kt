@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import app.safar.core.BikeStyle
 import app.safar.data.Settings
 import app.safar.data.ThemeMode
 
@@ -31,6 +32,8 @@ internal object SettingsKeys {
     val CURRENCY = stringPreferencesKey("currency_symbol")
     val DEVELOPER_MODE = booleanPreferencesKey("developer_mode")
     val DISMISSED_PERMISSIONS = stringSetPreferencesKey("dismissed_permissions")
+    val BIKE_STYLE = stringPreferencesKey("bike_style")
+    val BIKE_PHOTO = stringPreferencesKey("bike_photo")
 }
 
 private val DEFAULTS = Settings()
@@ -57,6 +60,8 @@ internal fun readSettings(prefs: Preferences): Settings = with(SettingsKeys) {
         currencySymbol = prefs[CURRENCY] ?: DEFAULTS.currencySymbol,
         developerMode = prefs[DEVELOPER_MODE] ?: DEFAULTS.developerMode,
         dismissedPermissions = prefs[DISMISSED_PERMISSIONS] ?: DEFAULTS.dismissedPermissions,
+        bikeStyle = BikeStyle.entries.firstOrNull { it.name == prefs[BIKE_STYLE] },
+        bikePhoto = prefs[BIKE_PHOTO],
     )
 }
 
@@ -82,4 +87,8 @@ internal fun writeSettings(prefs: MutablePreferences, s: Settings) = with(Settin
     prefs[CURRENCY] = s.currencySymbol
     prefs[DEVELOPER_MODE] = s.developerMode
     prefs[DISMISSED_PERMISSIONS] = s.dismissedPermissions
+    val style = s.bikeStyle
+    if (style == null) prefs.remove(BIKE_STYLE) else prefs[BIKE_STYLE] = style.name
+    val photo = s.bikePhoto
+    if (photo == null) prefs.remove(BIKE_PHOTO) else prefs[BIKE_PHOTO] = photo
 }

@@ -10,6 +10,7 @@ import app.safar.data.PlaceKind
 import app.safar.data.PlaceSource
 import app.safar.data.ServiceIcon
 import app.safar.data.ServiceItem
+import app.safar.data.ServiceRecord
 import app.safar.data.SpanUnit
 import app.safar.data.TimeSpan
 import app.safar.data.TripStop
@@ -66,6 +67,15 @@ fun ServiceItem.toEntity() = ServiceItemEntity(
     firstAtKm = firstAtKm, firstByEpochDay = firstByDate?.toEpochDay(),
 )
 
+fun ServiceRecordEntity.toModel() = ServiceRecord(
+    id = id, itemId = itemId, label = label, icon = enumOr(icon, ServiceIcon.GENERIC), atMillis = atMillis,
+    odoKm = odoKm, cost = cost, note = note,
+)
+
+fun ServiceRecord.toEntity() = ServiceRecordEntity(
+    id = id, itemId = itemId, label = label, icon = icon.name, atMillis = atMillis, odoKm = odoKm, cost = cost, note = note,
+)
+
 fun PlaceEntity.toModel() = Place(
     id = id, label = label, detail = detail, query = query, kind = enumOr(kind, PlaceKind.STAR),
     source = enumOr(source, PlaceSource.TYPED), sortOrder = sortOrder, lat = lat, lng = lng,
@@ -83,11 +93,13 @@ fun ParkedSpot.toEntity() = ParkedSpotEntity(lat = lat, lng = lng, accuracyM = a
 fun DocumentEntity.toModel() = BikeDocument(
     id = id, title = title, kind = enumOr(kind, DocKind.OTHER), fileName = fileName, mimeType = mimeType,
     sizeBytes = sizeBytes, addedMillis = addedMillis, expiryEpochDay = expiryEpochDay, note = note, remindedStage = remindedStage,
+    serviceRecordId = serviceRecordId,
 )
 
 fun BikeDocument.toEntity() = DocumentEntity(
     id = id, title = title, kind = kind.name, fileName = fileName, mimeType = mimeType, sizeBytes = sizeBytes,
     addedMillis = addedMillis, expiryEpochDay = expiryEpochDay, note = note, remindedStage = remindedStage,
+    serviceRecordId = serviceRecordId,
 )
 
 /**

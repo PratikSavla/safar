@@ -1,6 +1,7 @@
 package app.safar.data.backup
 
 import android.util.Log
+import app.safar.data.BikePhotos
 import app.safar.data.DocumentFiles
 import app.safar.data.SavedBikeStore
 import app.safar.data.Settings
@@ -43,6 +44,8 @@ class UserDataManager(
     private val files: DocumentFiles,
     private val workDir: File,
     private val io: CoroutineDispatcher,
+    /** The rider's bike photo; deleted with everything else. Kept out of exports. */
+    private val photos: BikePhotos? = null,
 ) : UserData {
 
     override suspend fun export(out: OutputStream, appVersion: String, nowMillis: Long): BackupCounts = coroutineScope {
@@ -76,7 +79,12 @@ class UserDataManager(
             }
         }
         val imported = staged.data.settings
-        if (imported != null) settings.update { current -> imported.applyTo(Settings(onboarded = current.onboarded, dismissedPermissions = current.dismissedPermissions)) }
+        if (imported != null) {
+            // The photo is not in the file: the one on this phone stays.
+            settings.update { current ->
+                imported.applyTo(Settings(onboarded = current.onboarded, dismissedPermissions = current.dismissedPermissions, bikePhoto = current.bikePhoto))
+            }
+        }
     }
 
     override suspend fun discard(staged: StagedBackup) {
@@ -85,7 +93,10 @@ class UserDataManager(
 
     override suspend fun wipe() = coroutineScope {
         val db = async { dao.clearAll() }
-        val papers = async(io) { files.deleteAll() }
+        val papers = async(io) {
+            files.deleteAll()
+            photos?.deleteAll()
+        }
         val prefs = async { settings.update { Settings() } }
         val bike = async { savedBike.clear() }
         db.await()

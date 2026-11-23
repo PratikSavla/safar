@@ -30,6 +30,7 @@ object DataModule {
     private const val SAVED_BIKE_FILE = "saved_bike"
     /** Papers' files. Not listed in the backup rules, so Android backup leaves them out. */
     private const val DOCUMENTS_DIR = "documents"
+    private const val BIKE_PHOTO_DIR = "bike"
 
     private val installed = AtomicBoolean(false)
 
@@ -50,13 +51,15 @@ object DataModule {
         AppContainer.fuel = RoomFuelRepository(db.fuelUps())
         val trips = RoomTripRepository(db.trips())
         AppContainer.trips = trips
-        AppContainer.service = RoomServiceRepository(db.serviceItems())
+        AppContainer.service = RoomServiceRepository(db.serviceItems(), db.serviceRecords())
         AppContainer.places = RoomPlaceRepository(db.places())
         AppContainer.parked = RoomParkedRepository(db.parkedSpot())
         val documents = RoomDocumentRepository(db.documents())
         val files = DocumentFiles(File(app.filesDir, DOCUMENTS_DIR))
         AppContainer.documents = documents
         AppContainer.documentFiles = files
+        val photos = BikePhotos(File(app.filesDir, BIKE_PHOTO_DIR))
+        AppContainer.bikePhotos = photos
         AppContainer.userData = UserDataManager(
             dao = db.backup(),
             settings = AppContainer.settings,
@@ -64,6 +67,7 @@ object DataModule {
             files = files,
             workDir = app.filesDir,
             io = Dispatchers.IO,
+            photos = photos,
         )
         scope.launch { thinOldTracks(trips, DataStoreOneTimeFlags(settingsData)) }
         ioScope.launch { pruneOrphans(documents, files) }

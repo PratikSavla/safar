@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,6 +26,7 @@ import app.safar.ui.components.BackTopBar
 import app.safar.ui.components.EmptyState
 import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.SecondaryButton
+import app.safar.ui.components.showPastDatePicker
 import app.safar.ui.components.SwitchRow
 import app.safar.ui.components.TextAction
 import app.safar.ui.components.TopoTransform
@@ -40,6 +42,9 @@ import java.time.ZoneId
 /** Form actions, bundled so the stateless content stays readable. */
 data class FuelUpActions(
     val onLitres: (String) -> Unit = {},
+    val onPrice: (String) -> Unit = {},
+    val onByPrice: (Boolean) -> Unit = {},
+    val onPickDay: () -> Unit = {},
     val onTotal: (String) -> Unit = {},
     val onOdo: (String) -> Unit = {},
     val onEditOdo: () -> Unit = {},
@@ -67,8 +72,12 @@ fun FuelUpScreen(navigator: Navigator, fuelUpId: Long?) {
         // Only the fuel page shows the toast: a new receipt logged from elsewhere lands there (fuel-form.js).
         if (!fromFuel && fuelUpId == null) navigator.go(Route.Fuel)
     }
+    val context = LocalContext.current
     val actions = FuelUpActions(
-        vm::setLitres, vm::setTotal, vm::setOdo, vm::editOdo, vm::setFull, vm::save, vm::delete, navigator::back,
+        onLitres = vm::setLitres, onPrice = vm::setPrice, onByPrice = vm::setByPrice,
+        onPickDay = { showPastDatePicker(context, state.day, state.today, vm::setDay) },
+        onTotal = vm::setTotal, onOdo = vm::setOdo, onEditOdo = vm::editOdo, onFull = vm::setFull,
+        onSave = vm::save, onDelete = vm::delete, onClose = navigator::back,
     )
     FuelUpContent(state, toast, actions)
 }
@@ -85,7 +94,7 @@ fun FuelUpContent(state: FuelUpUiState, toast: AtlasToastState, actions: FuelUpA
             AtlasToastHost(toast, bottomPadding = 40.dp)
         },
     ) {
-        val kicker = if (entry != null) "Edit fuel-up · ${fuelDate(entry.atMillis, ZoneId.systemDefault())}" else "Log fuel · today"
+        val kicker = if (entry != null) "Edit fuel-up · ${fuelDate(entry.atMillis, ZoneId.systemDefault())}" else "Log fuel · ${dayWord(state.day, state.today)}"
         BackTopBar(kicker, "At the pump", actions.onClose, titleEm = if (entry != null) ", corrected." else ", one receipt.")
         when {
             state.loading -> Unit
@@ -98,6 +107,7 @@ fun FuelUpContent(state: FuelUpUiState, toast: AtlasToastState, actions: FuelUpA
 
 @Composable
 private fun FormBody(state: FuelUpUiState, actions: FuelUpActions, onAskDelete: () -> Unit) {
+    FillDateRow(state, actions.onPickDay)
     AmountFields(state, actions)
     OdometerBlock(state, actions)
     SwitchRow(

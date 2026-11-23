@@ -2,6 +2,7 @@ package app.safar.ui.home
 
 import app.safar.core.AlertCounter
 import app.safar.core.BikeCatalog
+import app.safar.core.BikeStyle
 import app.safar.core.BikeState
 import app.safar.core.ClusterReading
 import app.safar.core.LinkState
@@ -41,13 +42,16 @@ data class ConnUi(
     val nextAttemptAt: Long? = null,
     val link: LinkState = LinkState.Idle,
     val mtu: Int? = null,
+    /** The bike's drawing: the rider's choice, else the model's. */
+    val style: BikeStyle = BikeStyle.STANDARD,
+    /** The rider's photo of the bike (a [app.safar.data.BikePhotos] file name), shown instead of the drawing. */
+    val photo: String? = null,
 )
 
-internal fun connUi(bike: BikeState): ConnUi {
+internal fun connUi(bike: BikeState, chosenStyle: BikeStyle? = null, photo: String? = null): ConnUi {
     val link = bike.link
-    val family = bike.saved?.model?.family
-        ?: (link as? LinkState.Connecting)?.name?.let { BikeCatalog.forBleName(it).family }
-        ?: VehicleFamily.MOTORCYCLE
+    val model = bike.saved?.model ?: (link as? LinkState.Connecting)?.name?.let { BikeCatalog.forBleName(it) }
+    val family = model?.family ?: VehicleFamily.MOTORCYCLE
     val (kind, tone) = when (link) {
         LinkState.Connected -> ConnKind.CONNECTED to StampTone.MOSS
         is LinkState.Connecting -> ConnKind.CONNECTING to StampTone.SLATE
@@ -61,6 +65,8 @@ internal fun connUi(bike: BikeState): ConnUi {
         kind, LinkCopy.headline(bike), LinkCopy.detail(bike), LinkCopy.stamp(link, bike.saved != null), tone, family,
         bike.saved?.name, bike.saved?.address, bike.cluster?.receivedAtMillis,
         attempt = reconnect?.attempt ?: 0, nextAttemptAt = reconnect?.nextAttemptAtMillis, link = link, mtu = bike.mtu,
+        style = chosenStyle ?: model?.style ?: BikeStyle.STANDARD,
+        photo = photo,
     )
 }
 

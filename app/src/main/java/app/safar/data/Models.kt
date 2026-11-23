@@ -1,5 +1,6 @@
 package app.safar.data
 
+import app.safar.core.BikeStyle
 import java.time.LocalDate
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
@@ -30,6 +31,10 @@ data class Settings(
     val developerMode: Boolean = false,
     /** Permissions the rider waved away on Today ("Not now"), by name. The card returns when another one goes off. */
     val dismissedPermissions: Set<String> = emptySet(),
+    /** The rider's choice of bike drawing; null = the paired model's own. */
+    val bikeStyle: BikeStyle? = null,
+    /** The rider's photo of the bike: a file name in [BikePhotos]; null = the drawing. */
+    val bikePhoto: String? = null,
 )
 
 /** Where a fuel-up odometer came from (ux/FUEL.md). */
@@ -109,6 +114,22 @@ data class ServiceItem(
     val firstPending: Boolean get() = firstAtKm != null || firstByDate != null
 }
 
+/**
+ * A service that was done: logged by marking an item done, or typed in afterwards for an earlier service.
+ * [label] and [icon] are copied from the item so the history reads the same after the item is removed
+ * ([itemId] then points nowhere). [odoKm] is null when the rider did not know it.
+ */
+data class ServiceRecord(
+    val id: Long = 0,
+    val itemId: Long?,
+    val label: String,
+    val icon: ServiceIcon,
+    val atMillis: Long,
+    val odoKm: Int?,
+    val cost: Double? = null,
+    val note: String? = null,
+)
+
 enum class PlaceKind { HOME, WORK, FUEL, STAR }
 
 /** How a place was saved: shared from Google Maps, phone GPS, typed, parked spot, or end of a trip. */
@@ -142,7 +163,8 @@ enum class DocKind { RC, INSURANCE, PUC, LICENCE, SERVICE_BILL, OTHER }
 /**
  * A bike paper kept on this phone: a PDF or an image in `filesDir/documents/[fileName]`. The file is never part
  * of Android backup. [expiryEpochDay] is a local date (days since 1970-01-01); [remindedStage] is the last
- * expiry reminder sent for that date (see `reminderStage`), 0 = none yet.
+ * expiry reminder sent for that date (see `reminderStage`), 0 = none yet. [serviceRecordId] links a bill or
+ * receipt to the [ServiceRecord] it belongs to; it stays a paper when that record is removed.
  */
 data class BikeDocument(
     val id: Long = 0,
@@ -155,4 +177,5 @@ data class BikeDocument(
     val expiryEpochDay: Long? = null,
     val note: String? = null,
     val remindedStage: Int = 0,
+    val serviceRecordId: Long? = null,
 )

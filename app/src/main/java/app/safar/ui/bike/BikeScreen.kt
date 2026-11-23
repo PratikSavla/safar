@@ -13,12 +13,23 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.safar.core.AppContainer
 import app.safar.ui.art.AtlasIcons
-import app.safar.ui.art.BikeSilhouette
+import app.safar.ui.components.AtlasToastHost
+import app.safar.ui.components.AtlasToastState
+import app.safar.ui.components.TextAction
+import app.safar.ui.components.rememberToastState
+import app.safar.ui.documents.pickedSource
+import app.safar.ui.vm.NoticeToasts
+import kotlinx.coroutines.Dispatchers
+import java.io.File
 import app.safar.ui.components.AtlasBottomSheet
 import app.safar.ui.components.AtlasCard
 import app.safar.ui.components.AtlasPage
@@ -43,6 +54,8 @@ import app.safar.ui.nav.Route
 import app.safar.ui.theme.Atlas
 
 class BikeActions(
+    val picture: PictureActions = PictureActions(),
+    val photoFile: (String) -> File = { File(it) },
     val onBack: () -> Unit = {},
     val onPair: () -> Unit = {},
     val onLog: () -> Unit = {},
@@ -56,21 +69,34 @@ class BikeActions(
  */
 @Composable
 fun BikeScreen(navigator: Navigator, modifier: Modifier = Modifier) {
-    val vm = viewModel { BikeViewModel(AppContainer.bike, AppContainer.savedBike) }
+    val vm = viewModel { BikeViewModel(AppContainer.bike, AppContainer.savedBike, AppContainer.settings, AppContainer.bikePhotos, Dispatchers.IO) }
     val state by vm.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val toast = rememberToastState()
+    NoticeToasts(vm.notices, toast)
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) vm.usePhoto(pickedSource(context, uri))
+    }
     val actions = BikeActions(
+        picture = PictureActions(
+            onStyle = vm::chooseStyle,
+            onChoosePhoto = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            onRemovePhoto = vm::removePhoto,
+        ),
+        photoFile = AppContainer.bikePhotos::file,
         onBack = navigator::back,
         onPair = { navigator.go(Route.Pair) },
         onLog = { navigator.go(Route.Log) },
         onIconTest = { navigator.go(Route.IconTest) },
         onForget = { if (vm.forget()) navigator.resetTo(Route.Pair) },
     )
-    BikeContent(state, actions, modifier)
+    BikeContent(state, actions, modifier, toast)
 }
 
 @Composable
-internal fun BikeContent(state: BikeScreenState, actions: BikeActions, modifier: Modifier = Modifier) {
+internal fun BikeContent(state: BikeScreenState, actions: BikeActions, modifier: Modifier = Modifier, toast: AtlasToastState? = null) {
     var confirm by rememberSaveable { mutableStateOf(false) }
+    var picturing by rememberSaveable { mutableStateOf(false) }
     val info = state.info
     AtlasPage(
         modifier,
@@ -79,7 +105,9 @@ internal fun BikeContent(state: BikeScreenState, actions: BikeActions, modifier:
                 AtlasBottomSheet(confirm, { confirm = false }) {
                     ForgetSheet(info.model.name, onKeep = { confirm = false }, onForget = { confirm = false; actions.onForget() })
                 }
+                BikePictureSheet(picturing, state.picture, state.busy, actions.picture) { picturing = false }
             }
+            toast?.let { AtlasToastHost(it, bottomPadding = 40.dp) }
         },
     ) {
         when {
@@ -87,7 +115,7 @@ internal fun BikeContent(state: BikeScreenState, actions: BikeActions, modifier:
             info == null -> NoBike(actions)
             else -> {
                 BackTopBar("Your bike", info.model.name, actions.onBack, titleEm = ", on paper.")
-                RegistrationCard(info)
+                RegistrationCard(info, state.picture, actions.photoFile, onPicture = { picturing = true })
                 DevOnly { DeveloperLink(info, actions) }
                 SectionHeader("Forget this bike")
                 Note("Safar stops connecting to it until you pair again. Your rides, fuel log and service dates stay.")
@@ -108,7 +136,7 @@ private fun NoBike(actions: BikeActions) {
 
 /** What the bike told Safar about itself, as a registration document (`.regdoc`). */
 @Composable
-private fun RegistrationCard(info: BikeInfo) {
+private fun RegistrationCard(info: BikeInfo, picture: BikePictureUi, photoFile: (String) -> File, onPicture: () -> Unit) {
     val c = Atlas.colors
     AtlasCard {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -118,7 +146,8 @@ private fun RegistrationCard(info: BikeInfo) {
             }
             Stamp(info.stamp, tone = if (info.connected) StampTone.MOSS else StampTone.INK)
         }
-        BikeSilhouette(info.model.family, Modifier.align(Alignment.CenterHorizontally).padding(vertical = 12.dp), width = 160.dp, color = c.ink2)
+        BikePicture(picture, photoFile, Modifier.align(Alignment.CenterHorizontally).padding(top = 12.dp))
+        TextAction("Change picture", onPicture, Modifier.align(Alignment.CenterHorizontally).padding(bottom = 6.dp), icon = AtlasIcons.edit)
         if (info.deviceInfo == null) {
             Note("Connect once and Safar reads these details from your bike.", color = c.ink3)
         }

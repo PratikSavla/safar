@@ -58,6 +58,10 @@
 .leaf p { color: var(--ink-2); font-size: 1rem; }
 .leaf-text { align-self: center; padding: 28px 26px; background: var(--card); border-radius: 6px; box-shadow: var(--shadow); }
 .leaf-text h3 { border-top: 0; padding-top: 0; margin-bottom: 14px; }
+/* Six phones fill the rows above; the Settings card takes a row of its own, its ticks side by side. */
+.atlas .leaf-text { grid-column: 1 / -1; }
+.leaf-text .ticks { display: grid; grid-template-columns: repeat(auto-fit, minmax(15em, 1fr)); column-gap: 32px; }
+.leaf-text .ticks li:last-child { border-bottom: 1px solid var(--rule); }
 .ticks li { position: relative; padding: 9px 0 9px 26px; border-bottom: 1px solid var(--rule); color: var(--ink-2); font-size: .98rem; }
 .ticks li:last-child { border-bottom: 0; }
 .ticks li::before { content: ""; position: absolute; left: 2px; top: 1.05em; width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--rust); }

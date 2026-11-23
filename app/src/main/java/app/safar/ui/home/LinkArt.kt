@@ -20,9 +20,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
-import app.safar.core.VehicleFamily
 import app.safar.ui.art.AtlasIcons
-import app.safar.ui.art.BikeSilhouette
 import app.safar.ui.components.AtlasIcon
 import app.safar.ui.components.rememberLoopPhase
 import app.safar.ui.components.rememberOnScreen
@@ -35,7 +33,7 @@ private val PageEase = CubicBezierEasing(0.22f, 0.8f, 0.24f, 1f)
  * while a link is being made, amber while retrying, a faint dotted line when offline. Decorative.
  */
 @Composable
-fun LinkArt(kind: ConnKind, family: VehicleFamily, modifier: Modifier = Modifier) {
+fun LinkArt(kind: ConnKind, modifier: Modifier = Modifier, bike: @Composable () -> Unit) {
     val offline = kind == ConnKind.IDLE || kind == ConnKind.BLUETOOTH_OFF
     Row(
         modifier.fillMaxWidth().padding(vertical = 10.dp).alpha(if (offline) 0.45f else 1f).clearAndSetSemantics { },
@@ -45,7 +43,7 @@ fun LinkArt(kind: ConnKind, family: VehicleFamily, modifier: Modifier = Modifier
         AtlasIcon(AtlasIcons.phone, size = 26.dp)
         val line = Modifier.weight(1f).height(9.dp)
         if (offline) OfflineLine(line) else LiveLine(kind, line)
-        BikeSilhouette(family, width = 76.dp)
+        bike()
     }
 }
 

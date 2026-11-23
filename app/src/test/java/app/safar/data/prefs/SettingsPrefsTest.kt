@@ -3,6 +3,7 @@ package app.safar.data.prefs
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.mutablePreferencesOf
+import app.safar.core.BikeStyle
 import app.safar.data.Settings
 import app.safar.data.ThemeMode
 import kotlinx.coroutines.flow.first
@@ -29,6 +30,7 @@ class SettingsPrefsTest {
             theme = ThemeMode.DARK, keepScreenOn = false, autoRideMode = false, serviceReminders = false,
             lowFuelAlert = false, tankLitres = 11.5, currencySymbol = "$", developerMode = true,
             dismissedPermissions = setOf("PHONE", "LOCATION"),
+            bikeStyle = BikeStyle.ADVENTURE, bikePhoto = "0b9b5f3e-1111-4c2a-9a59-6f1d2b8e7a10.jpg",
         )
         val prefs = mutablePreferencesOf()
         writeSettings(prefs, custom)
@@ -93,5 +95,16 @@ class SettingsPrefsTest {
     fun otherErrorsPropagate() = runTest {
         val broken = flow<Preferences> { throw IllegalStateException("bug") }
         assertFailsWith<IllegalStateException> { broken.retryOnIoError("settings").first() }
+    }
+
+    @Test
+    fun clearingTheBikePictureRemovesItsKeysAndAnUnknownStyleReadsAsNone() {
+        val prefs = mutablePreferencesOf()
+        writeSettings(prefs, Settings(bikeStyle = BikeStyle.SPORT, bikePhoto = "a.jpg"))
+        writeSettings(prefs, Settings())
+        assertNull(prefs[SettingsKeys.BIKE_STYLE])
+        assertNull(prefs[SettingsKeys.BIKE_PHOTO])
+        prefs[SettingsKeys.BIKE_STYLE] = "HOVERBIKE"
+        assertNull(readSettings(prefs).bikeStyle)
     }
 }

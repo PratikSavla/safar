@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import app.safar.ui.bike.BikeThumb
+import java.io.File
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -40,6 +42,8 @@ class ConnActions(
     val connectSaved: () -> Unit,
     val openPair: () -> Unit,
     val enableBluetooth: () -> Unit,
+    /** Resolves the rider's bike photo name to its file. */
+    val photoFile: (String) -> File = { File(it) },
 )
 
 /**
@@ -61,7 +65,7 @@ fun ConnectionCard(conn: ConnUi, autoRideOn: Boolean, actions: ConnActions, modi
             }
             Stamp(conn.stamp, tone = conn.tone)
         }
-        LinkArt(conn.kind, conn.family)
+        LinkArt(conn.kind) { BikeThumb(conn.photo, conn.style, actions.photoFile, 76.dp) }
         ConnFoot(conn, autoRideOn, actions)
     }
 }

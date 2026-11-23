@@ -108,10 +108,10 @@ class FuelFormMappingTest {
     @Test
     fun `the form locks while moving and cannot save`() {
         val form = FuelForm("6.5", "690", "12301")
-        val moving = fuelUpUiState(null, false, live, form, ups, 12.0, "₹", RideState(speedKmh = 42f, moving = true))
+        val moving = fuelUpUiState(null, false, live, form, ups, 12.0, "₹", RideState(speedKmh = 42f, moving = true), FuelFixtures.NOW, ZoneOffset.UTC)
         assertEquals("Locked while moving (42 km/h). Stop to edit.", moving.locked)
         assertFalse(moving.canSave)
-        val still = fuelUpUiState(null, false, live, form, ups, 12.0, "₹", RideState())
+        val still = fuelUpUiState(null, false, live, form, ups, 12.0, "₹", RideState(), FuelFixtures.NOW, ZoneOffset.UTC)
         assertTrue(still.canSave)
         assertEquals("Price per litre shows here", perLitreLine(null, "₹"))
     }

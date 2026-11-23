@@ -38,7 +38,7 @@ class BackupRoundTripTest {
         val staged = readBackup(ByteArrayInputStream(export(dir)), tmp.root.resolve("staging"))
 
         assertEquals("1.2.3", staged.manifest.appVersion)
-        assertEquals(BackupCounts(trips = 2, trackPoints = 3, fuelUps = 1, serviceItems = 2, places = 1, parkedSpot = true, documents = 2), staged.manifest.counts)
+        assertEquals(BackupCounts(trips = 2, trackPoints = 3, fuelUps = 1, serviceItems = 2, serviceRecords = 2, places = 1, parkedSpot = true, documents = 2), staged.manifest.counts)
         assertEquals(0, staged.missingDocuments)
         val rows = staged.data.toRows(todayEpochDay = 0)
         val original = sampleRows()
@@ -46,6 +46,7 @@ class BackupRoundTripTest {
         assertEquals(original.trackPoints.map { it.copy(id = 0) }, rows.trackPoints)
         assertEquals(original.fuelUps, rows.fuelUps)
         assertEquals(original.serviceItems, rows.serviceItems)
+        assertEquals(original.serviceRecords, rows.serviceRecords)
         assertEquals(original.places, rows.places)
         assertEquals(original.parkedSpot, rows.parkedSpot)
         assertEquals(original.documents.map { it.copy(remindedStage = 0) }, rows.documents)

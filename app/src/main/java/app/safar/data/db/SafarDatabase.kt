@@ -14,11 +14,12 @@ import androidx.room.RoomDatabase
         TrackPointEntity::class,
         TripStopEntity::class,
         ServiceItemEntity::class,
+        ServiceRecordEntity::class,
         PlaceEntity::class,
         ParkedSpotEntity::class,
         DocumentEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
     autoMigrations = [
         // Service items by time, and a first service that differs from the recurring one.
@@ -27,12 +28,15 @@ import androidx.room.RoomDatabase
         AutoMigration(from = 2, to = 3),
         // Trip note and trip stops for merged rides.
         AutoMigration(from = 3, to = 4),
+        // Service history (services done, including ones logged afterwards) and bills linked to them.
+        AutoMigration(from = 4, to = 5),
     ],
 )
 abstract class SafarDatabase : RoomDatabase() {
     abstract fun fuelUps(): FuelUpDao
     abstract fun trips(): TripDao
     abstract fun serviceItems(): ServiceItemDao
+    abstract fun serviceRecords(): ServiceRecordDao
     abstract fun places(): PlaceDao
     abstract fun parkedSpot(): ParkedSpotDao
     abstract fun documents(): DocumentDao

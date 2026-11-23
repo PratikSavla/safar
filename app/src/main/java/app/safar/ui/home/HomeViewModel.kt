@@ -95,7 +95,7 @@ internal fun homeUi(
     return HomeUi(
         riderName = live.settings.riderName.trim(),
         modelName = LinkCopy.modelName(bike),
-        conn = connUi(bike),
+        conn = connUi(bike, live.settings.bikeStyle, live.settings.bikePhoto),
         autoRideOn = live.settings.autoRideMode,
         ledger = ledgerUi(bike, fuel),
         counts = CountsUi(live.alerts.missed, live.alerts.messages),

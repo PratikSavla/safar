@@ -8,12 +8,12 @@ import { bearing, haversineM, makeRng, trackKm, wrap, type LatLng, type Rng } fr
 import { buildTrips, localAt, type DemoTrip } from './demo-trips.ts';
 import { placeholderPdf, zip, type ZipEntry } from './demo-files.ts';
 import {
-  LIVE_ODO, SETTINGS, applyFuelBars, buildFuelUps, buildParked, buildPlaces, buildService, mileageSegments, recentKmpl,
+  LIVE_ODO, SETTINGS, applyFuelBars, buildFuelUps, buildParked, buildPlaces, buildService, buildServiceHistory, mileageSegments, recentKmpl,
   type FuelUp,
 } from './demo-data.ts';
 
 const DAY = 86_400_000;
-const APP_VERSION = '0.2.0';
+const APP_VERSION = '1.0.0';
 
 type Args = { outDir: string; now: number; seed: number };
 
@@ -126,13 +126,14 @@ function main(): void {
   const barsNow = applyFuelBars(trips, fuelUps, rates);
   const papers = buildPapers(rng, args.now);
   const data = {
-    trips: oldestFirst.map(tripDto), fuelUps, serviceItems: buildService(args.now, trips), places: buildPlaces(),
+    trips: oldestFirst.map(tripDto), fuelUps, serviceItems: buildService(args.now, trips),
+    serviceRecords: buildServiceHistory(args.now, trips), places: buildPlaces(),
     parkedSpot: buildParked(rng, trips[0]), documents: papers.map((p) => p.dto), settings: SETTINGS,
     savedBike: { name: 'SBM01A1B2C3D', address: '00:00:00:00:00:00' },
   };
   const counts = {
     trips: data.trips.length, trackPoints: trips.reduce((n, t) => n + t.track.length, 0), fuelUps: fuelUps.length,
-    serviceItems: data.serviceItems.length, places: data.places.length, parkedSpot: true, documents: papers.length,
+    serviceItems: data.serviceItems.length, serviceRecords: data.serviceRecords.length, places: data.places.length, parkedSpot: true, documents: papers.length,
   };
   const manifest = { format: 'safar-backup', formatVersion: 1, appVersion: APP_VERSION, exportedAtMillis: args.now, counts };
   const entries: ZipEntry[] = [

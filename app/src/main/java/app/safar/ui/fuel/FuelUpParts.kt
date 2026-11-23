@@ -32,6 +32,7 @@ import app.safar.ui.components.Note
 import app.safar.ui.components.NumberWithUnit
 import app.safar.ui.components.PrimaryButton
 import app.safar.ui.components.SecondaryButton
+import app.safar.ui.components.SegmentedChoice
 import app.safar.ui.components.TextAction
 import app.safar.ui.components.rememberNow
 import app.safar.ui.copy.Phrases
@@ -41,16 +42,30 @@ import app.safar.ui.theme.Atlas
 import java.time.ZoneId
 import kotlin.math.roundToInt
 
-/** Litres and amount side by side with decimal keyboards, then the live price per litre (`.ff-pair`). */
+/**
+ * What the receipt says: litres or the price per litre, beside the amount paid, with decimal keyboards. The line
+ * below works out the other one (`.ff-pair`).
+ */
 @Composable
 internal fun AmountFields(state: FuelUpUiState, actions: FuelUpActions) {
     val style = Atlas.type.numberSmall.copy(fontSize = Atlas.type.numberSmall.fontSize * 1.15f)
+    SegmentedChoice(
+        listOf(false to "Litres", true to "Price per litre"), state.form.byPrice, actions.onByPrice,
+        Modifier.padding(bottom = 12.dp),
+    )
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(Modifier.weight(1f)) {
-            AtlasTextField(
-                state.form.litres, actions.onLitres, label = "Litres", placeholder = "0.0", textStyle = style,
-                keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next, trailing = { UnitText("L") },
-            )
+            if (state.form.byPrice) {
+                AtlasTextField(
+                    state.form.price, actions.onPrice, label = "Per litre · ${state.currency}", placeholder = "0.00", textStyle = style,
+                    keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next,
+                )
+            } else {
+                AtlasTextField(
+                    state.form.litres, actions.onLitres, label = "Litres", placeholder = "0.0", textStyle = style,
+                    keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next, trailing = { UnitText("L") },
+                )
+            }
             FieldLine(state.messages[FuelField.LITRES])
         }
         Column(Modifier.weight(1f)) {

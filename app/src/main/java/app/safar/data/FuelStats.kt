@@ -58,10 +58,18 @@ data class FuelUpValidation(
 }
 
 /**
- * Checks a form entry against the existing [fuelUps]. [odo] is null when the field is empty or not a whole
- * number; [litres] and [total] are null when empty.
+ * Checks a form entry against the existing [fuelUps] (those logged before it). [odo] is null when the field is
+ * empty or not a whole number; [litres] and [total] are null when empty. [later] are the fuel-ups logged after
+ * the entry's date: its odometer may not be higher than theirs.
  */
-fun validateFuelUp(odo: Int?, litres: Double?, total: Double?, fuelUps: List<FuelUp>, tank: Double): FuelUpValidation {
+fun validateFuelUp(
+    odo: Int?,
+    litres: Double?,
+    total: Double?,
+    fuelUps: List<FuelUp>,
+    tank: Double,
+    later: List<FuelUp> = emptyList(),
+): FuelUpValidation {
     val errors = linkedMapOf<FuelField, String>()
     val warnings = linkedMapOf<FuelField, String>()
     if (litres == null || litres <= 0) {
@@ -74,8 +82,11 @@ fun validateFuelUp(odo: Int?, litres: Double?, total: Double?, fuelUps: List<Fue
         errors[FuelField.ODO] = "Enter the odometer (whole km)"
     } else {
         val prev = fuelUps.sortedWith(byOdo).lastOrNull()
+        val next = later.minByOrNull { it.odometerKm }
         if (prev != null && odo < prev.odometerKm) {
             errors[FuelField.ODO] = "Lower than the last fuel-up (${groupThousands(prev.odometerKm)} km)"
+        } else if (next != null && odo > next.odometerKm) {
+            errors[FuelField.ODO] = "Higher than a later fuel-up (${groupThousands(next.odometerKm)} km)"
         } else if (prev != null && odo - prev.odometerKm > tank * 60) {
             warnings[FuelField.ODO] = "${groupThousands(odo - prev.odometerKm)} km since the last fuel-up — a missed entry?"
         }

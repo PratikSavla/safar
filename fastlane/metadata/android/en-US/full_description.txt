@@ -1,0 +1,33 @@
+Safar is an open-source, offline-first Android companion app for Suzuki motorcycles and scooters equipped with a Bluetooth display. Connect over Bluetooth LE to get turn-by-turn navigation, caller alerts, and a complete riding log — with zero ads, zero accounts, and zero tracking.
+
+SUPPORTED BIKES & SCOOTERS
+• V-Strom SX
+• Gixxer / Gixxer SF / Gixxer 250 / Gixxer SF 250
+• Access 125
+• Burgman Street / Burgman Street EX
+• Avenis
+
+KEY FEATURES
+• Turn-by-Turn Navigation on Your Cluster: Start navigation in Google Maps from your saved places and see every upcoming turn and distance directly on your bike's LCD/TFT display.
+• Smart Call & WhatsApp Alerts: See who is calling, missed call counts, and WhatsApp call or message alerts on your dash. Only the caller's name and count are sent to the display — never your message text.
+• Auto Ride Mode: Launches a clean, high-contrast, glanceable riding screen automatically when you start moving, with optional keep-screen-on.
+• Live Bike Telemetry: View connection status, odometer, Trip A/B, fuel bars, and engine temperature synced from the bike.
+• Trip & Route Log: Automatically records rides with start time, distance, average/top speed, and GPS route map.
+• Fuel & Mileage Tracker: Log fill-ups by litres or price per litre, track real-world mileage, estimate remaining range, and get low-fuel alerts.
+• Service & Paper Reminders: Track oil, chain, air filter, brake, and tyre intervals by kilometres or time. Store RC, insurance, PUC, and licence papers with 30-day and 7-day expiry reminders.
+• Parked Location & Home Widget: Automatically saves where you parked when the ignition turns off, plus a home-screen widget for quick bike status.
+• Full Data Ownership: Export everything (trips, fuel, service, places, papers, settings) to a single portable .zip file, import anytime, or delete all data in one tap.
+
+PRIVACY BY DESIGN
+• No account required. No backend servers. No analytics or crash trackers.
+• All riding, fuel, location, and document data stays strictly on your phone.
+• Open-source software licensed under GNU GPLv3.
+
+PERMISSIONS EXPLAINED
+• Nearby Devices (Bluetooth): Pair and stay connected to your bike's Bluetooth display.
+• Location: Record trip routes and where you parked (stored locally only).
+• Phone, Call Log & Contacts: Display incoming/missed caller names on the bike cluster.
+• Notification Access: Forward Google Maps turns and WhatsApp call/message alerts to the cluster.
+
+DISCLAIMER
+Safar is an independent open-source project and is not affiliated with, endorsed by, or sponsored by Suzuki Motor Corporation. Suzuki, V-Strom, Gixxer, Access, Burgman, and Avenis are trademarks of their respective owners. Google Maps is a trademark of Google LLC, and WhatsApp is a trademark of WhatsApp LLC.

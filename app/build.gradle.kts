@@ -23,10 +23,10 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "app.safar"
+        applicationId = "in.savlab.safar"
         minSdk = 26
         targetSdk = 37
-        versionCode = 9
+        versionCode = 10
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

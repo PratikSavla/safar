@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy · Safar</title>
+<meta name="description" content="Privacy Policy for Safar, the open-source Android companion app for Suzuki Bluetooth displays. All data stays on your device.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F3EEE4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161C" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="sections.css">
+<style>
+  .policy { max-width: 760px; margin: 0 auto; padding: clamp(32px, 6vw, 64px) var(--gutter); }
+  .policy h1 { font-family: var(--f-display); font-size: clamp(2rem, 4vw, 3rem); line-height: 1.1; margin: 0 0 8px; }
+  .policy .updated { font-family: var(--f-mono); font-size: 0.85rem; color: var(--ink-3); margin: 0 0 32px; }
+  .policy h2 { font-family: var(--f-display); font-size: 1.35rem; margin: 32px 0 10px; }
+  .policy p, .policy li { color: var(--ink-2); line-height: 1.65; }
+  .policy ul { padding-left: 20px; }
+  .policy li { margin: 8px 0; }
+  .policy code { font-family: var(--f-mono); font-size: 0.88em; background: var(--paper-2); padding: 2px 6px; border-radius: 4px; }
+  .policy .summary-box { background: var(--card); border: 1px solid var(--rule); border-radius: 12px; padding: 20px 24px; margin: 24px 0; }
+  .policy .summary-box strong { color: var(--ink); }
+</style>
+<script>
+  (function () {
+    var root = document.documentElement;
+    root.classList.add('js');
+    try {
+      var t = localStorage.getItem('safar-theme');
+      if (t === 'light' || t === 'dark') root.dataset.theme = t;
+    } catch (e) {}
+  })();
+</script>
+<script src="main.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <a class="brand" href="index.html" aria-label="Safar home">
+    <svg class="mark" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" rx="26"/><path d="M30 74C42 74 40 58 54 58S66 42 78 40"/><circle cx="78" cy="40" r="8"/><circle cx="78" cy="40" r="3"/></svg>
+    <span>Safar</span>
+  </a>
+  <nav aria-label="Sections">
+    <a href="index.html#features">Features</a><a href="index.html#bikes">Bikes</a><a href="index.html#privacy">Privacy</a><a href="index.html#build">Build</a>
+  </nav>
+  <button class="theme" type="button" aria-pressed="false" data-theme-toggle>
+    <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 2.5a7.5 7.5 0 0 1 0 15z"/></svg>
+    <span data-theme-label>Night</span>
+  </button>
+</header>
+
+<main id="main" class="policy">
+  <h1>Privacy Policy</h1>
+  <p class="updated">Effective date: 27 November 2026 · Applies to Safar (<code>in.savlab.safar</code>)</p>
+
+  <div class="summary-box">
+    <strong>In short:</strong> Safar has no user accounts, no backend servers, no analytics, no crash-reporting SDKs, and no advertising. All riding, location, fuel, service, and document data stays strictly on your phone.
+  </div>
+
+  <h2>1. Data We Collect or Transmit</h2>
+  <p>We do <strong>not</strong> collect, store, or transmit any personal data to our own servers or third-party analytics providers. We have no servers.</p>
+  <p>All app data—including trip logs, GPS routes, fuel fill-ups, service reminders, saved places, parked location, settings, and bike papers (RC, insurance, PUC, licence)—is stored locally on your device in an app-private Room database, DataStore preferences, and app-private file storage.</p>
+
+  <h2>2. Permissions and How They Are Used</h2>
+  <p>Safar requests only the Android permissions required for its companion features. Every permission is optional until you enable the feature that uses it:</p>
+  <ul>
+    <li><strong>Nearby Devices / Bluetooth (<code>BLUETOOTH_SCAN</code>, <code>BLUETOOTH_CONNECT</code>):</strong> Used to discover, pair with, and send navigation/alert frames to your Suzuki motorcycle or scooter Bluetooth display over BLE.</li>
+    <li><strong>Location (<code>ACCESS_FINE_LOCATION</code>, <code>ACCESS_COARSE_LOCATION</code>, <code>FOREGROUND_SERVICE_LOCATION</code>):</strong> Used while riding to record trip distance, speed, route tracks, and your parked location when the bike disconnects. Location data never leaves your phone.</li>
+    <li><strong>Phone, Call Log &amp; Contacts (<code>READ_PHONE_STATE</code>, <code>READ_CALL_LOG</code>, <code>READ_CONTACTS</code>):</strong> Used solely to detect incoming or missed calls and resolve the caller's name locally so it can be shown on your bike's display. Call logs and contacts are never stored by Safar or sent off-device.</li>
+    <li><strong>Notification Access (<code>BIND_NOTIFICATION_LISTENER_SERVICE</code>):</strong> Used locally to read turn-by-turn navigation updates from Google Maps and incoming call/message alerts from WhatsApp so they can be forwarded to your bike's display. Only the sender/caller name and count are sent to the display—never message contents.</li>
+    <li><strong>Notifications &amp; Foreground Services (<code>POST_NOTIFICATIONS</code>, <code>FOREGROUND_SERVICE_CONNECTED_DEVICE</code>):</strong> Used to keep the Bluetooth link alive reliably while riding and to show local reminders for low fuel, service intervals, and expiring documents.</li>
+  </ul>
+
+  <h2>3. Third-Party Services &amp; Android Backups</h2>
+  <ul>
+    <li><strong>Google Maps:</strong> When you tap "Navigate" from a saved place, Safar opens Google Maps via a standard Android intent. Your use of Google Maps is governed by Google's own privacy policy.</li>
+    <li><strong>Android Device Backup:</strong> Safar enables Android's end-to-end encrypted backup and device-to-device transfer for trips, fuel logs, service items, saved places, and settings. Bike papers, your bike photo, and debug logs are excluded from cloud backup. You can disable Android Backup in your phone's system settings.</li>
+  </ul>
+
+  <h2>4. Your Control Over Your Data</h2>
+  <p>In <strong>Settings → Your data</strong>, you can export all of your data into a portable <code>.zip</code> archive at any time, import a previous backup, or permanently delete all data stored by Safar in one tap. Uninstalling the app also removes all local app data.</p>
+
+  <h2>5. Children's Privacy</h2>
+  <p>Safar is designed for licensed motorcycle and scooter riders and is not directed at children under 13.</p>
+
+  <h2>6. Changes to This Policy</h2>
+  <p>If this policy is updated, the revised version will be posted on this page with an updated effective date.</p>
+
+  <h2>7. Contact</h2>
+  <p>If you have questions about this privacy policy or Safar's data practices, contact us at <a href="mailto:safar@savlab.in">safar@savlab.in</a>.</p>
+</main>
+
+<footer class="foot">
+  <div class="foot-in">
+    <p class="foot-brand"><svg class="mark" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" rx="26"/><path d="M30 74C42 74 40 58 54 58S66 42 78 40"/><circle cx="78" cy="40" r="8"/><circle cx="78" cy="40" r="3"/></svg>Safar</p>
+    <p><a href="index.html">Back to Safar home</a> · <a href="https://github.com/PratikSavla/safar/blob/main/LICENSE">GNU GPLv3</a></p>
+  </div>
+</footer>
+</body>
+</html>

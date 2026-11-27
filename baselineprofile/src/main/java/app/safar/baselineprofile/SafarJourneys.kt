@@ -23,7 +23,7 @@ private const val MAX_SCROLLS = 8
 
 /** Package under test, passed by the Gradle build as `targetAppId`. */
 val targetPackage: String
-    get() = InstrumentationRegistry.getArguments().getString("targetAppId") ?: "app.safar"
+    get() = InstrumentationRegistry.getArguments().getString("targetAppId") ?: "in.savlab.safar"
 
 /** The five stub tabs, read as "<label>" or "<label>, 3 new" / "<label>, navigating". */
 private fun tab(label: String): BySelector = By.desc(Pattern.compile("^${Pattern.quote(label)}(,.*)?$"))

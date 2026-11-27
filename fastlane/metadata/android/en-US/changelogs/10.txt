@@ -1,0 +1,6 @@
+Initial Play Store release (v1.0.0):
+• Turn-by-turn Google Maps navigation on compatible Suzuki Bluetooth clusters
+• Caller ID and WhatsApp call/message alerts (name & count only)
+• Auto Ride Mode, GPS Trip Log, Fuel & Mileage tracker
+• Service interval & Bike Papers (RC, Insurance, PUC) expiry reminders
+• Parked location, home-screen widget, and full .zip backup export/import

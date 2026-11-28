@@ -71,9 +71,9 @@ class GoogleMapsTest {
     }
 
     @Test
-    fun `real departure notification gives start heading, remaining distance and ETA`() {
+    fun `real departure notification gives straight ahead, remaining distance and ETA`() {
         val update = updateFromNotification(null, realDepart, now)
-        assertEquals(17, update.iconCode) // head south-west
+        assertEquals(8, update.iconCode) // "Head southwest": Maps shows a straight arrow
         assertEquals(23708, update.remainingM)
         assertEquals(12, update.eta.hour)
         assertEquals(55, update.eta.minute)

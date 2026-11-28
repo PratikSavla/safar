@@ -8,8 +8,8 @@ enum class NavStatusCode(val code: Char) {
 
 /**
  * Exactly what the cluster receives on the next navigation tick, plus the raw text it came from.
- * [iconCode] is 1..45 (docs 4.4). [iconMatched] is false when the large-icon hash had no match and the
- * code came from the instruction text.
+ * [iconCode] is 1..45 (docs 4.4). [iconMatched] is false when the large icon matched no Google Maps maneuver
+ * drawable and the code came from the instruction text.
  */
 data class NavSnapshot(
     val iconCode: Int,

@@ -18,3 +18,6 @@ include(":baselineprofile")
 
 rootProject.name = "safar"
 include(":protocol", ":app", ":bikesim")
+
+// Local-only debug APK (cluster icon audit, live Maps capture); git-ignored, so clones build without it.
+if (file("navtest").exists()) include(":navtest")

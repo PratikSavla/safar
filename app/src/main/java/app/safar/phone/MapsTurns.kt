@@ -4,6 +4,7 @@ import app.safar.core.NavSnapshot
 import app.safar.core.NavStatusCode
 import app.safar.core.PhoneSnapshot
 import app.safar.core.cellularOk
+import app.safar.protocol.ManeuverMatch
 import app.safar.protocol.MapsNotification
 import app.safar.protocol.NavStatus
 import app.safar.protocol.NavUpdate
@@ -14,6 +15,7 @@ import app.safar.protocol.updateFromNotification
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.Locale
 
 // Google Maps notification -> NavSnapshot (docs 11.3 steps 4-7). Pure Kotlin: no Android imports.
 
@@ -105,13 +107,16 @@ fun MapsTurn.toSnapshot(phone: PhoneSnapshot, zone: ZoneId = ZoneId.systemDefaul
 }
 
 /** Raw fields for the debug log (docs 12.6). Missing fields are left out. */
-fun MapsFields.toLogDetail(iconHash: String?, iconCode: Int?): Map<String, String> = buildMap {
+fun MapsFields.toLogDetail(icon: ManeuverMatch?, iconCode: Int?): Map<String, String> = buildMap {
     title?.let { put("title", it) }
     shortCriticalText?.let { put("shortCriticalText", it) }
     subText?.let { put("subText", it) }
     text?.let { put("text", it) }
     progress?.let { put("progress", it.toString()) }
     progressMax?.let { put("progressMax", it.toString()) }
-    iconHash?.let { put("iconHash", it) }
+    icon?.let {
+        put("iconRef", it.name)
+        put("iconDiff", "%.2f".format(Locale.ROOT, it.diff))
+    }
     put("iconCode", iconCode?.toString() ?: "none")
 }

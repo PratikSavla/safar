@@ -2,6 +2,7 @@ package app.safar.phone
 
 import app.safar.core.NavStatusCode
 import app.safar.core.PhoneSnapshot
+import app.safar.protocol.ManeuverMatch
 import org.junit.Test
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -21,7 +22,7 @@ class MapsTurnsTest {
     @Test
     fun departureMapsToSnapshot() {
         val snap = reduceMaps(null, depart, matchedIcon = null, nowMillis = now, zone = zone).toSnapshot(phoneOk, zone)
-        assertEquals(17, snap.iconCode, "head southwest")
+        assertEquals(8, snap.iconCode, "head southwest: Maps shows a straight arrow")
         assertFalse(snap.iconMatched)
         assertEquals(0, snap.distanceToTurnM)
         assertEquals(23708, snap.remainingM)
@@ -94,10 +95,16 @@ class MapsTurnsTest {
 
     @Test
     fun logDetailCarriesRawFields() {
-        val detail = turn.toLogDetail(iconHash = "00000000000000ff", iconCode = null)
+        val detail = turn.toLogDetail(ManeuverMatch("maneuver_turn_normal_right", 0.125), iconCode = 4)
         assertEquals("200 m · Turn right toward NH 48", detail["title"])
         assertEquals("1723", detail["progressMax"])
-        assertEquals("none", detail["iconCode"])
+        assertEquals("maneuver_turn_normal_right", detail["iconRef"])
+        assertEquals("0.13", detail["iconDiff"])
+        assertEquals("4", detail["iconCode"])
         assertFalse("text" in detail)
+
+        val textOnly = turn.toLogDetail(icon = null, iconCode = null)
+        assertEquals("none", textOnly["iconCode"])
+        assertFalse("iconRef" in textOnly)
     }
 }

@@ -1,0 +1,4 @@
+v1.1.0:
+• Turn arrows on your bike now match Google Maps exactly, read from the Maps turn icon itself instead of its text
+• Roundabout exits, ramps, forks, U-turns and "Head …" starts show the right arrow
+• Works with any phone language for the turn arrow

@@ -6,8 +6,6 @@ import android.app.Application
 import android.content.Context
 import android.os.Bundle
 import app.safar.core.AppContainer
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -31,7 +29,7 @@ object PhoneModule {
     private var calls: CallMonitor? = null
     private var ride: RideTrackerImpl? = null
 
-    /** The Maps bridge with its debug extras (learnIcon, lastUnmatched); also `AppContainer.navigation`. */
+    /** The Maps bridge; also `AppContainer.navigation`. */
     @Volatile
     var maps: MapsNavigationBridge? = null
         private set
@@ -44,9 +42,7 @@ object PhoneModule {
 
         val phone = PhoneStatusMonitor(app).also { it.start() }
         val alerts = AlertCenterImpl(::outboxOrNull, { AppContainer.settings.settings.value }, log)
-        val icons = IconLibrary(app, log)
-        scope.launch(Dispatchers.IO) { icons.load() }
-        val bridge = MapsNavigationBridge(app, phone.state, scope, icons, log)
+        val bridge = MapsNavigationBridge(app, phone.state, scope, MapsManeuverIcons(app, log), log)
         router = NotificationRouter(bridge, WhatsAppAlerts(alerts), { PhoneAccess.defaultDialer(app) }, alerts::phoneMissedRead)
         calls = CallMonitor(app, alerts, scope, log).also { it.start() }
         val tracker = RideTrackerImpl(app, scope, log).also { it.start() }

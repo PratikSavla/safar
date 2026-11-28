@@ -8,6 +8,9 @@ local.properties
 keystore.properties
 CLAUDE.local.md
 
+# Local-only debug module (cluster icon audit, live Maps capture)
+navtest/
+
 # Captures, logs and exports: never commit
 *.log
 *.jsonl

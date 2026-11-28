@@ -13,7 +13,6 @@
     <include domain="database" path="safar.db-journal" requireFlags="clientSideEncryption" />
     <include domain="file" path="datastore/settings.preferences_pb" requireFlags="clientSideEncryption" />
     <include domain="file" path="datastore/saved_bike.preferences_pb" requireFlags="clientSideEncryption" />
-    <include domain="file" path="maps-icons-learned.json" requireFlags="clientSideEncryption" />
 
     <include domain="database" path="safar.db" requireFlags="deviceToDeviceTransfer" />
     <include domain="database" path="safar.db-wal" requireFlags="deviceToDeviceTransfer" />
@@ -21,5 +20,4 @@
     <include domain="database" path="safar.db-journal" requireFlags="deviceToDeviceTransfer" />
     <include domain="file" path="datastore/settings.preferences_pb" requireFlags="deviceToDeviceTransfer" />
     <include domain="file" path="datastore/saved_bike.preferences_pb" requireFlags="deviceToDeviceTransfer" />
-    <include domain="file" path="maps-icons-learned.json" requireFlags="deviceToDeviceTransfer" />
 </full-backup-content>

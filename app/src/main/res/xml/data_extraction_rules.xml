@@ -17,7 +17,6 @@
         <include domain="database" path="safar.db-journal" />
         <include domain="file" path="datastore/settings.preferences_pb" />
         <include domain="file" path="datastore/saved_bike.preferences_pb" />
-        <include domain="file" path="maps-icons-learned.json" />
     </cloud-backup>
     <device-transfer>
         <include domain="database" path="safar.db" />
@@ -26,6 +25,5 @@
         <include domain="database" path="safar.db-journal" />
         <include domain="file" path="datastore/settings.preferences_pb" />
         <include domain="file" path="datastore/saved_bike.preferences_pb" />
-        <include domain="file" path="maps-icons-learned.json" />
     </device-transfer>
 </data-extraction-rules>

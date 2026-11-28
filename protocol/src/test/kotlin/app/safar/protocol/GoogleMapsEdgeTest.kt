@@ -70,8 +70,20 @@ class GoogleMapsEdgeTest {
         assertEquals(43, codeFromInstruction("Take the ferry"))
         assertEquals(21, codeFromInstruction("At the roundabout, take the first exit"))
         assertEquals(45, codeFromInstruction("Enter the rotary"))
-        assertEquals(41, codeFromInstruction("Head northeast"))
-        assertEquals(40, codeFromInstruction("Head north on Main Rd"))
+        assertEquals(8, codeFromInstruction("Head northeast"))
+        assertEquals(8, codeFromInstruction("Head north on Main Rd"))
         assertEquals(27, codeFromInstruction("Take the exit on the left"))
+    }
+
+    @Test
+    fun `phrasings seen in Google Maps notifications`() {
+        assertEquals(25, codeFromInstruction("At Rider Junction, take the 3rd exit onto Main Rd"))
+        assertEquals(21, codeFromInstruction("At Rider Chowk, take the 1st exit"))
+        assertEquals(45, codeFromInstruction("At the roundabout, take the 4th exit"))
+        assertEquals(45, codeFromInstruction("Exit the roundabout onto Main Rd"))
+        assertEquals(3, codeFromInstruction("Turn slightly left toward NH 48"))
+        assertEquals(6, codeFromInstruction("Turn slightly right onto Main Rd"))
+        assertEquals(5, codeFromInstruction("Turn sharply right"))
+        assertEquals(8, codeFromInstruction("Continue straight to stay on NH 48"))
     }
 }

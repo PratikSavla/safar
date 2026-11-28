@@ -2,7 +2,6 @@ package app.safar.phone
 
 import android.app.Notification
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
 import android.service.notification.StatusBarNotification
@@ -72,10 +71,10 @@ internal fun waNotification(sbn: StatusBarNotification): WaNotification {
     )
 }
 
-/** The large icon drawn to a bitmap and its dHash. */
-internal class IconCapture(val hash: Long, val bitmap: Bitmap)
+/** The large icon drawn to ARGB pixels, [width] x [height]. */
+internal class IconCapture(val argb: IntArray, val width: Int, val height: Int)
 
-/** Draws `android.largeIcon` and hashes it (docs 11.4). Null when there is no icon or it cannot be drawn. */
+/** Draws `android.largeIcon` (docs 11.4). Null when there is no icon or it cannot be drawn. */
 internal fun captureLargeIcon(context: Context, n: Notification): IconCapture? {
     val icon = n.getLargeIcon() ?: return null
     return try {
@@ -87,7 +86,8 @@ internal fun captureLargeIcon(context: Context, n: Notification): IconCapture? {
         drawable.draw(Canvas(bitmap))
         val pixels = IntArray(w * h)
         bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
-        IconCapture(iconHash(pixels, w, h), bitmap)
+        bitmap.recycle()
+        IconCapture(pixels, w, h)
     } catch (e: RuntimeException) {
         // Resources.NotFoundException, or a hardware bitmap that a software canvas cannot read.
         Log.w(TAG, "Maps large icon could not be drawn", e)

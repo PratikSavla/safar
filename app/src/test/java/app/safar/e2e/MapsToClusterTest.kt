@@ -61,12 +61,12 @@ class MapsToClusterTest {
         encodeNavigation(NavigationData(icon, turnM, eta, leftM, status, active = true), ChecksumMode.SUM)
 
     @Test
-    fun departureGivesHeadingIconRemainingDistanceAndEta() = runTest {
+    fun departureGivesStraightAheadRemainingDistanceAndEta() = runTest {
         val (rig, maps) = mapsRig()
-        maps.post(depart)
+        maps.post(depart) // "Head southwest": Maps shows a straight arrow, so no compass start icon
         rig.advance(period)
-        assertContentEquals(expected(17, 0, LocalTime.of(12, 55), 23_708), rig.lastNavBytes())
-        assertEquals(TxFrames.Nav(17, "0000M", "23.7K", "1255PM", '1', '1'), rig.frames.nav(rig.lastNavBytes()))
+        assertContentEquals(expected(8, 0, LocalTime.of(12, 55), 23_708), rig.lastNavBytes())
+        assertEquals(TxFrames.Nav(8, "0000M", "23.7K", "1255PM", '1', '1'), rig.frames.nav(rig.lastNavBytes()))
     }
 
     @Test
